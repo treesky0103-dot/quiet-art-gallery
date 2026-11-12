@@ -1,0 +1,15 @@
+name: Probe Seven European American Museum Commons Categories
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe seven collection categories and image license and resolution metadata
+        run: python3 scripts/probe_seven_collections.py
