@@ -1,4 +1,5 @@
-# 고요한 미술관 v1.5 — 아프리카 미술관 확장·표본 작품 조사
+# 고요한 미술관 v1.6 — 미술관/기관 19곳 조회
+
 
 
 ## 아시아 미술관 확장
@@ -54,3 +55,22 @@ APK는 `Actions → Build Gallery APK`에서 GitHub Actions 빌드 후 Artifacts
 ## 버전 분리 및 백업
 - APK package/applicationId: `com.gallery.kiosk.v15`, versionCode 6, versionName 1.5.0.
 - 기존 v1.4는 변경하지 않고 별도 설치합니다. 기존 앱의 CSV 감상 기록을 백업한 뒤 v1.5에서 복원하십시오.
+
+
+## v1.6 추가 공개 이미지 공급원 — 7곳
+- 암스테르담 국립미술관 (Paintings in the Rijksmuseum Amsterdam)
+- 미국 국립미술관 (Paintings in the National Gallery of Art (Washington, D.C.))
+- 게티 미술관 (Paintings in The J. Paul Getty Museum)
+- 덴마크 국립미술관 (Paintings in Statens Museum for Kunst)
+- 파리 시립미술관 연합 소속 카르나발레 박물관 (Paintings in Musée Carnavalet)
+- 런던 내셔널갤러리 (Paintings in the National Gallery, London)
+- 월터스 미술관 (Paintings in the Walters Art Museum)
+
+모두 Wikimedia Commons에 정리된 미술관별 공개 이미지 분류를 실시간 조회합니다. 각 미술관의 공식 API 연결을 의미하지 않습니다. '파리 시립미술관 연합'은 전체 연합이 아니라 소속 카르나발레 미술관 분류를 이용합니다. 저작권이 남은 이미지는 사적 감상이라는 이유만으로 자동 허용하지 않고 CC0/퍼블릭 도메인 조건을 유지합니다.
+
+기존 클리블랜드/시카고/메트로폴리탄 3곳과 아시아 5곳, 아프리카 4곳을 포함한 19개 소장기관·기관 네트워크에서 작품을 검색할 수 있도록 구성했습니다. 서양 미술사조 13개·아시아 회화·아프리카 소장 회화·유럽/미국 소장 회화 총 16개 전시 구간을 순환합니다. 미술사조를 특정할 수 있는 공개 작품은 사조에 배정하고, 불명확한 작품은 지역/소장처 구간에 배정합니다.
+
+## 검증의 범위
+- 7곳의 Commons 카테고리를 실제 API에서 20건씩 조회하여 총 140개 중 130개가 사용 권리/원본 해상도 메타데이터 조건에 부합했지만, 이는 재생 가능 작품의 전수 확인이 아닙니다.
+- 설정의 19개 공급원별 표본 조사는 일부 페이지만 조사합니다. 실제 화상 픽셀·액자 여부·전수 중복 검증 완료를 뜻하지 않습니다.
+- v1.6 앱 ID는 `com.gallery.kiosk.v16`로, v1.5와 별도로 설치됩니다. 기존 감상 기록을 CSV로 백업하고 새 앱에서 복원하세요.

@@ -11,13 +11,13 @@
   const state = {
     db:null,pool:[],pendingKeys:new Set(), prepared:null,current:null,currentNode:ui.b,
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
-    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{}},
-    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
-    failures:{cleveland:0,chicago:0,met:0,asian:0,african:0},backoff:{},
+    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{}},
+    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
+    failures:{cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)'};
+  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'유럽·미국 미술관 7곳(공용 자료)'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -115,9 +115,10 @@
       const params={query:{bool:{filter:[{term:{is_public_domain:true}},{exists:{field:'image_id'}}]}},page,limit:100,fields:['id','title','artist_title','image_id','is_public_domain','artwork_type_title','medium_display','thumbnail','style_title','style_titles','date_display','date_start']};
       if(isMovement)params.query.bool.must=[{multi_match:{query:movement.en,fields:['style_title^5','style_titles^4','term_titles^2','artist_title','title']}}];
       url=`https://api.artic.edu/api/v1/artworks/search?params=${encodeURIComponent(JSON.stringify(params))}`;
-    }else if(kind==='asianCommons'||kind==='africanCommons'){
+    }else if(kind==='asianCommons'||kind==='africanCommons'||kind==='additionalCommons'){
       const [museumId, offsetText]=String(param).split(':');
-      const museum=(kind==='africanCommons'?C.AFRICAN_MUSEUMS:C.ASIAN_MUSEUMS).find(m=>m.id===museumId);
+      const museums=kind==='africanCommons'?C.AFRICAN_MUSEUMS:kind==='additionalCommons'?C.ADDITIONAL_MUSEUMS:C.ASIAN_MUSEUMS;
+      const museum=museums.find(m=>m.id===museumId);
       const offset=Number(offsetText);
       if(!museum||!Number.isInteger(offset)||offset<0||offset>100000)throw Error('박물관 소장품 조회 범위 오류');
       const query='deepcategory:"'+museum.category+'"';
@@ -174,6 +175,14 @@
         const rows=Array.isArray(res.query&&res.query.pages)?res.query.pages.length:0;
         const total=Number(res.query&&res.query.searchinfo&&res.query.searchinfo.totalhits)||0;
         state.cursors.african[museum.id]=(rows===0||rows<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
+      }else if(source==='additional'){
+        const museum=C.ADDITIONAL_MUSEUMS[state.additionalOrder++%C.ADDITIONAL_MUSEUMS.length];
+        const offset=Number(state.cursors.additional[museum.id])||0;
+        const res=await request('additionalCommons',museum.id+':'+offset);
+        addCandidates(C.normalizeAdditionalCommons(res,museum.id).filter(C.eligibleArt));
+        const rows=Array.isArray(res.query&&res.query.pages)?res.query.pages.length:0;
+        const total=Number(res.query&&res.query.searchinfo&&res.query.searchinfo.totalhits)||0;
+        state.cursors.additional[museum.id]=(rows===0||rows<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
       }else if(source==='met'){
         const departments=['11','9','21','6'];const m=departments[(state.metType++)%3];
         if(!state.metIDs.length||state.metIndex>=state.metIDs.length){
@@ -207,6 +216,7 @@
     if(!movement)return 0;
     if(movementId==='asian')return sourceIsAllowed('asian')?fetchSource('asian'):0;
     if(movementId==='african')return sourceIsAllowed('african')?fetchSource('african'):0;
+    if(movementId==='additional')return sourceIsAllowed('additional')?fetchSource('additional'):0;
     if(!sourceIsAllowed('chicago'))return 0;
     const last=state.lastMovementTry[movementId]||0;
     if(Date.now()-last<CONFIG.movementRetryMs)return 0;
@@ -238,13 +248,13 @@
     if(state.filling)return state.filling;
     state.filling=(async()=>{
       let attempts=0, progress=0;
-      while(state.pool.length<target && attempts<10){
-        const source=['cleveland','chicago','met','asian','african'][state.sourceOrder++%5];
+      while(state.pool.length<target && attempts<12){
+        const source=['cleveland','chicago','met','asian','african','additional'][state.sourceOrder++%6];
         attempts++;
         progress+=await fetchSource(source);
         if(test&&typeof test.afterFetch==='function')test.afterFetch(source);
         if(state.pool.length>=target)break;
-        if(attempts>=5&&!progress)break;
+        if(attempts>=6&&!progress)break;
       }
       if(state.pool.length===0&&state.lastErr) inform('새 작품을 가져오지 못했습니다. 네트워크를 확인해 주세요.');
       return state.pool.length;
@@ -427,7 +437,7 @@
         if(!C.eligibleArt(a))continue;
         rec.eligible++;out.eligible++;
         if(!C.metadataResolutionOkay(a))continue;
-        const verifiedSize=(a.museumRegion==='asia'||a.museumRegion==='africa'||a.source==='클리블랜드');
+        const verifiedSize=(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.source==='클리블랜드');
         if(verifiedSize){rec.resolutionChecked++;out.resolutionChecked++;}
         else {rec.pixelUnknown++;out.pixelUnknown++;}
         if(unique.has(a.key))continue;
@@ -458,6 +468,8 @@
         await perform(m.label,'asianCommons',m.id+':0',r=>({count:Array.isArray(r.query&&r.query.pages)?r.query.pages.length:0,items:C.normalizeAsianCommons(r,m.id)}));
       for(const m of C.AFRICAN_MUSEUMS)
         await perform(m.label,'africanCommons',m.id+':0',r=>({count:Array.isArray(r.query&&r.query.pages)?r.query.pages.length:0,items:C.normalizeAfricanCommons(r,m.id)}));
+      for(const m of C.ADDITIONAL_MUSEUMS)
+        await perform(m.label,'additionalCommons',m.id+':0',r=>({count:Array.isArray(r.query&&r.query.pages)?r.query.pages.length:0,items:C.normalizeAdditionalCommons(r,m.id)}));
       out.details=[...reports.values()];
       state.audit=out;
       try{await dbPutMany('settings',[{key:'inventoryAudit',value:out}]);}
@@ -639,6 +651,7 @@
       if(b&&b.value){state.cursors=Object.assign(state.cursors,b.value);}
       state.cursors.asian=state.cursors.asian||{};
       state.cursors.african=state.cursors.african||{};
+      state.cursors.additional=state.cursors.additional||{};
       state.cursors.met=Object.assign({'11':0,'9':0,'21':0,'6':0},state.cursors.met||{});
       state.movementPages=(movements&&movements.value&&typeof movements.value==='object')?movements.value:{};
       state.audit=auditSaved&&auditSaved.value||null;

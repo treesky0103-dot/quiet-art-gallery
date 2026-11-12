@@ -18,11 +18,12 @@ test('Public domain Asian paintings enter a separate slot after thirteen western
   assert.equal(a.title,'Joseon painting');
   assert.equal(C.eligibleArt(a),true);
   assert.equal(C.classifyMovement(a),'asian');
-  assert.equal(C.MOVEMENTS.length,15);
+  assert.equal(C.MOVEMENTS.length,16);
   assert.equal(C.MOVEMENTS[0].id,'renaissance');
   assert.equal(C.MOVEMENTS[12].id,'contemporary');
   assert.equal(C.MOVEMENTS[13].id,'asian');
   assert.equal(C.MOVEMENTS[14].id,'african');
+  assert.equal(C.MOVEMENTS[15].id,'additional');
 });
 test('Attribution-required, copyrighted and unknown Commons licenses are not silently accepted',()=>{
   for(const label of ['CC BY 4.0','CC BY-SA 4.0','Copyrighted','Unknown']){

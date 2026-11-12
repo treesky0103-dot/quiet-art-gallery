@@ -7,7 +7,7 @@ function mock(title='File:Quiet_Painting.jpg',rights='Public domain',w=2000,h=26
 test('African museum sources are explicit, institution-linked categories',()=>{
  assert.deepEqual(C.AFRICAN_MUSEUMS.map(x=>x.id),['iziko','ethiopia','zimbabwe','johannesburg']);
  assert(C.AFRICAN_MUSEUMS.every(x=>x.category.includes('Paintings')));
- assert.deepEqual(C.MOVEMENTS.slice(-2).map(m=>m.id),['asian','african']);
+ assert.deepEqual(C.MOVEMENTS.slice(13,15).map(m=>m.id),['asian','african']);
 });
 test('Only public-domain/CC0 2D files become African painting candidates',()=>{
  for(const m of C.AFRICAN_MUSEUMS){

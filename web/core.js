@@ -16,7 +16,7 @@
   function metadataResolutionOkay(a){
     if(!a)return false;
     // Commons source dimensions and Cleveland web rendition can be checked before download.
-    if(a.museumRegion==='asia'||a.museumRegion==='africa'||a.source==='클리블랜드')return highResolution(a.width,a.height);
+    if(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.source==='클리블랜드')return highResolution(a.width,a.height);
     return true; // Other sources must pass the decoded-image check.
   }
   const BLOCKLIST = /(?:\bsculpture\b|\bceramic(?:s)?\b|\bpottery\b|\bfurniture\b|\btextile\b|\btapestry\b|\barmor\b|\barmour\b|\bweapon\b|\bphotograph(?:y)?\b|\binstallation\b|\bstatue\b|\bvase\b|\bcoin\b|\bmedal\b|\bjewelry\b|\bjewellery\b|\barchitecture\b|\bdecorative art\b|\bframe(?:d)?\b|\bgallery view\b|\bexhibition view\b|\b3d\b|\bvideo\b|\bfilm\b|\bglass\b|\bcarpet\b|\bcostume\b|\bcarving\b|\brelief\b|\bbook cover\b)/i;
@@ -45,6 +45,17 @@
     {id:'ethiopia', label:'에티오피아 국립박물관', category:'Paintings in the National Museum of Ethiopia'},
     {id:'zimbabwe', label:'짐바브웨 국립미술관', category:'Paintings in the National Gallery of Zimbabwe'},
     {id:'johannesburg', label:'요하네스버그 미술관', category:'Paintings by Paul Signac in the Johannesburg Art Gallery'}
+  ]);
+  // Additional museum-owned collections, discovered by Wikimedia Commons categories.
+  // Paris Musées is represented by its member Musée Carnavalet, not the full network.
+  const ADDITIONAL_MUSEUMS = Object.freeze([
+    {id:'rijks',label:'암스테르담 국립미술관',category:'Paintings in the Rijksmuseum Amsterdam'},
+    {id:'nga',label:'미국 국립미술관',category:'Paintings in the National Gallery of Art (Washington, D.C.)'},
+    {id:'getty',label:'게티 미술관',category:'Paintings in The J. Paul Getty Museum'},
+    {id:'smk',label:'덴마크 국립미술관',category:'Paintings in Statens Museum for Kunst'},
+    {id:'paris',label:'파리 시립미술관 연합(카르나발레)',category:'Paintings in Musée Carnavalet'},
+    {id:'london',label:'런던 내셔널갤러리',category:'Paintings in the National Gallery, London'},
+    {id:'walters',label:'월터스 미술관',category:'Paintings in the Walters Art Museum'}
   ]);
   // Conservative exclusions for exhibition-room, 3-D-object and framed photography filenames.
   const COMMONS_SCENE_BLOCK = /(?:gallery (?:interior|view|room)|museum (?:interior|hall|room)|exhibition (?:view|room|hall)|on (?:the )?wall|framed (?:painting|art)|sculpture|statue|installation|museum building|art gallery building|visitor|tour group|gallery entrance)/i;
@@ -103,6 +114,29 @@
         description:'',license:wikimediaText(metadata.LicenseShortName&&metadata.LicenseShortName.value),
         rightsOK:commonsPublicDomain(metadata)&&/^(?:image\/(?:jpeg|png|webp))$/.test(mime),
         museumRegion:'africa',verifiedCollectionCategory:true,style:'',styles:[],date:'',
+        page:string(info&&info.descriptionurl)
+      };
+    });
+  }
+  function normalizeAdditionalCommons(data, museumId) {
+    const museum=ADDITIONAL_MUSEUMS.find(m=>m.id===museumId);
+    if(!museum)return [];
+    const pages=data&&data.query&&data.query.pages;
+    return (Array.isArray(pages)?pages:[]).filter(page=>!COMMONS_SCENE_BLOCK.test(string(page&&page.title))&&!/\b(?:detail(?:ed)?|verso|back side|frame|gallery wall|portrait of visitors)\b/i.test(string(page&&page.title))).map(page=>{
+      const info=page&&Array.isArray(page.imageinfo)?page.imageinfo[0]:null;
+      const metadata=info&&info.extmetadata||{};
+      const mime=string(info&&info.mime).toLowerCase();
+      const title=string(page&&page.title).replace(/^File:/i,'').replace(/\.(?:jpg|jpeg|png|webp)$/i,'').replace(/_/g,' ');
+      return {
+        key:'commons:'+String(page&&page.pageid),source:museum.label,
+        title:wikimediaText(title)||'제목 미상',
+        artist:wikimediaText(metadata.Artist&&metadata.Artist.value)||'작가 미상',
+        image:string(info&&(info.thumburl||info.url)),
+        width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
+        type:'Painting',classification:'Painting',medium:'',
+        description:'',license:wikimediaText(metadata.LicenseShortName&&metadata.LicenseShortName.value),
+        rightsOK:commonsPublicDomain(metadata)&&/^(?:image\/(?:jpeg|png|webp))$/.test(mime),
+        museumRegion:'additional',verifiedCollectionCategory:true,style:'',styles:[],date:'',
         page:string(info&&info.descriptionurl)
       };
     });
@@ -226,7 +260,8 @@
     {id:'abstract', label:'추상미술', en:'Abstract Art'},
     {id:'contemporary', label:'현대미술', en:'Contemporary Art'},
     {id:'asian', label:'아시아 회화', en:'Asian painting'},
-    {id:'african', label:'아프리카 소장 회화', en:'Paintings from African museum collections'}
+    {id:'african', label:'아프리카 소장 회화', en:'Paintings from African museum collections'},
+    {id:'additional',label:'유럽·미국 소장 회화',en:'European and American museum paintings'}
   ]);
   const STYLE_RULES = [
     ['post-impressionism',/\bpost[\s-]*impressionis(?:m|t)\b/i],
@@ -281,6 +316,7 @@
       if(at>=0 && (at===0 || !/[a-z]/.test(artist[at-1])) &&
          (at+n.length===artist.length || !/[a-z]/.test(artist[at+n.length])))return id;
     }
+    if(a.museumRegion==='additional' && a.verifiedCollectionCategory===true && a.rightsOK)return 'additional';
     return null;
   }
   function nextAvailableMovementIndex(start, has) {
@@ -296,6 +332,6 @@
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
   }
   return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, highResolution, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
-    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, commonsPublicDomain,
+    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel };
 });

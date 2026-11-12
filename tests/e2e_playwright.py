@@ -58,6 +58,7 @@ def main():
   page.wait_for_function("document.getElementById('audit-summary').textContent.includes('조회한 메타데이터')",timeout=12000)
   report=page.locator('#audit-summary').inner_text()
   assert '이지코 남아공 국립미술관' in report and '에티오피아 국립박물관' in report,report
+  assert '암스테르담 국립미술관' in report and '런던 내셔널갤러리' in report,report
   assert '전체 작품 수' in report and '실제 픽셀 확인 필요' in report,report
   print('PASS: sampled 12-source inventory audit and explicit coverage limitation')
   print('PASS: 180-degree rotation toggle and readable bottom title/artist')

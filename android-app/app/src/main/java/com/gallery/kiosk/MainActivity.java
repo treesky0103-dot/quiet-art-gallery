@@ -224,6 +224,28 @@ public final class MainActivity extends Activity {
             params.put("fields",new JSONArray().put("id").put("title").put("artist_title").put("image_id").put("is_public_domain").put("artwork_type_title").put("medium_display").put("thumbnail").put("style_title").put("style_titles").put("date_display").put("date_start"));
             return "https://api.artic.edu/api/v1/artworks/search?params="+URLEncoder.encode(params.toString(),"UTF-8");
         }
+        if(type.equals("additionalCommons")){
+            String[] parts=p.split(":",-1);
+            if(parts.length!=2)throw new IOException("추가 미술관 검색 조건 오류");
+            String[] ids={"rijks","nga","getty","smk","paris","london","walters"};
+            String[] cats={
+                "Paintings in the Rijksmuseum Amsterdam",
+                "Paintings in the National Gallery of Art (Washington, D.C.)",
+                "Paintings in The J. Paul Getty Museum",
+                "Paintings in Statens Museum for Kunst",
+                "Paintings in Musée Carnavalet",
+                "Paintings in the National Gallery, London",
+                "Paintings in the Walters Art Museum"
+            };
+            String category=null;
+            for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))category=cats[i];
+            if(category==null)throw new IOException("등록되지 않은 추가 미술관");
+            int off=bounded(parts[1],0,100000);
+            String query="deepcategory:\""+category+"\"";
+            return "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=50&gsrsearch="+
+                URLEncoder.encode(query,"UTF-8")+"&gsroffset="+off+
+                "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=2000&format=json&formatversion=2";
+        }
         if(type.equals("africanCommons")){
             String[] parts=p.split(":",-1);
             if(parts.length!=2)throw new IOException("아프리카 소장품 검색 인자 오류");
@@ -275,7 +297,7 @@ public final class MainActivity extends Activity {
         HttpURLConnection conn=(HttpURLConnection)new URL(url).openConnection();
         conn.setConnectTimeout(10000);conn.setReadTimeout(16000);conn.setInstanceFollowRedirects(false);
         conn.setRequestProperty("Accept","application/json");
-        conn.setRequestProperty("User-Agent","QuietArtGallery/1.5 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
+        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
         conn.setRequestProperty("AIC-User-Agent","Quiet-Art-Gallery (local personal project)");
         try{
             if(conn.getResponseCode()!=200)throw new IOException("HTTP "+conn.getResponseCode());

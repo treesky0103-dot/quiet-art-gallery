@@ -32,8 +32,8 @@
 <footer id="caption" class="caption" aria-live="polite"><div id="art-title"></div><div id="art-meta"></div></footer>
 <div id="settings-backdrop" class="backdrop" hidden></div>
 <section id="settings" class="settings" aria-label="전시 설정" aria-modal="true" role="dialog" hidden>
-  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.5</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
-  <p class="sheet-copy">13개 서양 미술사조에 아시아·아프리카 소장 회화를 더해 총 15개 구간을 순환합니다. 저해상도는 자동 제외합니다(이미지 짧은 변 1200px·긴 변 1600px 이상). 회화·드로잉·판화·평면 현대미술만 전시합니다. 작품은 잘라내지 않으며 액자·조각·전시실 사진은 가능한 한 자동 제외합니다.</p>
+  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.6</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
+  <p class="sheet-copy">서양 미술사조 13개와 아시아·아프리카·유럽/미국 소장 회화 3개를 더해 총 16개 구간을 순환합니다. 총 19개 미술관·기관의 공개 이미지를 조회합니다. 저해상도는 자동 제외합니다(이미지 짧은 변 1200px·긴 변 1600px 이상). 회화·드로잉·판화·평면 현대미술만 전시합니다. 작품은 잘라내지 않으며 액자·조각·전시실 사진은 가능한 한 자동 제외합니다.</p>
   <div class="pill-row"><div class="metric"><small>전환 주기</small><strong>30초</strong></div><div class="metric"><small>세로형 목표</small><strong>70%</strong></div><div class="metric"><small>재사용 제한</small><strong>90일</strong></div></div>
   <div class="rule"><span>작품 수집</span><strong>기존 미술관 3곳 + 아시아 미술관 5곳(공용 자료 경유)</strong></div>
   <div class="rule"><span>이미지 캐시 최대</span><strong>100MB (초과 시 80MB까지 정리)</strong></div>
@@ -47,7 +47,7 @@
   <div class="action-grid">
     <button class="wide-btn" id="rotate-180">화면 180° 회전</button>
     <button class="wide-btn" id="refresh-now">작품 목록 새로 가져오기</button>
-    <button class="wide-btn" id="audit-now">전시 가능 후보 수 조사(표본)</button>
+    <button class="wide-btn" id="audit-now">19개 공급원별 작품 후보 수 조사(표본)</button>
     <button class="wide-btn" id="free-space">이미지 캐시 비우기</button>
     <button class="wide-btn" id="export-history">감상 기록 백업</button>
     <button class="wide-btn" id="import-history">감상 기록 복원</button>
@@ -56,7 +56,7 @@
   <div class="rule"><span>작품 수 조사</span><strong>표본·미확정</strong></div>
   <p id="audit-summary" class="small-note" style="white-space:pre-wrap;max-height:36vh;overflow:auto">조사 전 · 전체 수 미확인</p>
   <p id="setting-message" class="small-note">10GB 이상 남은 태블릿도 용량 증가를 막도록 관리합니다. 이미지 캐시와 감상 기록은 별도로 보관합니다.</p>
-  <p class="small-note">사조별 또는 아시아·아프리카 소장 회화 자료가 없으면 해당 구간을 건너뜁니다. 모든 공급원이 고갈되면 90일 제한을 어기지 않고 마지막 작품을 유지합니다. 액자 자동 감지는 완벽하지 않으며 출처별 이미지 상태에 따라 누락될 수 있습니다.</p>
+  <p class="small-note">사조별 또는 아시아·아프리카·유럽/미국 소장 회화 자료가 없으면 해당 구간을 건너뜁니다. 모든 공급원이 고갈되면 90일 제한을 어기지 않고 마지막 작품을 유지합니다. 액자 자동 감지는 완벽하지 않으며 출처별 이미지 상태에 따라 누락될 수 있습니다.</p>
   <button class="done" id="settings-done">그림으로 돌아가기</button>
 </section>
 <script src="core.js"></script>
