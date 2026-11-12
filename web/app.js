@@ -11,6 +11,8 @@
   const state = {
     db:null,pool:[],pendingKeys:new Set(), prepared:null,current:null,currentNode:ui.b,
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
+    offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
+    lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
     cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{}},
     sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
     failures:{cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0},backoff:{},
@@ -56,6 +58,10 @@
   }
   function imageURL(art){
     if(!C.safeURL(art.image))return '';
+    // Strict offline-asset whitelist; runtime JSON cannot inject arbitrary asset paths.
+    if(window.GalleryAndroid && /^offline\/fallback-[0-3]\.jpg$/.test(art.offlineAsset||'')){
+      return 'https://appassets.gallery/'+art.offlineAsset;
+    }
     if(window.GalleryAndroid) return 'https://appassets.gallery/art-image?u='+encodeURIComponent(art.image);
     return art.image;
   }
@@ -73,6 +79,25 @@
     });
     if(!C.highResolution(img.naturalWidth,img.naturalHeight))throw new Error('저해상도 또는 소형 이미지 제외');
     return {art,src,width:img.naturalWidth,height:img.naturalHeight,orient:img.naturalHeight>img.naturalWidth*1.02?'portrait':'other'};
+  }
+
+  async function loadOfflineDeck(){
+    if(!window.GalleryAndroid)return 0;
+    try{
+      const r=await fetch('https://appassets.gallery/offline-deck.json',{cache:'no-store'});
+      if(!r.ok)throw Error('비상 작품 목록 없음');
+      const items=await r.json();
+      if(!Array.isArray(items)||items.length<2||items.length>4)throw Error('비상 작품 목록 형식 오류');
+      const loaded=[];
+      for(const art of items){
+        if(!/^offline\/fallback-[0-3]\.jpg$/.test(art.offlineAsset||'')||
+          !C.eligibleArt(art)||!C.metadataResolutionOkay(art))continue;
+        art.movement=C.classifyMovement(art)||'additional';
+        try{loaded.push(await loadImage(art));}catch(e){state.lastErr='비상 작품: '+e.message;}
+      }
+      state.offlineReady=loaded;
+      return loaded.length;
+    }catch(e){state.lastErr='비상 작품 준비: '+e.message;return 0;}
   }
   function normalizeBatch(kind,result){
     if(kind==='cleveland')return (Array.isArray(result.data)?result.data:[]).map(C.normalizeCleveland);
@@ -344,44 +369,106 @@
       ui.hud.classList.remove('active');
     },ms);
   }
-  async function next(){
-    if(state.busy)return;state.busy=true;
-    let retry=false;
-    clearTimeout(state.timer);
-    try{
-      const show=await prepareNext();
-      if(!show){
-        if(!state.current)inform('전시할 작품을 찾고 있습니다. 네트워크나 공급원 상태를 확인해 주세요.');
-        else inform('90일 제한을 지키며 새로운 작품을 찾는 중입니다.');
-        retry=true;
-        return;
+
+  // Rendering is intentionally synchronous and never waits for API/network/image
+  // requests. The tick is driven independently by the native Android clock.
+  function displayLoaded(show,emergency=false){
+    if(!show || (state.current&&state.current.art.key===show.art.key))return false;
+    const target=state.currentNode===ui.a?ui.b:ui.a;
+    target.alt=show.art.title+' — '+show.art.artist;
+    target.src=show.src;
+    target.classList.add('visible');
+    state.currentNode.classList.remove('visible');
+    ui.placeholder.hidden=true;
+    state.currentNode=target;state.current=show;
+    state.lastSwapAt=Date.now();
+    ui.title.textContent=C.tidyLabel(show.art.title,'제목 미상');
+    ui.meta.textContent=C.tidyLabel(show.art.artist,'작가 미상');
+    const idx=C.MOVEMENTS.findIndex(m=>m.id===show.art.movement);
+    state.stats.movementIndex=(Math.max(0,idx)+1)%C.MOVEMENTS.length;
+    state.recentLoaded=[show,...state.recentLoaded.filter(x=>x.art.key!==show.art.key)].slice(0,8);
+    state.recentDisplayed.add(show.art.key);
+    if(emergency)state.emergencySwaps++;
+    if(test&&test.onShow)test.onShow(show.art,show.orient,emergency);
+    // Persist in the background: storage latency may not delay a visual transition.
+    recordSeen(show.art,show.orient).then(()=>
+      dbPutMany('settings',[{key:'lastArtwork',value:show.art}])
+    ).catch(e=>{
+      state.lastErr='감상 기록 저장 실패: '+String(e.message||e);
+      // Keep the artwork clock running, but disclose that 90-day records
+      // may be incomplete until storage recovers.
+    });
+    updateInfo();
+    return true;
+  }
+  function emergencyChoice(){
+    // The four genuine CC0 paintings are shipped INSIDE the Android APK.
+    // If the online sources are not ready, cycle these rather than freeze.
+    const previous=state.current&&state.current.art.key;
+    const all=[...state.offlineReady,...state.recentLoaded];
+    const unique=new Map();
+    for(const item of all)if(item&&item.art.key!==previous&&!unique.has(item.art.key))
+      unique.set(item.art.key,item);
+    const choices=[...unique.values()];
+    if(!choices.length)return null;
+    return choices[state.emergencyIndex++%choices.length];
+  }
+  function advanceSlide(){
+    if(!state.playing)return;
+    state.tickCount++;
+    let shown=false;
+    if(state.prepared){
+      const candidate=state.prepared;
+      state.prepared=null;
+      if(!state.recentDisplayed.has(candidate.art.key)){
+        shown=displayLoaded(candidate,false);
       }
-      if(await seenRecently(show.art)){
-        state.prepared=null;retry=true;
-        inform('90일 중복 방지 기록과 대조하여 다음 작품을 찾는 중입니다.');
-        return;
-      }
-      const target=state.currentNode===ui.a?ui.b:ui.a;
-      target.alt=show.art.title+' — '+show.art.artist;
-      target.src=show.src;
-      target.classList.add('visible');state.currentNode.classList.remove('visible');
-      ui.placeholder.hidden=true;
-      state.currentNode=target;state.current=show;state.prepared=null;
-      ui.title.textContent=C.tidyLabel(show.art.title,'제목 미상');
-      ui.meta.textContent=C.tidyLabel(show.art.artist,'작가 미상');
-      state.stats.movementIndex=(C.MOVEMENTS.findIndex(m=>m.id===show.art.movement)+1)%C.MOVEMENTS.length;
-      try{await recordSeen(show.art,show.orient);await dbPutMany('settings',[{key:'lastArtwork',value:show.art}]);}catch(e){
-        state.playing=false;inform('감상 기록 저장에 실패했습니다. 90일 중복 방지를 위해 재생을 중단했습니다.');
-        controlsFor(0);return;
-      }
-      if(test&&test.onShow)test.onShow(show.art,show.orient);
-      updateInfo();
-    }catch(e){state.lastErr=e.message;inform('작품 전환 오류: '+e.message);}
-    finally{
-      state.busy=false;
-      if(state.playing)state.timer=setTimeout(next,retry?CONFIG.retryMs:INTERVAL);
-      if(state.playing&&!retry)prepareNext().catch(()=>{});
     }
+    if(!shown){
+      const emergency=emergencyChoice();
+      if(emergency)shown=displayLoaded(emergency,true);
+    }
+    if(!shown){
+      state.lastErr='준비된 서로 다른 그림이 없습니다. 예비 작품을 확인해 주세요.';
+    }
+    // This may take minutes; it NEVER blocks the next 30-second tick.
+    prepareNext().catch(e=>{state.lastErr='다음 그림 준비: '+e.message;});
+  }
+  function stopClock(){
+    clearTimeout(state.timer);state.timer=null;
+    if(state.nativeClock && window.GalleryAndroid &&
+       typeof window.GalleryAndroid.stopArtworkClock==='function'){
+      window.GalleryAndroid.stopArtworkClock();
+    }
+    state.nativeClock=false;
+  }
+  function armBrowserClock(){
+    if(!state.playing)return;
+    state.timer=setTimeout(()=>{
+      if(!state.playing)return;
+      state.nextDueAt+=INTERVAL;
+      if(state.nextDueAt<=Date.now())state.nextDueAt=Date.now()+INTERVAL;
+      advanceSlide();
+      armBrowserClock();
+    },Math.max(0,state.nextDueAt-Date.now()));
+  }
+  function startClock(){
+    stopClock();
+    if(!state.playing)return;
+    state.nextDueAt=Date.now()+INTERVAL;
+    if(!test&&window.GalleryAndroid &&
+       typeof window.GalleryAndroid.startArtworkClock==='function'){
+      state.nativeClock=true;
+      window.GalleryAndroid.startArtworkClock(CONFIG.intervalMs);
+    }else armBrowserClock();
+  }
+  // Android calls this from a main-thread Handler every 30,000ms, independent
+  // of the API and loading promises.
+  window.__galleryClockTick=()=>advanceSlide();
+  window.__galleryForeground=()=>{if(state.playing)startClock();};
+  function next(){
+    advanceSlide();
+    if(state.playing)startClock(); // manual skip resets the 30-second clock
   }
   async function pruneExpired(){
     const cutoff=Date.now()-C.NINETY_DAYS_MS;
@@ -489,6 +576,8 @@
     const count=state.stats.portrait+state.stats.other;
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
+    const backup=el('fallback-status');
+    if(backup)backup.textContent=state.offlineReady.length+'점 준비 · 비상 사용 '+state.emergencySwaps+'회';
     el('refresh-count').textContent=state.stats.updatedAt?new Date(state.stats.updatedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',hour12:false}):'–';
     el('source-status').textContent=state.sourceReady.length?state.sourceReady.map(s=>sourceNames[s]).join(' · '):state.lastErr||'연결 대기';
     const m=C.MOVEMENTS[(Number(state.stats.movementIndex)||0)%C.MOVEMENTS.length];
@@ -617,10 +706,10 @@
     el('close-settings').addEventListener('click',closeSettings);
     el('settings-done').addEventListener('click',closeSettings);
     ui.backdrop.addEventListener('click',closeSettings);
-    el('next').addEventListener('click',()=>{if(state.busy)return;state.prepared=null;next();controlsFor();});
+    el('next').addEventListener('click',()=>{next();controlsFor();});
     el('toggle-pause').addEventListener('click',()=>{
-      state.playing=!state.playing;clearTimeout(state.timer);
-      if(state.playing)state.timer=setTimeout(next,INTERVAL);
+      state.playing=!state.playing;
+      if(state.playing)startClock();else stopClock();
       updateInfo();controlsFor();
     });
     el('audit-now').addEventListener('click',()=>runInventoryAudit().catch(e=>{ui.msg.textContent='조사 실패: '+String(e.message||e);state.auditing=false;el('audit-now').disabled=false;}));
@@ -651,7 +740,7 @@
       e.target.value='';
     });
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings(); if(e.key==='ArrowRight'&&ui.settings.hidden)next(); if(e.key===' '&&ui.settings.hidden){e.preventDefault();el('toggle-pause').click();}});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.playing){clearTimeout(state.timer);state.timer=setTimeout(next,INTERVAL);refreshForDay().catch(()=>{});}});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.playing){startClock();refreshForDay().catch(()=>{});}});
   }
   async function init(){
     wire();
@@ -669,10 +758,22 @@
       state.flipped=!!(flip&&flip.value);
       applyRotation();
       if(!Number.isInteger(state.stats.movementIndex)||state.stats.movementIndex<0||state.stats.movementIndex>=C.MOVEMENTS.length)state.stats.movementIndex=0;
-      await restoreLastShown();
-      await refreshForDay();
-      await fillPool(CONFIG.minPool);
-      await next();
+      // APK ships four true paintings. Load before starting the clock so a
+      // transient outage or slow museum search cannot freeze a displayed work.
+      await loadOfflineDeck();
+      if(state.offlineReady.length){
+        displayLoaded(state.offlineReady[0],true);
+      }else{
+        await restoreLastShown();
+        if(!state.current){
+          await fillPool(CONFIG.minPool);
+          await prepareNext();
+          if(state.prepared){const first=state.prepared;state.prepared=null;displayLoaded(first);}
+        }
+      }
+      startClock();
+      refreshForDay().catch(()=>{});
+      prepareNext().catch(()=>{});
       setInterval(()=>refreshForDay().catch(()=>{}),60*1000);
       setInterval(updateInfo,30000);
       if('serviceWorker' in navigator && !window.GalleryAndroid && location.protocol==='https:'){
@@ -691,6 +792,8 @@
     prepared:state.prepared&&state.prepared.art.key,errors:state.lastErr,sourceReady:state.sourceReady,
     apiCalls:state.apiCalls,day:state.stats.day,playing:state.playing,
     movementIndex:state.stats.movementIndex,movement:state.current&&state.current.art.movement,
-    flipped:state.flipped,caption:[ui.title.textContent,ui.meta.textContent]});
+    flipped:state.flipped,caption:[ui.title.textContent,ui.meta.textContent],
+    lastSwapAt:state.lastSwapAt,tickCount:state.tickCount,emergencySwaps:state.emergencySwaps,
+    offlineReady:state.offlineReady.length,nativeClock:state.nativeClock,nextDueAt:state.nextDueAt});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

@@ -178,7 +178,8 @@
     return true;
   }
   function normalizeCleveland(item) {
-    const img = item && item.images && item.images.web;
+    // CMA web rendition is only 900 px: use the CC0 print (3400 px) image when available.
+    const img = item && item.images && (item.images.print || item.images.web);
     const creator = item && item.creators && item.creators[0];
     return {
       key: `cma:${item && item.id}`,

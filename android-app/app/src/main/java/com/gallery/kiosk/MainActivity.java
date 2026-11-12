@@ -6,6 +6,9 @@ import android.graphics.Color;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -65,6 +68,10 @@ public final class MainActivity extends Activity {
     private File exportFile;
     private File importFile;
     private long lastApiMs = 0L;
+    private final Handler galleryClock = new Handler(Looper.getMainLooper());
+    private Runnable galleryTicker;
+    private long galleryDeadline;
+    private static final long ART_INTERVAL_MS = 30000L;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -107,11 +114,12 @@ public final class MainActivity extends Activity {
                     }catch(IOException e){return response(404,"text/plain",new byte[0]);}
                 }
                 String assetPath = (path == null || path.equals("/")) ? "index.html" : path.substring(1);
-                if (!Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js").contains(assetPath))
+                boolean offlineImage=assetPath.matches("offline/fallback-[0-3]\\.jpg");
+                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json").contains(assetPath))
                     return response(404, "text/plain", new byte[0]);
                 try {
                     InputStream in = getAssets().open(assetPath);
-                    String mime = assetPath.endsWith(".css") ? "text/css" : assetPath.endsWith(".js") ? "text/javascript" : assetPath.endsWith(".png") ? "image/png" : assetPath.endsWith(".webmanifest") ? "application/manifest+json" : "text/html";
+                    String mime = assetPath.endsWith(".css") ? "text/css" : assetPath.endsWith(".js") ? "text/javascript" : assetPath.endsWith(".png") ? "image/png" : offlineImage ? "image/jpeg" : assetPath.endsWith(".json") ? "application/json" : assetPath.endsWith(".webmanifest") ? "application/manifest+json" : "text/html";
                     return new WebResourceResponse(mime, "UTF-8", 200, "OK", Collections.singletonMap("Cache-Control", "no-store"), in);
                 } catch (IOException e) { return response(404, "text/plain", new byte[0]); }
             }
@@ -126,8 +134,32 @@ public final class MainActivity extends Activity {
             View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
     @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(hasFocus)immersive();}
+    // Native clock is anchored to uptime, rather than delayed artwork requests.
+    private void stopGalleryTicker(){
+        if(galleryTicker!=null)galleryClock.removeCallbacks(galleryTicker);
+        galleryTicker=null;
+    }
+    private void startGalleryTicker(){
+        stopGalleryTicker();
+        galleryDeadline=SystemClock.uptimeMillis()+ART_INTERVAL_MS;
+        galleryTicker=new Runnable(){
+            @Override public void run(){
+                if(web==null)return;
+                web.evaluateJavascript("window.__galleryClockTick && window.__galleryClockTick();",null);
+                galleryDeadline+=ART_INTERVAL_MS;
+                long now=SystemClock.uptimeMillis();
+                if(galleryDeadline<=now)galleryDeadline=now+ART_INTERVAL_MS;
+                galleryClock.postAtTime(this,galleryDeadline);
+            }
+        };
+        galleryClock.postAtTime(galleryTicker,galleryDeadline);
+    }
+    @Override protected void onPause(){stopGalleryTicker();super.onPause();}
+    @Override protected void onResume(){super.onResume();
+        if(web!=null)web.evaluateJavascript("window.__galleryForeground && window.__galleryForeground();",null);
+    }
     @Override public void onBackPressed(){if(web!=null)web.evaluateJavascript("(function(){var e=document.getElementById('settings');if(e&&!e.hidden){document.getElementById('settings-done').click()}})();",null);}
-    @Override protected void onDestroy(){if(web!=null){web.destroy();web=null;}io.shutdownNow();super.onDestroy();}
+    @Override protected void onDestroy(){stopGalleryTicker();if(web!=null){web.destroy();web=null;}io.shutdownNow();super.onDestroy();}
 
     private static WebResourceResponse response(int status, String mime, byte[] content) {
         return new WebResourceResponse(mime, "UTF-8", status, status == 200 ? "OK" : "Error", Collections.singletonMap("Cache-Control", "no-store"), new ByteArrayInputStream(content));
@@ -297,7 +329,7 @@ public final class MainActivity extends Activity {
         HttpURLConnection conn=(HttpURLConnection)new URL(url).openConnection();
         conn.setConnectTimeout(10000);conn.setReadTimeout(16000);conn.setInstanceFollowRedirects(false);
         conn.setRequestProperty("Accept","application/json");
-        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.1 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
+        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.2 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
         conn.setRequestProperty("AIC-User-Agent","Quiet-Art-Gallery (local personal project)");
         try{
             if(conn.getResponseCode()!=200)throw new IOException("HTTP "+conn.getResponseCode());
@@ -310,6 +342,14 @@ public final class MainActivity extends Activity {
         }finally{conn.disconnect();}
     }
     final class Bridge {
+        @JavascriptInterface public void startArtworkClock(int intervalMs){
+            // A fixed 30-second clock. Do not accept arbitrary values.
+            if(intervalMs!=30000)return;
+            runOnUiThread(()->{if(web!=null)startGalleryTicker();});
+        }
+        @JavascriptInterface public void stopArtworkClock(){
+            runOnUiThread(()->stopGalleryTicker());
+        }
         // Use Android's actual view transform so all pixels and hit targets rotate
         // together on tablets, regardless of CSS body/fixed positioning behavior.
         @JavascriptInterface public void setDisplayRotation(boolean upsideDown){

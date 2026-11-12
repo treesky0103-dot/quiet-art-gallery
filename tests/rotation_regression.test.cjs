@@ -8,8 +8,8 @@ test('Native Android WebView 180 rotation',()=>{
  assert.match(java,/@JavascriptInterface\s+public void setDisplayRotation\(boolean upsideDown\)/);
  assert.match(java,/web\.setRotation\(upsideDown \? 180f : 0f\)/);
  const gradle=load('android-app/app/build.gradle');
- assert.match(gradle,/versionName '1\.6\.1'/);
- assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.v161'/);
+ assert.match(gradle,/versionName '1\.6\.2'/);
+ assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.v162'/);
 });
 test('Rotation is saved, restored and settings close automatically',()=>{
  const app=load('web/app.js');

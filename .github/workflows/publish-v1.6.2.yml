@@ -1,0 +1,70 @@
+name: Publish v1.6.2 Fixed 30-second clock APK
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-v1.6.2.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout tagged release source
+        uses: actions/checkout@v4
+      - name: Validate version and JS
+        run: |
+          grep -q "versionName '1.6.2'" android-app/app/build.gradle
+          node --check web/app.js
+          node --check web/core.js
+          node --test tests/*.test.cjs
+          for f in app.js core.js index.html style.css sw.js manifest.webmanifest icon-192.png icon-512.png; do
+            cmp "web/$f" "android-app/app/src/main/assets/$f"
+          done
+      - name: Obtain and audit four public-domain emergency paintings
+        run: python3 scripts/build_emergency_deck.py
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.9'
+          cache-provider: basic
+      - name: Build APK
+        working-directory: android-app
+        run: gradle :app:assembleDebug --no-daemon
+      - name: Package and verify APK
+        run: |
+          cp android-app/app/build/outputs/apk/debug/app-debug.apk QuietArtGallery_v1.6.2.apk
+          test -s QuietArtGallery_v1.6.2.apk
+          sha256sum QuietArtGallery_v1.6.2.apk | tee SHA256SUMS.txt
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          path='QuietArtGallery_v1.6.2.apk'
+          with ZipFile(path) as z:
+            assert z.testzip() is None
+            assert 'classes.dex' in z.namelist()
+            assert 'assets/app.js' in z.namelist()
+            assert 'assets/core.js' in z.namelist()
+          print('APK ZIP integrity and app assets OK')
+          PY
+      - name: Publish public download on GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view v1.6.2 >/dev/null 2>&1; then
+            gh release upload v1.6.2 QuietArtGallery_v1.6.2.apk SHA256SUMS.txt --clobber
+          else
+            gh release create v1.6.2 QuietArtGallery_v1.6.2.apk SHA256SUMS.txt \
+              --title 'Quiet Art Gallery v1.6.2 — 30-second clock fix' \
+              --notes 'Native fixed 30-second artwork clock, four bundled public-domain paintings for offline/fetch-delay emergency rotation, and 19 source collection feeds. In emergency mode paintings may repeat before 90 days. Preserve CSV history.'
+          fi
+      - name: Verify public release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view v1.6.2 --json url,assets --jq '.url, (.assets[] | .name)'
