@@ -1,0 +1,63 @@
+name: Verify Published v1.6.5 APK and Export
+on:
+  push:
+    paths:
+      - '.github/workflows/verify-published-v1.6.5.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact public release and validate SHA256 and APK content
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download v1.6.5 --repo "$GITHUB_REPOSITORY" --pattern 'QuietArtGallery_v1.6.5.apk' --pattern 'SHA256SUMS.txt'
+          sha256sum --check SHA256SUMS.txt
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          import hashlib,json
+          p='QuietArtGallery_v1.6.5.apk'
+          with ZipFile(p) as z:
+              assert z.testzip() is None
+              assert 'classes.dex' in z.namelist()
+              core=z.read('assets/core.js').decode('utf-8')
+              app=z.read('assets/app.js').decode('utf-8')
+              html=z.read('assets/index.html').decode('utf-8')
+              assert 'MIN_ACCEPTABLE_SHORT_SIDE = 1000' in core
+              assert 'MIN_ACCEPTABLE_LONG_SIDE = 1400' in core
+              assert 'MIN_IMAGE_SHORT_SIDE = 1200' in core
+              assert 'MIN_IMAGE_LONG_SIDE = 1600' in core
+              assert 'minimumPortraitFill:.75' in app
+              assert 'C.acceptableResolution(img.naturalWidth,img.naturalHeight)' in app
+              assert 'eligible.sort((a,b)=>C.qualityTier(b)-C.qualityTier(a))' in app
+              assert 'C.targetModern(state.stats.slot)' in app
+              assert 'hydrateHistory()' in app
+              assert '75% 이상' in html
+              assert '고화질 우선' in html
+              assert 'v1.6.5' in html
+              art=json.loads(z.read('assets/offline-deck.json'))
+              assert len(art)==8
+              keys=set();hashes=set()
+              for i,a in enumerate(art):
+                  binary=z.read('assets/offline/fallback-'+str(i)+'.jpg')
+                  assert hashlib.sha256(binary).hexdigest()==a['sha256']
+                  assert a['key'] not in keys and a['sha256'] not in hashes
+                  w,h=a['width'],a['height']
+                  assert min(w,h)>=1200 and max(w,h)>=1600 and h>w
+                  keys.add(a['key']);hashes.add(a['sha256'])
+              print('PASS published v1.6.5 SHA256, APK CRC, medium-minimum thresholds, high-first source selection, 75% portrait fill, 8 verified distinct emergency artworks.')
+          PY
+      - name: Archive independently verified published APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuietArtGallery-v1.6.5-PUBLISHED-CANONICAL-APK
+          path: |
+            QuietArtGallery_v1.6.5.apk
+            SHA256SUMS.txt
+          retention-days: 14
+          if-no-files-found: error
