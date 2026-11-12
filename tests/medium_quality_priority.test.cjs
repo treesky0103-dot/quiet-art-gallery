@@ -8,7 +8,7 @@ const art=(key,w,h,movement='additional')=>({key, width:w,height:h,movement,
  source:'유럽 미술관',image:'https://upload.wikimedia.org/wikipedia/commons/a/aaa/artwork.jpg',
  title:'Portrait '+key,artist:'Artist '+key,type:'Painting',rightsOK:true,license:'Public domain'});
 test('75 percent threshold admits real portrait ratios formerly rejected by 80',()=>{
- const w=1000,h=1700,vw=1000,vh=1600;
+ const w=1000,h=2100,vw=1000,vh=1600;
  const actual=C.portraitScreenFill(w,h,vw,vh);
  assert(actual>=.75 && actual<.80);
  assert.equal(C.fillsPortraitScreen(w,h,vw,vh,.75),true);
