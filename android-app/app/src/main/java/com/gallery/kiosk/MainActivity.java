@@ -297,7 +297,7 @@ public final class MainActivity extends Activity {
         HttpURLConnection conn=(HttpURLConnection)new URL(url).openConnection();
         conn.setConnectTimeout(10000);conn.setReadTimeout(16000);conn.setInstanceFollowRedirects(false);
         conn.setRequestProperty("Accept","application/json");
-        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
+        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.1 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
         conn.setRequestProperty("AIC-User-Agent","Quiet-Art-Gallery (local personal project)");
         try{
             if(conn.getResponseCode()!=200)throw new IOException("HTTP "+conn.getResponseCode());
@@ -310,6 +310,13 @@ public final class MainActivity extends Activity {
         }finally{conn.disconnect();}
     }
     final class Bridge {
+        // Use Android's actual view transform so all pixels and hit targets rotate
+        // together on tablets, regardless of CSS body/fixed positioning behavior.
+        @JavascriptInterface public void setDisplayRotation(boolean upsideDown){
+            runOnUiThread(()->{
+                if(web!=null)web.setRotation(upsideDown ? 180f : 0f);
+            });
+        }
         @JavascriptInterface public void requestJson(String type,String param,String rid){
             if(type==null||param==null||rid==null||!rid.matches("[0-9]{1,12}"))return;
             io.execute(()->{

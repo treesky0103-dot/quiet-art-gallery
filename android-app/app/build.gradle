@@ -4,11 +4,11 @@ android {
     namespace 'com.gallery.kiosk'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.gallery.kiosk.v16'
+        applicationId 'com.gallery.kiosk.v161'
         minSdk 26
         targetSdk 35
-        versionCode 7
-        versionName '1.6.0'
+        versionCode 8
+        versionName '1.6.1'
     }
     buildTypes {
         release { minifyEnabled false }

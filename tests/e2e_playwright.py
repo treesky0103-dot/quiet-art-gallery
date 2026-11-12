@@ -49,9 +49,16 @@ def main():
   assert '100MB' in page.locator('#settings').inner_text()
   page.locator('#rotate-180').click()
   assert page.locator('body').evaluate('(e)=>e.classList.contains("upside-down")')
+  assert page.locator('#settings').is_hidden(),'closing settings must immediately reveal rotated painting'
+  assert page.locator('#viewer').evaluate('(e)=>getComputedStyle(e).transform').startswith('matrix(-1, 0, 0, -1'), 'artwork was not rotated'
+  page.evaluate("document.getElementById('open-settings').click()")
+  assert page.locator('#settings').is_visible()
   assert page.locator('#rotation-status').inner_text()=='180° 회전 중'
   page.locator('#rotate-180').click()
   assert not page.locator('body').evaluate('(e)=>e.classList.contains("upside-down")')
+  assert page.locator('#settings').is_hidden()
+  assert page.locator('#viewer').evaluate('(e)=>getComputedStyle(e).transform')=='none'
+  page.evaluate("document.getElementById('open-settings').click()")
   assert page.locator('#rotation-status').inner_text()=='기본 방향'
   assert page.locator('#audit-now').count()==1
   page.locator('#audit-now').click()

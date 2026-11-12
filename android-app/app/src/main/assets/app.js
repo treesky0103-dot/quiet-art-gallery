@@ -499,9 +499,16 @@
     el('toggle-pause').textContent=state.playing?'Ⅱ':'▶';
     el('toggle-pause').setAttribute('aria-label',state.playing?'일시정지':'재생');
   }
+  // Android rotates its actual WebView to avoid CSS fixed-layer issues.
+  function applyRotation(){
+    const native=window.GalleryAndroid && typeof window.GalleryAndroid.setDisplayRotation==='function';
+    document.body.classList.toggle('native-rotation',!!native);
+    document.body.classList.toggle('upside-down',state.flipped);
+    if(native)window.GalleryAndroid.setDisplayRotation(state.flipped);
+  }
   async function setFlip(enabled){
     state.flipped=!!enabled;
-    document.body.classList.toggle('upside-down',state.flipped);
+    applyRotation();
     if(state.db)await dbPutMany('settings',[{key:'flipped',value:state.flipped}]);
     updateInfo();
   }
@@ -602,7 +609,11 @@
   function wire(){
     el('viewer').addEventListener('click',()=>controlsFor());
     el('open-settings').addEventListener('click',showSettings);
-    el('rotate-180').addEventListener('click',()=>setFlip(!state.flipped).catch(e=>{ui.msg.textContent='화면 방향 저장 실패: '+e.message;}));
+    el('rotate-180').addEventListener('click',async()=>{
+      try{await setFlip(!state.flipped);}
+      catch(e){ui.msg.textContent='화면 방향 저장 실패: '+e.message;}
+      finally{closeSettings();}
+    });
     el('close-settings').addEventListener('click',closeSettings);
     el('settings-done').addEventListener('click',closeSettings);
     ui.backdrop.addEventListener('click',closeSettings);
@@ -656,7 +667,7 @@
       state.movementPages=(movements&&movements.value&&typeof movements.value==='object')?movements.value:{};
       state.audit=auditSaved&&auditSaved.value||null;
       state.flipped=!!(flip&&flip.value);
-      document.body.classList.toggle('upside-down',state.flipped);
+      applyRotation();
       if(!Number.isInteger(state.stats.movementIndex)||state.stats.movementIndex<0||state.stats.movementIndex>=C.MOVEMENTS.length)state.stats.movementIndex=0;
       await restoreLastShown();
       await refreshForDay();

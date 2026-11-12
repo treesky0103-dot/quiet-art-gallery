@@ -6,6 +6,21 @@
 #art-title{font-size:clamp(14px,3.1vw,21px);font-weight:500;line-height:1.4}
 #art-meta{font-size:clamp(12px,2.6vw,16px);line-height:1.5;padding-top:4px}
 /* App-wide 180 degree rotation for upside-down mounting. Rotate images AND labels/UI. */
-body.upside-down{transform:rotate(180deg);transform-origin:center center;width:100vw;height:100dvh;}
+/* v1.6.1: Rotate visible layers directly in browsers. Native Android uses WebView rotation.
+   Do not transform BODY; doing so can misplace fixed layers in Android WebView. */
+body.upside-down{transform:none!important;width:100%;height:100%}
+body.upside-down:not(.native-rotation) #viewer{transform:rotate(180deg)!important;transform-origin:center center}
+body.upside-down:not(.native-rotation) #caption{
+ top:0;bottom:auto;transform:rotate(180deg)!important;transform-origin:center center;
+ background:linear-gradient(180deg,rgba(0,0,0,.86),rgba(0,0,0,.5) 44%,transparent)
+}
+body.upside-down:not(.native-rotation) #hud{
+ top:auto;bottom:0;transform:rotate(180deg)!important;transform-origin:center center;
+ background:linear-gradient(0deg,rgba(0,0,0,.8),transparent)
+}
+body.upside-down:not(.native-rotation) #settings{
+ top:0;bottom:auto;transform:rotate(180deg);transform-origin:center center;
+ border-radius:0 0 22px 22px;border-top:0;border-bottom:1px solid #494239
+}
 /* Control labels must use broadly supported system fonts, avoiding symbol tofu. */
 button{font-family:system-ui,'Noto Sans KR',sans-serif}
