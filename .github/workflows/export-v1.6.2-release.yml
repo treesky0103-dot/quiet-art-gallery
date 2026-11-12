@@ -1,0 +1,49 @@
+name: Export and Verify Canonical v1.6.2 Release
+on:
+  push:
+    paths:
+      - '.github/workflows/export-v1.6.2-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch canonical APK and confirm all 4 emergency paintings
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download v1.6.2 --repo "$GITHUB_REPOSITORY" --pattern 'QuietArtGallery_v1.6.2.apk' --pattern SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          import hashlib,json
+          p='QuietArtGallery_v1.6.2.apk'
+          with ZipFile(p) as z:
+              assert z.testzip() is None
+              assert 'classes.dex' in z.namelist()
+              app=z.read('assets/app.js').decode('utf-8')
+              assert 'window.__galleryClockTick' in app
+              art=json.loads(z.read('assets/offline-deck.json'))
+              assert len(art)==4
+              keys=set()
+              for i,a in enumerate(art):
+                  b=z.read('assets/offline/fallback-'+str(i)+'.jpg')
+                  assert hashlib.sha256(b).hexdigest()==a['sha256']
+                  assert min(a['width'],a['height'])>=1200
+                  assert max(a['width'],a['height'])>=1600
+                  assert a['key'] not in keys
+                  keys.add(a['key'])
+              print('PASS: released APK, 4 verified unique paintings, clock JS, ZIP CRC')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuietArtGallery-v1.6.2-VERIFIED-RELEASE
+          path: |
+            QuietArtGallery_v1.6.2.apk
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
