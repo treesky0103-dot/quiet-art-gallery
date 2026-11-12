@@ -4,7 +4,7 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
@@ -12,22 +12,9 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      - name: Apply v1.2 patch from verified archive and sync assets
+      - name: Check v1.3 sources and artwork tests
         run: |
-          python3 - <<'PY'
-          import base64, pathlib, shutil, subprocess, zlib
-          root = pathlib.Path.cwd()
-          gradle = (root / "android-app/app/build.gradle").read_text()
-          if "versionName '1.2.0'" not in gradle:
-              encoded = (root / "tools/v1.2-source.patch.zlib.b64").read_text().strip()
-              source_patch = zlib.decompress(base64.b64decode(encoded)).decode()
-              subprocess.run(["patch", "-p0", "--batch", "--forward"], input=source_patch, text=True, check=True)
-          for filename in ("app.js", "core.js", "index.html", "style.css", "sw.js"):
-              shutil.copy2(root / "web" / filename, root / "android-app/app/src/main/assets" / filename)
-          PY
-      - name: Verify new version and 13-movement tests and assets
-        run: |
-          grep -q "versionName '1.2.0'" android-app/app/build.gradle
+          grep -q "versionName '1.3.0'" android-app/app/build.gradle
           node --check web/app.js
           node --check web/core.js
           node --test tests/*.test.cjs
@@ -48,26 +35,17 @@ jobs:
         with:
           gradle-version: '8.9'
           cache-provider: basic
-      - name: Build Android debug APK
+      - name: Build v1.3 APK
         working-directory: android-app
         run: gradle :app:assembleDebug --no-daemon
-      - name: Confirm APK exists and compute SHA-256
+      - name: Verify APK and SHA256
         run: |
           test -s android-app/app/build/outputs/apk/debug/app-debug.apk
           sha256sum android-app/app/build/outputs/apk/debug/app-debug.apk
-      - name: Commit tested v1.2 sources to main branch
-        run: |
-          if ! git diff --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add web/ android-app/ tests/
-            git commit -m "Implement v1.2 movement rotation, captions and 180 degree display"
-            git push origin HEAD:main
-          fi
-      - name: Archive installable v1.2 APK
+      - name: Upload installable v1.3 APK
         uses: actions/upload-artifact@v4
         with:
-          name: QuietArtGallery-v1.2-debug-APK
+          name: QuietArtGallery-v1.3-debug-APK
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
