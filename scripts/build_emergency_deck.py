@@ -1,109 +1,133 @@
 #!/usr/bin/env python3
-"""Build a small, verified OFFLINE emergency painting deck for the Android APK.
+"""Bundle 4 independently checked public-domain paintings for emergency offline rotation.
 
-All works must be paintings, CC0 images from Cleveland Museum of Art. No image
-resizing/upscaling. This is a fallback only; routine 90-day no-repeat selection
-does not use it. Requires network during CI build, never at app startup.
+The source is Wikimedia Commons, category-linked to named museum collections.
+This requires no network on the tablet; fails the build rather than silently
+shipping an empty fallback deck. Images are never upscaled or interpolated.
 """
 import hashlib
+import html
 import json
-import os
+import re
 import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
+import socket
 
-BASE = "https://openaccess-api.clevelandart.org/api/artworks/"
-OUT = Path("android-app/app/src/main/assets")
-MAX_BYTES = 8 * 1024 * 1024
-COUNT = 4
+OUT=Path("android-app/app/src/main/assets")
+MAX_BYTES=8*1024*1024
+COLLECTIONS=[
+ ("암스테르담 국립미술관","Paintings in the Rijksmuseum Amsterdam"),
+ ("미국 국립미술관","Paintings in the National Gallery of Art (Washington, D.C.)"),
+ ("게티 미술관","Paintings in The J. Paul Getty Museum"),
+ ("덴마크 국립미술관","Paintings in Statens Museum for Kunst"),
+ ("런던 내셔널갤러리","Paintings in the National Gallery, London")
+]
+BAD=re.compile(r"(?:interior|gallery view|exhibition view|museum hall|sculpture|statue|frame|detail|reverse|verso)",re.I)
+DOMAIN="upload.wikimedia.org"
 
-def request(url, max_bytes=6 * 1024 * 1024):
+def read_http(url,limit=MAX_BYTES,timeout=16):
     req=urllib.request.Request(url,headers={
-        "User-Agent":"QuietArtGallery/1.6.2 (noncommercial art display; open-access offline backup)",
-        "Accept":"application/json,image/jpeg"})
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        typ=resp.headers.get("Content-Type","").split(";")[0].strip().lower()
-        if int(resp.headers.get("Content-Length") or 0)>max_bytes:
-            raise ValueError("Too large Content-Length")
-        data=resp.read(max_bytes+1)
-        if len(data)>max_bytes: raise ValueError("Oversize response")
-    return typ,data
+      "User-Agent":"QuietArtGallery/1.6.2 (+https://github.com/treesky0103-dot/quiet-art-gallery; personal art gallery)",
+      "Accept":"application/json,image/jpeg"})
+    with urllib.request.urlopen(req,timeout=timeout) as conn:
+        ct=conn.headers.get("Content-Type","").lower().split(";")[0].strip()
+        size=int(conn.headers.get("Content-Length") or 0)
+        if size>limit:raise ValueError("oversize")
+        b=conn.read(limit+1)
+        if len(b)>limit:raise ValueError("oversize body")
+    return ct,b
 
 def jpeg_dimensions(data):
-    if not data.startswith(b"\xff\xd8"): raise ValueError("Not JPEG")
-    i=2
-    while i<len(data)-9:
-        if data[i]!=255:
-            i+=1;continue
-        while i<len(data) and data[i]==255: i+=1
-        if i>=len(data):break
-        marker=data[i]; i+=1
-        if marker in (0xd8,0xd9,0x01) or 0xd0<=marker<=0xd7: continue
-        if i+2>len(data):break
-        n=int.from_bytes(data[i:i+2],"big")
-        if n<2 or i+n>len(data):break
-        if marker in (0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf):
-            if n<7:break
-            return int.from_bytes(data[i+3:i+5],"big"),int.from_bytes(data[i+5:i+7],"big")
-        i+=n
-    raise ValueError("JPEG dimensions absent")
+    if data[:2]!=b"\xff\xd8":raise ValueError("Not JPEG")
+    idx=2
+    while idx<len(data)-10:
+        if data[idx]!=255:idx+=1;continue
+        while idx<len(data) and data[idx]==255:idx+=1
+        if idx>=len(data):break
+        marker=data[idx];idx+=1
+        if marker in [0xd8,0xd9,0x01] or 0xd0<=marker<=0xd7:continue
+        if idx+2>len(data):break
+        n=int.from_bytes(data[idx:idx+2],"big")
+        if n<2 or idx+n>len(data):break
+        if marker in [0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf]:
+            h=int.from_bytes(data[idx+3:idx+5],"big")
+            w=int.from_bytes(data[idx+5:idx+7],"big")
+            return w,h
+        idx+=n
+    raise ValueError("Missing JPEG SOF header")
+
+def readable(x):
+    value=re.sub(r"<[^>]*>"," ",str(x or ""))
+    return re.sub(r"\s+"," ",html.unescape(value)).strip()[:120]
 
 def main():
-    dest=OUT/"offline"
-    dest.mkdir(parents=True,exist_ok=True)
-    manifest=[]
-    used=set()
-    # Try different pages; stable order of API results, validated at build-time.
-    for offset in (0,100,200,300,400,500):
-        q=urllib.parse.urlencode({"type":"Painting","has_image":"1","limit":"100","skip":str(offset)})
+    target=OUT/"offline"
+    target.mkdir(parents=True,exist_ok=True)
+    deck=[]; seen=set()
+    for museum,category in COLLECTIONS:
+        if len(deck)>=4:break
+        params={
+          "action":"query","generator":"search","gsrsearch":'deepcategory:"'+category+'"',
+          "gsrnamespace":"6","gsrlimit":"50","gsroffset":"0",
+          "prop":"imageinfo","iiprop":"url|size|mime|extmetadata",
+          "iiurlwidth":"2000","format":"json","formatversion":"2"
+        }
+        api="https://commons.wikimedia.org/w/api.php?"+urllib.parse.urlencode(params)
         try:
-            typ,data=request(BASE+"?cc0&"+q)
-            if typ!="application/json":raise ValueError("unexpected metadata MIME "+typ)
-            paintings=json.loads(data).get("data") or []
+            mime,raw=read_http(api,4*1024*1024,22)
+            if mime!="application/json":raise ValueError("Unexpected API format "+mime)
+            pages=(json.loads(raw).get("query") or {}).get("pages") or []
         except Exception as ex:
-            print("metadata page unavailable:",offset,repr(ex),flush=True)
+            print("SOURCE ERROR",museum,repr(ex),flush=True)
             continue
-        for a in paintings:
-            if len(manifest)>=COUNT:break
-            if a.get("share_license_status")!="CC0" or str(a.get("type"))!="Painting":continue
-            photos=(a.get("images") or {})
-            rendition=photos.get("print") or {}
-            src=rendition.get("url") or ""
-            w,h=int(rendition.get("width") or 0),int(rendition.get("height") or 0)
-            aid=a.get("id")
-            if not src.startswith("https://") or "clevelandart.org" not in urllib.parse.urlsplit(src).hostname: continue
-            if min(w,h)<1200 or max(w,h)<1600 or aid in used:continue
-            if any(k in (str(a.get("title"))+" "+str(a.get("technique"))).lower()
-                   for k in ("sculpture","frame","photograph","installation","tapestry","triptych","panel of")):continue
+        found=False
+        for page in pages:
+            if len(deck)>=4:break
+            title=str(page.get("title") or "")
+            imageinfos=page.get("imageinfo") or []
+            if not imageinfos or BAD.search(title):continue
+            inf=imageinfos[0]
+            extra=inf.get("extmetadata") or {}
+            license=readable((extra.get("LicenseShortName") or {}).get("value")).lower()
+            if license not in ("public domain","pd","cc0","cc0 1.0","cc0 1.0 universal"):continue
+            if inf.get("mime")!="image/jpeg":continue
+            src=inf.get("thumburl") or ""
+            u=urllib.parse.urlsplit(src)
+            if u.scheme!="https" or u.hostname!=DOMAIN:continue
+            originalw=int(inf.get("width") or 0);originalh=int(inf.get("height") or 0)
+            if min(originalw,originalh)<1200 or max(originalw,originalh)<1600:continue
+            id=page.get("pageid")
+            if not isinstance(id,int) or id in seen:continue
             try:
-                mime,im=request(src,MAX_BYTES)
-                if mime!="image/jpeg" or len(im)<20000:raise ValueError("not an image/jpeg")
-                aw,ah=jpeg_dimensions(im)
-                if min(aw,ah)<1200 or max(aw,ah)<1600:raise ValueError("decoded dimensions insufficient")
-                filename="fallback-"+str(len(manifest))+".jpg"
-                (dest/filename).write_bytes(im)
-                artist=((a.get("creators") or [{}])[0].get("description") or "작가 미상")
+                mime,pixels=read_http(src,MAX_BYTES,18)
+                if mime!="image/jpeg" or len(pixels)<15000:raise ValueError("Not JPEG bytes")
+                w,h=jpeg_dimensions(pixels)
+                if min(w,h)<1200 or max(w,h)<1600:raise ValueError("Thumbnail not full enough")
+                name="fallback-"+str(len(deck))+".jpg"
+                (target/name).write_bytes(pixels)
                 item={
-                  "key":"cma:"+str(aid),
-                  "title":str(a.get("title") or "제목 미상")[:160],
-                  "artist":str(artist)[:160],
-                  "source":"클리블랜드",
-                  "image":src,"offlineAsset":"offline/"+filename,
-                  "type":"Painting","classification":"Painting","medium":str(a.get("technique") or "Oil on canvas"),
-                  "width":aw,"height":ah,"license":"CC0","rightsOK":True,
-                  "style":str(a.get("style") or ""),"styles":a.get("style_titles") or [],
-                  "date":str(a.get("creation_date") or ""), "page":str(a.get("url") or ""),
-                  "sha256":hashlib.sha256(im).hexdigest()
+                  "key":"commons:"+str(id),"source":museum,
+                  "title":readable(re.sub(r"\.(?:jpg|jpeg)$","",title.removeprefix("File:"),flags=re.I).replace("_"," ")),
+                  "artist":readable((extra.get("Artist") or {}).get("value")) or "작가 미상",
+                  "image":src,"offlineAsset":"offline/"+name,
+                  "width":w,"height":h,
+                  "rightsOK":True,"license":"Public domain",
+                  "type":"Painting","classification":"Painting","medium":"",
+                  "museumRegion":"additional","verifiedCollectionCategory":True,
+                  "style":"","styles":[],"date":"","page":str(inf.get("descriptionurl") or ""),
+                  "sha256":hashlib.sha256(pixels).hexdigest()
                 }
-                manifest.append(item);used.add(aid)
-                print("PASS offline",aid,aw,ah,len(im),item["title"],flush=True)
+                deck.append(item);seen.add(id);found=True
+                print("PASS offline",id,museum,w,h,len(pixels),item["title"],flush=True)
+                break # 1 unique work per museum, for variety
             except Exception as ex:
-                print("reject",aid,repr(ex)[:120],flush=True)
+                print("REJECT IMAGE",id,str(ex)[:100],flush=True)
             time.sleep(.1)
-        if len(manifest)>=COUNT:break
-    if len(manifest)<COUNT:raise RuntimeError("Could not verify 4 offline CC0 high-res paintings; refuse build")
-    (OUT/"offline-deck.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding="utf-8")
-    print("PASS 4 OFFLINE CC0 PAINTINGS",sum((dest/("fallback-"+str(i)+".jpg")).stat().st_size for i in range(COUNT)),flush=True)
+        if not found:print("NO ELIGIBLE WORK",museum,flush=True)
+    if len(deck)<4:raise RuntimeError("Failed to verify 4 CC0/PD JPG paintings; refuse APK build")
+    (OUT/"offline-deck.json").write_text(json.dumps(deck,ensure_ascii=False,indent=2),encoding="utf-8")
+    print("PASS four high-res offline artworks, total bytes",sum((target/("fallback-"+str(i)+".jpg")).stat().st_size for i in range(4)),flush=True)
 
 if __name__=="__main__":main()
