@@ -41,14 +41,26 @@ Object.defineProperty(HTMLImageElement.prototype,'src',{
   get(){return originalSrc.get.call(this);},
   set(url){
     if(String(url).startsWith('https://')){
-      return originalSrc.set.call(this,/\/mock\/l/.test(String(url))?window.__landscape:window.__portrait);
+      const match=String(url).match(/00000000-0000-0000-0000-[0-9]{12}/);
+      return originalSrc.set.call(this,match&&window.__mockOrientation?.get(match[0])===false?window.__landscape:window.__portrait);
     }
     return originalSrc.set.call(this,url);
   }
 });
+const TEST_MOVEMENTS=['Renaissance','Baroque','Rococo','Neoclassicism','Romanticism','Realism',
+  'Impressionism','Post-Impressionism','Expressionism','Cubism','Surrealism','Abstract Art','Contemporary Art'];
+const TEST_ARTWORKS=Array.from({length:12},(_,r)=>TEST_MOVEMENTS.map((style,m)=>{
+  const id=10000+r*13+m,portrait=(r%10)<7;
+  return {id,title:'Artwork '+id,artist_title:'Test Artist '+id,
+    image_id:'00000000-0000-0000-0000-'+String(id).padStart(12,'0'),
+    artwork_type_title:'Painting',medium_display:'Oil on canvas',style_title:style,
+    style_titles:[style],date_display:'1900',is_public_domain:true,
+    thumbnail:{width:portrait?420:720,height:portrait?720:420}};
+})).flat();
+window.__mockOrientation=new Map(TEST_ARTWORKS.map(a=>[a.image_id,a.thumbnail.height>a.thumbnail.width]));
 window.__GALLERY_TEST__={
   intervalMs:220, shown:[],
-  onShow:(art,orient)=>window.__GALLERY_TEST__.shown.push({key:art.key,orient}),
+  onShow:(art,orient)=>window.__GALLERY_TEST__.shown.push({key:art.key,orient,movement:art.movement}),
   request:async(kind,param)=>{
     if(kind==='cleveland'){
       const data=Array.from({length:130},(_,i)=>({
@@ -58,7 +70,8 @@ window.__GALLERY_TEST__={
       }));
       return {info:{total:130},data};
     }
-    if(kind==='chicago')return {config:{iiif_url:'https://www.artic.edu/iiif/2'},pagination:{total_pages:1},data:[]};
+    if(kind==='chicago')return {config:{iiif_url:'https://www.artic.edu/iiif/2'},pagination:{total_pages:1},data:TEST_ARTWORKS};
+    if(kind==='chicagoMovement'){const id=String(param).split(':')[0];const m=window.GalleryCore.MOVEMENTS.find(x=>x.id===id);return {config:{iiif_url:'https://www.artic.edu/iiif/2'},pagination:{total_pages:1},data:TEST_ARTWORKS.filter(a=>a.style_title===m?.en)};}
     if(kind==='metSearch')return {total:0,objectIDs:[]};
     throw Error('Unexpected API '+kind);
   }

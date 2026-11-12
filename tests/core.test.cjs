@@ -44,3 +44,27 @@ test('seen fingerprint prevents duplicate title artist cross-source',()=>{
  const seen=new Map([[C.fingerprint(art),previous]]);
  assert.equal(C.pickCandidate(items,'portrait',seen,Date.parse('2026-11-12T00:00:00Z')),-1);
 });
+
+test('13 museum-style movements ordered and curator metadata prioritized',()=>{
+ const names=['renaissance','baroque','rococo','neoclassicism','romanticism','realism',
+ 'impressionism','post-impressionism','expressionism','cubism','surrealism','abstract','contemporary'];
+ assert.deepEqual(C.MOVEMENTS.map(x=>x.id),names);
+ for(const m of C.MOVEMENTS){
+   const explicit={...art,artist:'Unlisted Maker',style:m.en};
+   assert.equal(C.classifyMovement(explicit),m.id,m.en);
+ }
+ assert.equal(C.classifyMovement({...art,artist:'Vincent van Gogh (1853–1890)'}),'post-impressionism');
+ assert.equal(C.classifyMovement({...art,artist:'After Vincent van Gogh'}),null);
+ assert.equal(C.classifyMovement({...art,artist:'Pablo Picasso'}),null);
+ assert.equal(C.classifyMovement({...art,style:'Post-Impressionism',artist:'Mary Cassatt'}),'post-impressionism');
+ assert.equal(C.classifyMovement({...art,date:'1880',artist:'Anonymous'}),null,'year must not assign styles');
+});
+test('skip unsupported movements instead of mislabelling',()=>{
+ assert.equal(C.nextAvailableMovementIndex(0,id=>id==='romanticism'),4);
+ assert.equal(C.nextAvailableMovementIndex(11,id=>id==='rococo'),2);
+ assert.equal(C.nextAvailableMovementIndex(0,id=>false),-1);
+});
+test('bottom text strips replacement square glyphs, with safe missing fallback',()=>{
+ assert.equal(C.tidyLabel('□ Garden ▯ ■', '제목 미상'),'Garden');
+ assert.equal(C.tidyLabel('�� □', '작가 미상'),'작가 미상');
+});

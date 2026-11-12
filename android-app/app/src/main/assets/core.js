@@ -66,7 +66,8 @@
       classification: string(item && item.type),
       description: '', license: string(item && item.share_license_status),
       rightsOK: (item && item.share_license_status) === 'CC0',
-      page: string(item && item.url)
+      style: string(item && item.style), styles: Array.isArray(item && item.style_titles) ? item.style_titles : [],
+      date: string(item && item.creation_date), page: string(item && item.url)
     };
   }
   function normalizeChicago(item, iiifBase) {
@@ -86,7 +87,8 @@
       medium: string(item && item.medium_display), classification: string(item && item.artwork_type_title),
       description: '', license: 'Public domain',
       rightsOK: !!(item && item.is_public_domain),
-      page: item && Number.isInteger(item.id) ? `https://www.artic.edu/artworks/${item.id}` : ''
+      style: string(item && item.style_title), styles: Array.isArray(item && item.style_titles) ? item.style_titles : [],
+      date: string(item && item.date_display), page: item && Number.isInteger(item.id) ? `https://www.artic.edu/artworks/${item.id}` : ''
     };
   }
   function normalizeMet(item) {
@@ -99,7 +101,9 @@
       type: string(item && item.objectName), medium: string(item && item.medium),
       classification: string(item && item.classification),
       description: '', license: 'CC0',
-      rightsOK: !!(item && item.isPublicDomain), page: string(item && item.objectURL)
+      rightsOK: !!(item && item.isPublicDomain),
+      style: string(item && item.period), styles: [], date: string(item && item.objectDate),
+      page: string(item && item.objectURL)
     };
   }
   function pickCandidate(candidates, goal, seen, now) {
@@ -114,11 +118,89 @@
     if (unknown >= 0) return unknown;
     return candidates.findIndex(available);
   }
+
+  // Art-history rotation: styles from museum metadata win; curated makers provide
+  // a conservative fallback. No movement is inferred from the work's date alone.
+  const MOVEMENTS = Object.freeze([
+    {id:'renaissance', label:'르네상스', en:'Renaissance'},
+    {id:'baroque', label:'바로크', en:'Baroque'},
+    {id:'rococo', label:'로코코', en:'Rococo'},
+    {id:'neoclassicism', label:'신고전주의', en:'Neoclassicism'},
+    {id:'romanticism', label:'낭만주의', en:'Romanticism'},
+    {id:'realism', label:'사실주의', en:'Realism'},
+    {id:'impressionism', label:'인상주의', en:'Impressionism'},
+    {id:'post-impressionism', label:'후기인상주의', en:'Post-Impressionism'},
+    {id:'expressionism', label:'표현주의', en:'Expressionism'},
+    {id:'cubism', label:'입체주의', en:'Cubism'},
+    {id:'surrealism', label:'초현실주의', en:'Surrealism'},
+    {id:'abstract', label:'추상미술', en:'Abstract Art'},
+    {id:'contemporary', label:'현대미술', en:'Contemporary Art'}
+  ]);
+  const STYLE_RULES = [
+    ['post-impressionism',/\bpost[\s-]*impressionis(?:m|t)\b/i],
+    ['neoclassicism',/\bneo[\s-]*classic(?:ism|al)\b/i],
+    ['renaissance',/\b(?:renaissance|early renaissance|high renaissance)\b/i],
+    ['baroque',/\bbaroque\b/i],
+    ['rococo',/\brococo\b/i],
+    ['romanticism',/\bromantic(?:ism|ist)\b/i],
+    ['realism',/\b(?:realism|realist|social realism)\b/i],
+    ['impressionism',/\bimpressionis(?:m|t)\b/i],
+    ['expressionism',/\b(?:expressionism|expressionist|die br[üu]cke|der blaue reiter)\b/i],
+    ['cubism',/\bcubis(?:m|t)\b/i],
+    ['surrealism',/\bsurreal(?:ism|ist)\b/i],
+    ['abstract',/\b(?:abstract(?:ion| art| painting| expressionism)?|non[\s-]*objective art|geometric abstraction|suprematism|constructivism|color field)\b/i],
+    ['contemporary',/\b(?:contemporary art|contemporary painting|conceptual painting|21st century art)\b/i]
+  ];
+  // Avoid makers whose work spans several schools (e.g. Picasso, Dali, Manet).
+  // Cross-school artists must be classified using explicit museum style tags.
+  const MAKER_RULES = [
+    ['renaissance',['sandro botticelli','leonardo da vinci','michelangelo buonarroti','raphael sanzio','raffaello sanzio','titian','tiziano vecellio','albrecht dürer','albrecht durer','jan van eyck','hans holbein','piero della francesca','andrea mantegna','giovanni bellini','hieronymus bosch','giorgione']],
+    ['baroque',['caravaggio','rembrandt van rijn','peter paul rubens','diego velázquez','diego velazquez','artemisia gentileschi','johannes vermeer','frans hals','anthony van dyck','guido reni','claude lorrain','nicolas poussin','pietro da cortona']],
+    ['rococo',['jean-antoine watteau','antoine watteau','françois boucher','francois boucher','jean-honoré fragonard','jean-honore fragonard','giovanni battista tiepolo','thomas gainsborough','rosalba carriera']],
+    ['neoclassicism',['jacques-louis david','jean-auguste-dominique ingres','antonio canova','angelica kauffman','anton raphael mengs','elisabeth vigée le brun','elisabeth vigee le brun','joseph-marie vien','benjamin west']],
+    ['romanticism',['caspar david friedrich','eugène delacroix','eugene delacroix','théodore géricault','theodore gericault','j. m. w. turner','john constable','william blake','francisco de goya','henry fuseli','thomas cole']],
+    ['realism',['gustave courbet','jean-françois millet','jean-francois millet','honoré daumier','honore daumier','rosa bonheur','ivan shishkin','ilya repin','winslow homer','thomas eakins']],
+    ['impressionism',['claude monet','pierre-auguste renoir','alfred sisley','camille pissarro','berthe morisot','mary cassatt','gustave caillebotte','frédéric bazille','frederic bazille']],
+    ['post-impressionism',['vincent van gogh','paul cézanne','paul cezanne','paul gauguin','georges seurat','paul signac','henri de toulouse-lautrec','émile bernard','emile bernard','henri-edmond cross']],
+    ['expressionism',['edvard munch','ernst ludwig kirchner','egon schiele','emil nolde','karl schmidt-rottluff','erich heckel','oskar kokoschka','franz marc','august macke','käthe kollwitz','kathe kollwitz']],
+    ['cubism',['juan gris','georges braque','fernand léger','fernand leger','jean metzinger','albert gleizes','robert delaunay','sonia delaunay']],
+    ['surrealism',['rené magritte','rene magritte','max ernst','joan miró','joan miro','yves tanguy','leonora carrington','dorothea tanning','remedios varo','paul delvaux']],
+    ['abstract',['wassily kandinsky','piet mondrian','kazimir malevich','hilma af klint','mark rothko','barnett newman','agnes martin','jackson pollock','helen frankenthaler','lyubov popova','el lissitzky','frank stella']],
+    ['contemporary',['yoshitomo nara','takashi murakami','yayoi kusama','kerry james marshall','julie mehretu','cecil y brown','kehinde wiley','amy sherald','mark bradford','mickalene thomas']]
+  ];
+  function tidyLabel(text, fallback) {
+    const t=string(text).replace(/[\uFFFD\u25A0-\u25FF\uE000-\uF8FF]/g,'').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim();
+    return t && /[\p{L}\p{N}]/u.test(t) ? t.slice(0,160) : fallback;
+  }
+  function classifyMovement(a) {
+    if(!a)return null;
+    const styles = [string(a.style), ...(Array.isArray(a.styles)?a.styles.filter(x=>typeof x==='string'):[])].join(' | ');
+    // Only curator-provided style fields can justify classifications such as cubism
+    // for artists who worked in several movements.
+    for(const [id,pattern] of STYLE_RULES) if(pattern.test(styles))return id;
+    const artist=string(a.artist).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    if(/\b(?:after|follower of|school of|workshop of|in the style of|copy after)\b/i.test(artist))return null;
+    for(const [id,names] of MAKER_RULES)for(const name of names){
+      const n=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+      const at=artist.indexOf(n);
+      if(at>=0 && (at===0 || !/[a-z]/.test(artist[at-1])) &&
+         (at+n.length===artist.length || !/[a-z]/.test(artist[at+n.length])))return id;
+    }
+    return null;
+  }
+  function nextAvailableMovementIndex(start, has) {
+    for(let i=0;i<MOVEMENTS.length;i++){
+      const idx=(start+i)%MOVEMENTS.length;
+      if(has(MOVEMENTS[idx].id))return idx;
+    }
+    return -1;
+  }
+
   function prettyBytes(bytes) {
     const v = Number(bytes) || 0;
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
   }
   return { NINETY_DAYS_MS, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
     kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet,
-    pickCandidate, prettyBytes };
+    pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel };
 });

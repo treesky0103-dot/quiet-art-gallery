@@ -1,0 +1,206 @@
+/* Artwork selection core. Zero external dependencies. */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.GalleryCore = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+  const BLOCKLIST = /(?:\bsculpture\b|\bceramic(?:s)?\b|\bpottery\b|\bfurniture\b|\btextile\b|\btapestry\b|\barmor\b|\barmour\b|\bweapon\b|\bphotograph(?:y)?\b|\binstallation\b|\bstatue\b|\bvase\b|\bcoin\b|\bmedal\b|\bjewelry\b|\bjewellery\b|\barchitecture\b|\bdecorative art\b|\bframe(?:d)?\b|\bgallery view\b|\bexhibition view\b|\b3d\b|\bvideo\b|\bfilm\b|\bglass\b|\bcarpet\b|\bcostume\b|\bcarving\b|\brelief\b|\bbook cover\b)/i;
+  const ALLOW_TYPES = /(?:painting|paintings|drawing|drawings|print|prints|watercolo[u]?r|etching|lithograph|woodblock|woodcut|illustration|gouache|collage|pastel|ink on paper|oil on canvas|oil on panel|acrylic on|tempera on|aquatint|serigraph|screenprint|engraving)/i;
+  function string(x) { return typeof x === 'string' ? x : ''; }
+  function safeURL(url) {
+    try {
+      const u = new URL(url);
+      if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return false;
+      const h = u.hostname.toLowerCase();
+      return h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
+    } catch (_) { return false; }
+  }
+  function fingerprint(a) {
+    const norm = value => string(value).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '').slice(0, 95);
+    const title = norm(a.title), artist = norm(a.artist);
+    return title.length >= 4 && artist.length >= 3 ? `fp:${title}:${artist}` : null;
+  }
+  function orientation(a) {
+    const w = Number(a.width), h = Number(a.height);
+    if (w > 0 && h > 0) return h > w * 1.02 ? 'portrait' : 'other';
+    return 'unknown';
+  }
+  // EXACTLY seven portrait goals per 10 slots (orientation is a target, not a false guarantee).
+  function targetOrientation(slot) { return ((Math.max(0, Math.floor(slot)) % 10) < 7) ? 'portrait' : 'other'; }
+  function kstRenewalDay(epoch) {
+    // KST midnight 10:00 boundary = 01:00 UTC. Use UTC-1h day-shift.
+    return new Date(epoch - 60 * 60 * 1000).toISOString().slice(0, 10);
+  }
+  function canReshow(previous, now = Date.now()) {
+    if (!Number.isFinite(previous)) return true;
+    // Clock rolled back: never bypass a 90-day embargo.
+    return now >= previous && now - previous >= NINETY_DAYS_MS;
+  }
+  function eligibleArt(a) {
+    if (!a || !a.key || /:(?:undefined|null|NaN)$/.test(a.key) || !a.image || !safeURL(a.image) || !a.rightsOK) return false;
+    const t = string(a.type).trim();
+    const medium = string(a.medium).trim();
+    const classification = string(a.classification).trim();
+    const visualClass = [t, classification, medium].filter(Boolean).join(' | ');
+    // Type (or known metadata) must explicitly identify a 2D visual work.
+    if (!visualClass || !ALLOW_TYPES.test(visualClass)) return false;
+    if (BLOCKLIST.test(visualClass)) return false;
+    // Reject obvious photo-of-gallery or framed-object metadata; titles can refer to a painted frame,
+    // so do not reject artwork titles for merely mentioning a frame.
+    if (BLOCKLIST.test(string(a.description).slice(0, 160))) return false;
+    if (/\b(?:unknown|unverified|copyrighted|restricted)\b/i.test(string(a.license))) return false;
+    return true;
+  }
+  function normalizeCleveland(item) {
+    const img = item && item.images && item.images.web;
+    const creator = item && item.creators && item.creators[0];
+    return {
+      key: `cma:${item && item.id}`,
+      source: '클리블랜드', title: string(item && item.title) || '제목 미상',
+      artist: string(creator && creator.description) || '작가 미상',
+      image: string(img && img.url),
+      width: Number(img && img.width) || 0, height: Number(img && img.height) || 0,
+      type: string(item && item.type), medium: string(item && item.technique),
+      classification: string(item && item.type),
+      description: '', license: string(item && item.share_license_status),
+      rightsOK: (item && item.share_license_status) === 'CC0',
+      style: string(item && item.style), styles: Array.isArray(item && item.style_titles) ? item.style_titles : [],
+      date: string(item && item.creation_date), page: string(item && item.url)
+    };
+  }
+  function normalizeChicago(item, iiifBase) {
+    const imgid = string(item && item.image_id);
+    const base = string(iiifBase).replace(/\/$/, '');
+    // image_id comes from museum metadata; path may only contain safe token characters.
+    const image = imgid && /^[a-zA-Z0-9_-]{15,100}$/.test(imgid) && /^https:\/\/www\.artic\.edu\/iiif\/2$/i.test(base)
+      ? `${base}/${imgid}/full/843,/0/default.jpg` : '';
+    return {
+      key: `aic:${item && item.id}`,
+      source: '시카고', title: string(item && item.title) || '제목 미상',
+      artist: string(item && item.artist_title) || '작가 미상',
+      image,
+      width: Number(item && item.thumbnail && item.thumbnail.width) || 0,
+      height: Number(item && item.thumbnail && item.thumbnail.height) || 0,
+      type: string(item && item.artwork_type_title),
+      medium: string(item && item.medium_display), classification: string(item && item.artwork_type_title),
+      description: '', license: 'Public domain',
+      rightsOK: !!(item && item.is_public_domain),
+      style: string(item && item.style_title), styles: Array.isArray(item && item.style_titles) ? item.style_titles : [],
+      date: string(item && item.date_display), page: item && Number.isInteger(item.id) ? `https://www.artic.edu/artworks/${item.id}` : ''
+    };
+  }
+  function normalizeMet(item) {
+    return {
+      key: `met:${item && item.objectID}`,
+      source: '메트로폴리탄', title: string(item && item.title) || '제목 미상',
+      artist: string(item && item.artistDisplayName) || '작가 미상',
+      image: string(item && item.primaryImageSmall),
+      width: 0, height: 0,
+      type: string(item && item.objectName), medium: string(item && item.medium),
+      classification: string(item && item.classification),
+      description: '', license: 'CC0',
+      rightsOK: !!(item && item.isPublicDomain),
+      style: string(item && item.period), styles: [], date: string(item && item.objectDate),
+      page: string(item && item.objectURL)
+    };
+  }
+  function pickCandidate(candidates, goal, seen, now) {
+    function available(a) {
+      if (!eligibleArt(a)) return false;
+      const s = seen.get(a.key), fp = fingerprint(a), f = fp ? seen.get(fp) : null;
+      return canReshow(s, now) && canReshow(f, now);
+    }
+    const exact = candidates.findIndex(a => available(a) && orientation(a) === goal);
+    if (exact >= 0) return exact;
+    const unknown = candidates.findIndex(a => available(a) && orientation(a) === 'unknown');
+    if (unknown >= 0) return unknown;
+    return candidates.findIndex(available);
+  }
+
+  // Art-history rotation: styles from museum metadata win; curated makers provide
+  // a conservative fallback. No movement is inferred from the work's date alone.
+  const MOVEMENTS = Object.freeze([
+    {id:'renaissance', label:'르네상스', en:'Renaissance'},
+    {id:'baroque', label:'바로크', en:'Baroque'},
+    {id:'rococo', label:'로코코', en:'Rococo'},
+    {id:'neoclassicism', label:'신고전주의', en:'Neoclassicism'},
+    {id:'romanticism', label:'낭만주의', en:'Romanticism'},
+    {id:'realism', label:'사실주의', en:'Realism'},
+    {id:'impressionism', label:'인상주의', en:'Impressionism'},
+    {id:'post-impressionism', label:'후기인상주의', en:'Post-Impressionism'},
+    {id:'expressionism', label:'표현주의', en:'Expressionism'},
+    {id:'cubism', label:'입체주의', en:'Cubism'},
+    {id:'surrealism', label:'초현실주의', en:'Surrealism'},
+    {id:'abstract', label:'추상미술', en:'Abstract Art'},
+    {id:'contemporary', label:'현대미술', en:'Contemporary Art'}
+  ]);
+  const STYLE_RULES = [
+    ['post-impressionism',/\bpost[\s-]*impressionis(?:m|t)\b/i],
+    ['neoclassicism',/\bneo[\s-]*classic(?:ism|al)\b/i],
+    ['renaissance',/\b(?:renaissance|early renaissance|high renaissance)\b/i],
+    ['baroque',/\bbaroque\b/i],
+    ['rococo',/\brococo\b/i],
+    ['romanticism',/\bromantic(?:ism|ist)\b/i],
+    ['realism',/\b(?:realism|realist|social realism)\b/i],
+    ['impressionism',/\bimpressionis(?:m|t)\b/i],
+    ['expressionism',/\b(?:expressionism|expressionist|die br[üu]cke|der blaue reiter)\b/i],
+    ['cubism',/\bcubis(?:m|t)\b/i],
+    ['surrealism',/\bsurreal(?:ism|ist)\b/i],
+    ['abstract',/\b(?:abstract(?:ion| art| painting| expressionism)?|non[\s-]*objective art|geometric abstraction|suprematism|constructivism|color field)\b/i],
+    ['contemporary',/\b(?:contemporary art|contemporary painting|conceptual painting|21st century art)\b/i]
+  ];
+  // Avoid makers whose work spans several schools (e.g. Picasso, Dali, Manet).
+  // Cross-school artists must be classified using explicit museum style tags.
+  const MAKER_RULES = [
+    ['renaissance',['sandro botticelli','leonardo da vinci','michelangelo buonarroti','raphael sanzio','raffaello sanzio','titian','tiziano vecellio','albrecht dürer','albrecht durer','jan van eyck','hans holbein','piero della francesca','andrea mantegna','giovanni bellini','hieronymus bosch','giorgione']],
+    ['baroque',['caravaggio','rembrandt van rijn','peter paul rubens','diego velázquez','diego velazquez','artemisia gentileschi','johannes vermeer','frans hals','anthony van dyck','guido reni','claude lorrain','nicolas poussin','pietro da cortona']],
+    ['rococo',['jean-antoine watteau','antoine watteau','françois boucher','francois boucher','jean-honoré fragonard','jean-honore fragonard','giovanni battista tiepolo','thomas gainsborough','rosalba carriera']],
+    ['neoclassicism',['jacques-louis david','jean-auguste-dominique ingres','antonio canova','angelica kauffman','anton raphael mengs','elisabeth vigée le brun','elisabeth vigee le brun','joseph-marie vien','benjamin west']],
+    ['romanticism',['caspar david friedrich','eugène delacroix','eugene delacroix','théodore géricault','theodore gericault','j. m. w. turner','john constable','william blake','francisco de goya','henry fuseli','thomas cole']],
+    ['realism',['gustave courbet','jean-françois millet','jean-francois millet','honoré daumier','honore daumier','rosa bonheur','ivan shishkin','ilya repin','winslow homer','thomas eakins']],
+    ['impressionism',['claude monet','pierre-auguste renoir','alfred sisley','camille pissarro','berthe morisot','mary cassatt','gustave caillebotte','frédéric bazille','frederic bazille']],
+    ['post-impressionism',['vincent van gogh','paul cézanne','paul cezanne','paul gauguin','georges seurat','paul signac','henri de toulouse-lautrec','émile bernard','emile bernard','henri-edmond cross']],
+    ['expressionism',['edvard munch','ernst ludwig kirchner','egon schiele','emil nolde','karl schmidt-rottluff','erich heckel','oskar kokoschka','franz marc','august macke','käthe kollwitz','kathe kollwitz']],
+    ['cubism',['juan gris','georges braque','fernand léger','fernand leger','jean metzinger','albert gleizes','robert delaunay','sonia delaunay']],
+    ['surrealism',['rené magritte','rene magritte','max ernst','joan miró','joan miro','yves tanguy','leonora carrington','dorothea tanning','remedios varo','paul delvaux']],
+    ['abstract',['wassily kandinsky','piet mondrian','kazimir malevich','hilma af klint','mark rothko','barnett newman','agnes martin','jackson pollock','helen frankenthaler','lyubov popova','el lissitzky','frank stella']],
+    ['contemporary',['yoshitomo nara','takashi murakami','yayoi kusama','kerry james marshall','julie mehretu','cecil y brown','kehinde wiley','amy sherald','mark bradford','mickalene thomas']]
+  ];
+  function tidyLabel(text, fallback) {
+    const t=string(text).replace(/[\uFFFD\u25A0-\u25FF\uE000-\uF8FF]/g,'').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim();
+    return t && /[\p{L}\p{N}]/u.test(t) ? t.slice(0,160) : fallback;
+  }
+  function classifyMovement(a) {
+    if(!a)return null;
+    const styles = [string(a.style), ...(Array.isArray(a.styles)?a.styles.filter(x=>typeof x==='string'):[])].join(' | ');
+    // Only curator-provided style fields can justify classifications such as cubism
+    // for artists who worked in several movements.
+    for(const [id,pattern] of STYLE_RULES) if(pattern.test(styles))return id;
+    const artist=string(a.artist).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    if(/\b(?:after|follower of|school of|workshop of|in the style of|copy after)\b/i.test(artist))return null;
+    for(const [id,names] of MAKER_RULES)for(const name of names){
+      const n=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+      const at=artist.indexOf(n);
+      if(at>=0 && (at===0 || !/[a-z]/.test(artist[at-1])) &&
+         (at+n.length===artist.length || !/[a-z]/.test(artist[at+n.length])))return id;
+    }
+    return null;
+  }
+  function nextAvailableMovementIndex(start, has) {
+    for(let i=0;i<MOVEMENTS.length;i++){
+      const idx=(start+i)%MOVEMENTS.length;
+      if(has(MOVEMENTS[idx].id))return idx;
+    }
+    return -1;
+  }
+
+  function prettyBytes(bytes) {
+    const v = Number(bytes) || 0;
+    return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
+  }
+  return { NINETY_DAYS_MS, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
+    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet,
+    pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel };
+});

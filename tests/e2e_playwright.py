@@ -33,10 +33,27 @@ def main():
   assert d['shown']>=11 and d['portrait']>=7 and d['other']>=3,d
   keys=page.evaluate('window.__GALLERY_TEST__.shown.map(x=>x.key)')
   assert len(keys)==len(set(keys)),'duplicate during cycle'
+  shown=page.evaluate('window.__GALLERY_TEST__.shown')
+  order=['renaissance','baroque','rococo','neoclassicism','romanticism','realism',
+      'impressionism','post-impressionism','expressionism','cubism','surrealism','abstract','contemporary']
+  assert [x['movement'] for x in shown[:11]]==order[:11], shown[:11]
+  assert page.locator('#caption').evaluate('(e)=>getComputedStyle(e).opacity')=='1', 'caption is not persistently visible'
+  assert 'Artist ' in page.locator('#art-meta').inner_text()
+  assert '클리블랜드' not in page.locator('#art-meta').inner_text()
+  assert '세로형' not in page.locator('#art-meta').inner_text()
+  assert 'Artwork ' in page.locator('#art-title').inner_text()
+  print('PASS: 11 consecutive movement categories, title/artist-only persistent caption')
   page.locator('#viewer').click(position={'x':100,'y':70});page.locator('#open-settings').click()
   assert page.locator('#settings').is_visible()
   assert '90일' in page.locator('#settings').inner_text()
   assert '100MB' in page.locator('#settings').inner_text()
+  page.locator('#rotate-180').click()
+  assert page.locator('body').evaluate('(e)=>e.classList.contains("upside-down")')
+  assert page.locator('#rotation-status').inner_text()=='180° 회전 중'
+  page.locator('#rotate-180').click()
+  assert not page.locator('body').evaluate('(e)=>e.classList.contains("upside-down")')
+  assert page.locator('#rotation-status').inner_text()=='기본 방향'
+  print('PASS: 180-degree rotation toggle and readable bottom title/artist')
   page.locator('#settings-done').click()
   page.locator('#toggle-pause').click();count=page.evaluate('window.__galleryDiagnostic().shown')
   time.sleep(.6);assert page.evaluate('window.__galleryDiagnostic().shown')==count,'pause issue'

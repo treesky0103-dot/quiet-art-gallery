@@ -185,14 +185,29 @@ public final class MainActivity extends Activity {
             int off=bounded(parts[1],0,1000000);
             return "https://openaccess-api.clevelandart.org/api/artworks/?cc0&has_image=1&type="+parts[0]+"&limit=100&skip="+off;
         }
-        if(type.equals("chicago")){
-            int page=bounded(p,1,100000);
+        if(type.equals("chicago")||type.equals("chicagoMovement")){
+            int page;
+            String movementQuery=null;
+            if(type.equals("chicagoMovement")){
+                String[] parts=p.split(":",-1);
+                if(parts.length!=2)throw new IOException("사조 조회 조건 오류");
+                page=bounded(parts[1],1,100000);
+                String[] ids={"renaissance","baroque","rococo","neoclassicism","romanticism","realism","impressionism","post-impressionism","expressionism","cubism","surrealism","abstract","contemporary"};
+                String[] names={"Renaissance","Baroque","Rococo","Neoclassicism","Romanticism","Realism","Impressionism","Post-Impressionism","Expressionism","Cubism","Surrealism","Abstract Art","Contemporary Art"};
+                for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))movementQuery=names[i];
+                if(movementQuery==null)throw new IOException("허용되지 않은 사조");
+            }else page=bounded(p,1,100000);
             JSONObject params=new JSONObject();
             JSONObject terms=new JSONObject().put("term",new JSONObject().put("is_public_domain",true));
             JSONObject exists=new JSONObject().put("exists",new JSONObject().put("field","image_id"));
             JSONObject q=new JSONObject().put("bool",new JSONObject().put("filter",new JSONArray().put(terms).put(exists)));
+            if(movementQuery!=null){
+                JSONObject mm=new JSONObject().put("query",movementQuery)
+                    .put("fields",new JSONArray().put("style_title^5").put("style_titles^4").put("term_titles^2").put("artist_title").put("title"));
+                q.getJSONObject("bool").put("must",new JSONArray().put(new JSONObject().put("multi_match",mm)));
+            }
             params.put("query",q).put("page",page).put("limit",100);
-            params.put("fields",new JSONArray().put("id").put("title").put("artist_title").put("image_id").put("is_public_domain").put("artwork_type_title").put("medium_display").put("thumbnail"));
+            params.put("fields",new JSONArray().put("id").put("title").put("artist_title").put("image_id").put("is_public_domain").put("artwork_type_title").put("medium_display").put("thumbnail").put("style_title").put("style_titles").put("date_display").put("date_start"));
             return "https://api.artic.edu/api/v1/artworks/search?params="+URLEncoder.encode(params.toString(),"UTF-8");
         }
         if(type.equals("metSearch")){

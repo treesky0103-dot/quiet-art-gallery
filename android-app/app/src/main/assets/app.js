@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 22, targetPool: 140, maxQueue: 500, prefetch: 1, retryMs: 20000, pruneDays: 90});
+  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 22, targetPool: 140, maxQueue: 500, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -12,9 +12,9 @@
     db:null,pool:[],pendingKeys:new Set(), prepared:null,current:null,currentNode:ui.b,
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
     cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0}},
-    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0,
+    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, movementPages:{},lastMovementTry:{}, flipped:false,
     failures:{cleveland:0,chicago:0,met:0},backoff:{},
-    stats:{slot:0,shown:0,portrait:0,other:0,updatedAt:'',day:''},
+    stats:{slot:0,shown:0,portrait:0,other:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
   const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄'};
@@ -102,9 +102,18 @@
     if(kind==='cleveland'){
       const [type,offset]=String(param).split(':');
       url=`https://openaccess-api.clevelandart.org/api/artworks/?cc0&has_image=1&type=${encodeURIComponent(type)}&limit=100&skip=${Number(offset)||0}`;
-    }else if(kind==='chicago'){
-      const page=Math.max(1,parseInt(param,10)||1);
-      const params={query:{bool:{filter:[{term:{is_public_domain:true}},{exists:{field:'image_id'}}]}},page,limit:100,fields:['id','title','artist_title','image_id','is_public_domain','artwork_type_title','medium_display','thumbnail']};
+    }else if(kind==='chicago'||kind==='chicagoMovement'){
+      let page=Math.max(1,parseInt(param,10)||1);
+      const isMovement=kind==='chicagoMovement';
+      const movement=isMovement?C.MOVEMENTS.find(m=>m.id===String(param).split(':')[0]):null;
+      if(isMovement&&!movement)throw Error('허용되지 않은 사조');
+      if(isMovement){
+        const pieces=String(param).split(':');
+        if(pieces.length!==2)throw Error('사조 페이지 오류');
+        page=Math.max(1,parseInt(pieces[1],10)||1);
+      }
+      const params={query:{bool:{filter:[{term:{is_public_domain:true}},{exists:{field:'image_id'}}]}},page,limit:100,fields:['id','title','artist_title','image_id','is_public_domain','artwork_type_title','medium_display','thumbnail','style_title','style_titles','date_display','date_start']};
+      if(isMovement)params.query.bool.must=[{multi_match:{query:movement.en,fields:['style_title^5','style_titles^4','term_titles^2','artist_title','title']}}];
       url=`https://api.artic.edu/api/v1/artworks/search?params=${encodeURIComponent(JSON.stringify(params))}`;
     }else if(kind==='metSearch'){
       const [dept,offset]=String(param).split(':');
@@ -166,10 +175,32 @@
       return 0;
     }
   }
+  async function fetchForMovement(movementId){
+    const movement=C.MOVEMENTS.find(m=>m.id===movementId);
+    if(!movement||!sourceIsAllowed('chicago'))return 0;
+    const last=state.lastMovementTry[movementId]||0;
+    if(Date.now()-last<CONFIG.movementRetryMs)return 0;
+    state.lastMovementTry[movementId]=Date.now();
+    const page=state.movementPages[movementId]||1;
+    try{
+      const res=await request('chicagoMovement',`${movementId}:${page}`);
+      const arr=normalizeBatch('chicago',res).filter(C.eligibleArt);
+      const before=state.pool.length;
+      addCandidates(arr);
+      const pages=Number(res.pagination&&res.pagination.total_pages)||1;
+      state.movementPages[movementId]=page>=pages?1:page+1;
+      await dbPutMany('settings',[{key:'movementPages',value:state.movementPages}]);
+      if(!state.sourceReady.includes('chicago'))state.sourceReady.push('chicago');
+      return state.pool.length-before;
+    }catch(e){state.lastErr=`시카고(${movement.label}): ${e.message}`;return 0;}
+  }
   function addCandidates(items){
     for(const a of items){
       if(state.pool.length>=CONFIG.maxQueue)break;
       if(!C.eligibleArt(a)||state.pendingKeys.has(a.key))continue;
+      // Unknown/ambiguous style metadata cannot be silently labelled as a movement.
+      a.movement=C.classifyMovement(a);
+      if(!a.movement)continue;
       state.pool.push(a);state.pendingKeys.add(a.key);
     }
   }
@@ -190,13 +221,13 @@
     })();
     try{return await state.filling;}finally{state.filling=null; updateInfo();}
   }
-  async function takeCandidate(goal){
-    // Prefer tagged orientations. Unknown orientations are verified when image is decoded.
+  async function takeCandidate(goal, movementId){
+    // Only choose from the next verified school; orientation remains a target.
     const order=[goal,'unknown',goal==='portrait'?'other':'portrait'];
     for(const orient of order){
       for(let i=0;i<state.pool.length;i++){
         const a=state.pool[i];
-        if(C.orientation(a)!==orient)continue;
+        if(a.movement!==movementId||C.orientation(a)!==orient)continue;
         if(await seenRecently(a)){
           state.pool.splice(i,1);state.pendingKeys.delete(a.key);i--;continue;
         }
@@ -209,24 +240,45 @@
     if(state.prepared)return state.prepared;
     if(state.preparing)return state.preparing;
     state.preparing=(async()=>{
-    const target=C.targetOrientation(state.stats.slot);
-    if(!state.pool.length)await fillPool(CONFIG.minPool);
-    let fallback=null;
-    for(let j=0;j<15;j++){
-      if(!state.pool.length){await fillPool(CONFIG.minPool);if(!state.pool.length)break;}
-      const art=await takeCandidate(target);
-      if(!art)break;
-      try{
-        const loaded=await loadImage(art);
-        if(loaded.orient===target){state.prepared=loaded;break;}
-        if(!fallback)fallback=loaded;
-        else addCandidates([loaded.art]);
-      }catch(e){state.lastErr=`이미지: ${e.message}`;}
-    }
-    if(!state.prepared&&fallback)state.prepared=fallback;
-    else if(state.prepared&&fallback)addCandidates([fallback.art]);
-    if(state.pool.length<CONFIG.minPool&&!state.filling)fillPool(CONFIG.targetPool).catch(()=>{});
-    return state.prepared;
+      const orientationGoal=C.targetOrientation(state.stats.slot);
+      if(!state.pool.length)await fillPool(CONFIG.minPool);
+      const firstIdx=(Number(state.stats.movementIndex)||0)%C.MOVEMENTS.length;
+      // One targeted lookup for the next movement. If unavailable, skip it
+      // rather than inventing a label or breaking the 90-day embargo.
+      const desired=C.MOVEMENTS[firstIdx].id;
+      if(!state.pool.some(a=>a.movement===desired)){
+        let calls=0;
+        // Visit a few missing schools per retry so the app does not stall forever
+        // when the first museum has no supported images for a given school.
+        for(let step=0;step<C.MOVEMENTS.length && calls<3;step++){
+          const id=C.MOVEMENTS[(firstIdx+step)%C.MOVEMENTS.length].id;
+          if(state.pool.some(a=>a.movement===id))break;
+          if(Date.now()-(state.lastMovementTry[id]||0)<CONFIG.movementRetryMs)continue;
+          calls++;
+          await fetchForMovement(id);
+          if(state.pool.some(a=>a.movement===id))break;
+        }
+      }
+      for(let delta=0;delta<C.MOVEMENTS.length;delta++){
+        const m=C.MOVEMENTS[(firstIdx+delta)%C.MOVEMENTS.length];
+        if(!state.pool.some(a=>a.movement===m.id))continue;
+        let fallback=null;
+        for(let attempt=0;attempt<15;attempt++){
+          const art=await takeCandidate(orientationGoal,m.id);
+          if(!art)break;
+          try{
+            const loaded=await loadImage(art);
+            if(loaded.orient===orientationGoal){state.prepared=loaded;break;}
+            if(!fallback)fallback=loaded;
+            else addCandidates([loaded.art]);
+          }catch(e){state.lastErr=`이미지: ${e.message}`;}
+        }
+        if(!state.prepared&&fallback)state.prepared=fallback;
+        else if(state.prepared&&fallback)addCandidates([fallback.art]);
+        if(state.prepared)break;
+      }
+      if(state.pool.length<CONFIG.minPool&&!state.filling)fillPool(CONFIG.targetPool).catch(()=>{});
+      return state.prepared;
     })();
     try{return await state.preparing;}finally{state.preparing=null;}
   }
@@ -238,18 +290,18 @@
       ui.a.src=last.src;ui.a.alt=last.art.title+' — '+last.art.artist;
       ui.a.classList.add('visible');ui.b.classList.remove('visible');
       state.current=last;state.currentNode=ui.a;
-      ui.title.textContent=last.art.title;
-      ui.meta.textContent=last.art.artist+' · '+last.art.source+' · 이전에 전시한 작품';
+      ui.title.textContent=C.tidyLabel(last.art.title,'제목 미상');
+      ui.meta.textContent=C.tidyLabel(last.art.artist,'작가 미상');
       ui.placeholder.hidden=true;
       return true;
     }catch(_){return false;}
   }
   function controlsFor(ms=7500){
-    ui.hud.classList.add('active');ui.caption.classList.add('active');
+    ui.hud.classList.add('active');
     clearTimeout(state.hideTimer);
     if(ms>0)state.hideTimer=setTimeout(()=>{
       if(!ui.settings.hidden)return;
-      ui.hud.classList.remove('active');ui.caption.classList.remove('active');
+      ui.hud.classList.remove('active');
     },ms);
   }
   async function next(){
@@ -275,8 +327,9 @@
       target.classList.add('visible');state.currentNode.classList.remove('visible');
       ui.placeholder.hidden=true;
       state.currentNode=target;state.current=show;state.prepared=null;
-      ui.title.textContent=show.art.title;
-      ui.meta.textContent=show.art.artist+' · '+show.art.source+' · '+(show.orient==='portrait'?'세로형':'가로·정사각형');
+      ui.title.textContent=C.tidyLabel(show.art.title,'제목 미상');
+      ui.meta.textContent=C.tidyLabel(show.art.artist,'작가 미상');
+      state.stats.movementIndex=(C.MOVEMENTS.findIndex(m=>m.id===show.art.movement)+1)%C.MOVEMENTS.length;
       try{await recordSeen(show.art,show.orient);await dbPutMany('settings',[{key:'lastArtwork',value:show.art}]);}catch(e){
         state.playing=false;inform('감상 기록 저장에 실패했습니다. 90일 중복 방지를 위해 재생을 중단했습니다.');
         controlsFor(0);return;
@@ -322,8 +375,18 @@
     el('cache-count').textContent=cacheStatus();
     el('refresh-count').textContent=state.stats.updatedAt?new Date(state.stats.updatedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',hour12:false}):'–';
     el('source-status').textContent=state.sourceReady.length?state.sourceReady.map(s=>sourceNames[s]).join(' · '):state.lastErr||'연결 대기';
+    const m=C.MOVEMENTS[(Number(state.stats.movementIndex)||0)%C.MOVEMENTS.length];
+    el('movement-status').textContent=state.current ? (C.MOVEMENTS.find(x=>x.id===state.current.art.movement)?.label||'미분류')+' → '+m.label : m.label+'부터 탐색';
+    el('rotation-status').textContent=state.flipped?'180° 회전 중':'기본 방향';
+    el('rotate-180').textContent=state.flipped?'기본 방향으로 되돌리기':'화면 180° 회전';
     el('toggle-pause').textContent=state.playing?'Ⅱ':'▶';
     el('toggle-pause').setAttribute('aria-label',state.playing?'일시정지':'재생');
+  }
+  async function setFlip(enabled){
+    state.flipped=!!enabled;
+    document.body.classList.toggle('upside-down',state.flipped);
+    if(state.db)await dbPutMany('settings',[{key:'flipped',value:state.flipped}]);
+    updateInfo();
   }
   function showSettings(){ui.settings.hidden=false;ui.backdrop.hidden=false;clearTimeout(state.hideTimer);controlsFor(0);updateInfo();}
   function closeSettings(){ui.settings.hidden=true;ui.backdrop.hidden=true;controlsFor(2500);}
@@ -422,6 +485,7 @@
   function wire(){
     el('viewer').addEventListener('click',()=>controlsFor());
     el('open-settings').addEventListener('click',showSettings);
+    el('rotate-180').addEventListener('click',()=>setFlip(!state.flipped).catch(e=>{ui.msg.textContent='화면 방향 저장 실패: '+e.message;}));
     el('close-settings').addEventListener('click',closeSettings);
     el('settings-done').addEventListener('click',closeSettings);
     ui.backdrop.addEventListener('click',closeSettings);
@@ -464,9 +528,13 @@
     wire();
     try{
       state.db=await openDB();
-      const [a,b]=await Promise.all([dbGet('settings','stats'),dbGet('settings','cursors')]);
+      const [a,b,flip,movements]=await Promise.all([dbGet('settings','stats'),dbGet('settings','cursors'),dbGet('settings','flipped'),dbGet('settings','movementPages')]);
       if(a&&a.value){state.stats=Object.assign(state.stats,a.value);}
       if(b&&b.value){state.cursors=Object.assign(state.cursors,b.value);}
+      state.movementPages=(movements&&movements.value&&typeof movements.value==='object')?movements.value:{};
+      state.flipped=!!(flip&&flip.value);
+      document.body.classList.toggle('upside-down',state.flipped);
+      if(!Number.isInteger(state.stats.movementIndex)||state.stats.movementIndex<0||state.stats.movementIndex>=C.MOVEMENTS.length)state.stats.movementIndex=0;
       await restoreLastShown();
       await refreshForDay();
       await fillPool(CONFIG.minPool);
@@ -487,6 +555,8 @@
   window.__galleryDiagnostic=()=>({shown:state.stats.shown,slot:state.stats.slot,portrait:state.stats.portrait,
     other:state.stats.other,pool:state.pool.length,current:state.current&&state.current.art.key,
     prepared:state.prepared&&state.prepared.art.key,errors:state.lastErr,sourceReady:state.sourceReady,
-    apiCalls:state.apiCalls,day:state.stats.day,playing:state.playing});
+    apiCalls:state.apiCalls,day:state.stats.day,playing:state.playing,
+    movementIndex:state.stats.movementIndex,movement:state.current&&state.current.art.movement,
+    flipped:state.flipped,caption:[ui.title.textContent,ui.meta.textContent]});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
