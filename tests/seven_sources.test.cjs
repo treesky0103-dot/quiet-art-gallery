@@ -22,7 +22,7 @@ test('Public-domain 2D extra museum image qualifies; smaller or restricted files
   assert.equal(C.metadataResolutionOkay(art),true);
  }
  assert.equal(C.eligibleArt(C.normalizeAdditionalCommons(sample('CC BY 4.0'),'getty')[0]),false);
- assert.equal(C.metadataResolutionOkay(C.normalizeAdditionalCommons(sample('Public domain',1100,2400),'london')[0]),false);
+ assert.equal(C.metadataResolutionOkay(C.normalizeAdditionalCommons(sample('Public domain',999,2400),'london')[0]),false);
  assert.equal(C.normalizeAdditionalCommons(sample('Public domain',2600,3500,'File:Museum gallery interior.jpg'),'nga').length,0);
  assert.equal(C.normalizeAdditionalCommons(sample('Public domain',2600,3500,'File:Painting detail.jpg'),'smk').length,0);
 });

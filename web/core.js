@@ -7,16 +7,27 @@
   'use strict';
   const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
   // Minimum decoded image resolution. Never upscale a small original.
-  const MIN_IMAGE_SHORT_SIDE = 1200;
+  const MIN_IMAGE_SHORT_SIDE = 1200; // preferred high-resolution tier (unchanged)
   const MIN_IMAGE_LONG_SIDE = 1600;
+  const MIN_ACCEPTABLE_SHORT_SIDE = 1000; // medium-resolution fallback
+  const MIN_ACCEPTABLE_LONG_SIDE = 1400;
   function highResolution(width,height){
     const w=Number(width),h=Number(height);
     return Number.isFinite(w)&&Number.isFinite(h)&&w>0&&h>0&&Math.min(w,h)>=MIN_IMAGE_SHORT_SIDE&&Math.max(w,h)>=MIN_IMAGE_LONG_SIDE;
   }
+  function acceptableResolution(width,height){
+    const w=Number(width),h=Number(height);
+    return Number.isFinite(w)&&Number.isFinite(h)&&w>0&&h>0&&Math.min(w,h)>=MIN_ACCEPTABLE_SHORT_SIDE&&Math.max(w,h)>=MIN_ACCEPTABLE_LONG_SIDE;
+  }
+  function qualityTier(art){
+    // Priority for known image dimensions: 2 high, 1 medium, 0 unknown/rejected.
+    const w=Number(art&&art.width),h=Number(art&&art.height);
+    return highResolution(w,h)?2:acceptableResolution(w,h)?1:0;
+  }
   function metadataResolutionOkay(a){
     if(!a)return false;
     // Commons source dimensions and Cleveland web rendition can be checked before download.
-    if(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.museumRegion==='modern'||a.source==='클리블랜드')return highResolution(a.width,a.height);
+    if(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.museumRegion==='modern'||a.source==='클리블랜드')return acceptableResolution(a.width,a.height);
     return true; // Other sources must pass the decoded-image check.
   }
   const BLOCKLIST = /(?:\bsculpture\b|\bceramic(?:s)?\b|\bpottery\b|\bfurniture\b|\btextile\b|\btapestry\b|\barmor\b|\barmour\b|\bweapon\b|\bphotograph(?:y)?\b|\binstallation\b|\bstatue\b|\bvase\b|\bcoin\b|\bmedal\b|\bjewelry\b|\bjewellery\b|\barchitecture\b|\bdecorative art\b|\bframe(?:d)?\b|\bgallery view\b|\bexhibition view\b|\b3d\b|\bvideo\b|\bfilm\b|\bglass\b|\bcarpet\b|\bcostume\b|\bcarving\b|\brelief\b|\bbook cover\b)/i;
@@ -245,7 +256,7 @@
     const artRatio=w/h,screenRatio=Math.min(viewportW,viewportH)/Math.max(viewportW,viewportH);
     return Math.min(artRatio/screenRatio,screenRatio/artRatio);
   }
-  function fillsPortraitScreen(w,h,vw,vh,threshold=.80){
+  function fillsPortraitScreen(w,h,vw,vh,threshold=.75){
     return portraitScreenFill(w,h,vw,vh)+1e-8>=threshold;
   }
   // Multiple museum records can point to one original Commons file.
@@ -463,7 +474,7 @@
     const v = Number(bytes) || 0;
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
   }
-  return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, highResolution, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
+  return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, MIN_ACCEPTABLE_SHORT_SIDE, MIN_ACCEPTABLE_LONG_SIDE, highResolution, acceptableResolution, qualityTier, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
     kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,

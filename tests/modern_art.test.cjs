@@ -79,7 +79,7 @@ test('Openverse keyword hits are rejected if historic, copyright restricted or o
  assert.deepEqual(C.normalizeModernOpenverse(openverse('Digital painting CAFE','cc0','flickr')),[]);
  assert.deepEqual(C.normalizeModernOpenverse({results:[{...openverse().results[0],url:'https://example.org/a.png'}]}),[]);
 });
-test('Android API still uses 30 seconds, v1.6.4 isolated app and 90d dedup',()=>{
+test('Android API still uses 30 seconds, v1.6.5 isolated app and 90d dedup',()=>{
  const java=source('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java');
  assert(java.includes('ART_INTERVAL_MS = 30000L'));
  assert(java.includes('openverseModern'));
@@ -87,8 +87,8 @@ test('Android API still uses 30 seconds, v1.6.4 isolated app and 90d dedup',()=>
  assert(app.includes('hydrateHistory'));
  assert(app.includes('visualHashes'));
  const gradle=source('android-app/app/build.gradle');
- assert(gradle.includes("versionName '1.6.4'"));
- assert(gradle.includes("applicationId 'com.gallery.kiosk.v164'"));
+ assert(gradle.includes("versionName '1.6.5'"));
+ assert(gradle.includes("applicationId 'com.gallery.kiosk.v165'"));
  const html=source('web/index.html');
  assert(html.includes('고전·근대 65% · 현대 35%'));
  assert(html.includes('id="modern-count"'));

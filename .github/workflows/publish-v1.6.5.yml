@@ -1,0 +1,76 @@
+name: Publish v1.6.5 Portrait 75% Medium Quality APK
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-v1.6.5.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout tagged release source
+        uses: actions/checkout@v4
+      - name: Validate version and JS
+        run: |
+          grep -q "versionName '1.6.4'" android-app/app/build.gradle
+          node --check web/app.js
+          node --check web/core.js
+          node --test tests/*.test.cjs
+          grep -q 'Openverse' web/index.html
+          grep -q 'MODERN_CATEGORIES' web/core.js
+          grep -q 'C.targetModern' web/app.js
+          grep -q 'minimumPortraitFill:.75' web/app.js
+          grep -q 'acceptableResolution' web/core.js
+          grep -q 'C.qualityTier(b)-C.qualityTier(a)' web/app.js
+          for f in app.js core.js index.html style.css sw.js manifest.webmanifest icon-192.png icon-512.png; do
+            cmp "web/$f" "android-app/app/src/main/assets/$f"
+          done
+      - name: Obtain and audit eight high-quality emergency paintings
+        run: python3 scripts/build_emergency_deck.py
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.9'
+          cache-provider: basic
+      - name: Build APK
+        working-directory: android-app
+        run: gradle :app:assembleDebug --no-daemon
+      - name: Package and verify APK
+        run: |
+          cp android-app/app/build/outputs/apk/debug/app-debug.apk QuietArtGallery_v1.6.5.apk
+          test -s QuietArtGallery_v1.6.5.apk
+          sha256sum QuietArtGallery_v1.6.5.apk | tee SHA256SUMS.txt
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          path='QuietArtGallery_v1.6.5.apk'
+          with ZipFile(path) as z:
+            assert z.testzip() is None
+            assert 'classes.dex' in z.namelist()
+            assert 'assets/app.js' in z.namelist()
+            assert 'assets/core.js' in z.namelist()
+          print('APK ZIP integrity and app assets OK')
+          PY
+      - name: Publish public download on GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view v1.6.5 >/dev/null 2>&1; then
+            gh release upload v1.6.5 QuietArtGallery_v1.6.5.apk SHA256SUMS.txt --clobber
+          else
+            gh release create v1.6.5 QuietArtGallery_v1.6.5.apk SHA256SUMS.txt \
+              --title 'Quiet Art Gallery v1.6.5 — 75% Portrait, Medium Fallback' \
+              --notes '75% minimum portrait display coverage, 1000x1400 minimum decoded image size, 1200x1600 high quality preferred within each art group. All 33 worldwide museum categories, Openverse and Wikimedia contemporary art, 35% modern art target, strict 90-day no-repeat, 30-second clock, 8 high-quality emergency pictures and CSV history migration remain.'
+          fi
+      - name: Verify public release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view v1.6.5 --json url,assets --jq '.url, (.assets[] | .name)'

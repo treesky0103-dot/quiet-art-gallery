@@ -18,7 +18,8 @@ test('Only public-domain/CC0 2D files become African painting candidates',()=>{
  }
  assert.equal(C.normalizeAfricanCommons(mock('File:Art.jpg','CC BY 4.0'),'iziko')[0].rightsOK,false);
  assert.equal(C.normalizeAfricanCommons(mock('File:Art.jpg','Public domain',1000,2500),'iziko')[0].rightsOK,true);
- assert.equal(C.metadataResolutionOkay(C.normalizeAfricanCommons(mock('File:Art.jpg','Public domain',1000,2500),'iziko')[0]),false);
+ assert.equal(C.metadataResolutionOkay(C.normalizeAfricanCommons(mock('File:Art.jpg','Public domain',1000,2500),'iziko')[0]),true);
+ assert.equal(C.metadataResolutionOkay(C.normalizeAfricanCommons(mock('File:Art.jpg','Public domain',999,2500),'iziko')[0]),false);
 });
 test('Gallery interior and sculpture photos excluded by Commons filename',()=>{
  for(const name of ['File:exhibition view in museum.jpg','File:sculpture in gallery.jpg','File:gallery interior photo.jpg','File:visitors with paintings.jpg']){

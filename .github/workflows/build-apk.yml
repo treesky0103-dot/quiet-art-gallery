@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      - name: Check v1.6.4 modern source 35%-target portrait 80% no-repeat regression
+      - name: Check v1.6.5 portrait 75 percent medium fallback high-priority regression
         run: |
           grep -q "versionName '1.6.4'" android-app/app/build.gradle
           node --check web/app.js
@@ -21,7 +21,7 @@ jobs:
           for f in app.js core.js index.html style.css sw.js manifest.webmanifest icon-192.png icon-512.png; do
             cmp "web/$f" "android-app/app/src/main/assets/$f"
           done
-      - name: Fetch and verify four offline paintings
+      - name: Fetch and verify 8 offline paintings
         run: python3 scripts/build_emergency_deck.py
       - name: Install Java 17
         uses: actions/setup-java@v6
@@ -37,17 +37,17 @@ jobs:
         with:
           gradle-version: '8.9'
           cache-provider: basic
-      - name: Build v1.6.4 APK
+      - name: Build v1.6.5 APK
         working-directory: android-app
         run: gradle :app:assembleDebug --no-daemon
       - name: Verify APK and SHA256
         run: |
           test -s android-app/app/build/outputs/apk/debug/app-debug.apk
           sha256sum android-app/app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload installable v1.6.4 APK
+      - name: Upload installable v1.6.5 APK
         uses: actions/upload-artifact@v4
         with:
-          name: QuietArtGallery-v1.6.4-debug-APK
+          name: QuietArtGallery-v1.6.5-debug-APK
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
@@ -55,7 +55,7 @@ jobs:
       - name: Archive web and browser-test source
         uses: actions/upload-artifact@v4
         with:
-          name: QuietArtGallery-v1.6.4-browser-test-source
+          name: QuietArtGallery-v1.6.5-browser-test-source
           path: |
             web/
             tests/

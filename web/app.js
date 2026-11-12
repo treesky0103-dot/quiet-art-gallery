@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.80});
+  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -148,9 +148,9 @@
       img.onerror=()=>{if(finished)return;finished=true;clearTimeout(timeout);reject(new Error('이미지 파일 로드 실패'));};
       img.src=src;
     });
-    if(!C.highResolution(img.naturalWidth,img.naturalHeight))throw new Error('저해상도 또는 소형 이미지 제외');
+    if(!C.acceptableResolution(img.naturalWidth,img.naturalHeight))throw new Error('최소 중화질 미달 (짧은 변 1000px·긴 변 1400px)');
     if(!C.fillsPortraitScreen(img.naturalWidth,img.naturalHeight,innerWidth,innerHeight,CONFIG.minimumPortraitFill))
-      throw new Error('세로 화면 80% 미만 작품 제외');
+      throw new Error('세로 화면 75% 미만 작품 제외');
     return {art,src,width:img.naturalWidth,height:img.naturalHeight,orient:'portrait',visualHash:visualHash(img)};
   }
 
@@ -405,16 +405,19 @@
     try{return await state.filling;}finally{state.filling=null; updateInfo();}
   }
   async function takeCandidate(goal, movementId){
-    // Only choose from the next verified school; orientation remains a target.
+    // Preserve the verified school / portrait priority, but choose a high-
+    // resolution artwork before a medium-resolution one within that group.
+    // Unknown image metadata can still enter, but only after known high/medium.
     const order=[goal,'unknown',goal==='portrait'?'other':'portrait'];
     for(const orient of order){
-      for(let i=0;i<state.pool.length;i++){
-        const a=state.pool[i];
-        if(a.movement!==movementId||C.orientation(a)!==orient)continue;
+      const eligible=state.pool.filter(a=>a.movement===movementId&&C.orientation(a)===orient);
+      eligible.sort((a,b)=>C.qualityTier(b)-C.qualityTier(a));
+      for(const a of eligible){
+        const idx=state.pool.indexOf(a);if(idx<0)continue;
         if(await seenRecently(a)){
-          state.pool.splice(i,1);state.pendingKeys.delete(a.key);i--;continue;
+          state.pool.splice(idx,1);state.pendingKeys.delete(a.key);continue;
         }
-        state.pool.splice(i,1);state.pendingKeys.delete(a.key);return a;
+        state.pool.splice(idx,1);state.pendingKeys.delete(a.key);return a;
       }
     }
     return null;

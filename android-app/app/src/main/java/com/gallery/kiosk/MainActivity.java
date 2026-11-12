@@ -51,9 +51,9 @@ public final class MainActivity extends Activity {
     private static final int MAX_IMPORT_BYTES = 128 * 1024 * 1024;
     private static final int MAX_JSON_BYTES = 4 * 1024 * 1024;
     private static final int MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-    private static final int MIN_IMAGE_SHORT_SIDE = 1200;
-    private static final int MIN_IMAGE_LONG_SIDE = 1600;
-    private static boolean highResolution(File image) {
+    private static final int MIN_IMAGE_SHORT_SIDE = 1000;
+    private static final int MIN_IMAGE_LONG_SIDE = 1400;
+    private static boolean acceptableResolution(File image) {
         BitmapFactory.Options opt = new BitmapFactory.Options();
         opt.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(image.getAbsolutePath(), opt);
@@ -181,7 +181,7 @@ public final class MainActivity extends Activity {
         try {
             File f=new File(imageDir,hashUrl(src)+".img");
             if(f.isFile()&&f.length()>0){
-                if(highResolution(f)){f.setLastModified(System.currentTimeMillis());return new WebResourceResponse(sniffMime(f),null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));}
+                if(acceptableResolution(f)){f.setLastModified(System.currentTimeMillis());return new WebResourceResponse(sniffMime(f),null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));}
                 f.delete(); // Purge low-resolution cached files.
             }
             HttpURLConnection con=(HttpURLConnection)new URL(src).openConnection();
@@ -198,7 +198,7 @@ public final class MainActivity extends Activity {
                     while((read=input.read(buf))>=0){total+=read;if(total>MAX_IMAGE_BYTES)throw new IOException("이미지 용량 제한 초과");out.write(buf,0,read);}
                     out.flush();
                 }catch(Exception err){tmp.delete();throw err;}
-                if(!highResolution(tmp)){tmp.delete();return response(422,"text/plain",new byte[0]);}
+                if(!acceptableResolution(tmp)){tmp.delete();return response(422,"text/plain",new byte[0]);}
                 if(!tmp.renameTo(f)){tmp.delete();throw new IOException("캐시 저장 실패");}
                 f.setLastModified(System.currentTimeMillis());
                 pruneImageCache();
@@ -367,7 +367,7 @@ public final class MainActivity extends Activity {
         HttpURLConnection conn=(HttpURLConnection)new URL(url).openConnection();
         conn.setConnectTimeout(10000);conn.setReadTimeout(16000);conn.setInstanceFollowRedirects(false);
         conn.setRequestProperty("Accept","application/json");
-        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.4 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
+        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.5 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
         conn.setRequestProperty("AIC-User-Agent","Quiet-Art-Gallery (local personal project)");
         try{
             if(conn.getResponseCode()!=200)throw new IOException("HTTP "+conn.getResponseCode());
