@@ -10,7 +10,7 @@ ROOT=Path(__file__).resolve().parents[1]/'web'
 def data_image(size):
  im=Image.new('RGB',size,'#9fb6b0');out=io.BytesIO();im.save(out,'PNG')
  return 'data:image/png;base64,'+base64.b64encode(out.getvalue()).decode()
-PORTRAIT=data_image((400,620));LANDSCAPE=data_image((620,400))
+PORTRAIT=data_image((1250,1850));LANDSCAPE=data_image((1850,1250))
 STUB = (Path(__file__).with_name('stub.js')).read_text()
 def main():
  with sync_playwright() as p:

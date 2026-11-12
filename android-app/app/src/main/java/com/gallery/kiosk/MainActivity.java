@@ -3,6 +3,7 @@ package com.gallery.kiosk;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -47,6 +48,15 @@ public final class MainActivity extends Activity {
     private static final int MAX_IMPORT_BYTES = 128 * 1024 * 1024;
     private static final int MAX_JSON_BYTES = 4 * 1024 * 1024;
     private static final int MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+    private static final int MIN_IMAGE_SHORT_SIDE = 1200;
+    private static final int MIN_IMAGE_LONG_SIDE = 1600;
+    private static boolean highResolution(File image) {
+        BitmapFactory.Options opt = new BitmapFactory.Options();
+        opt.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(image.getAbsolutePath(), opt);
+        int w=opt.outWidth,h=opt.outHeight;
+        return w>0&&h>0&&Math.min(w,h)>=MIN_IMAGE_SHORT_SIDE&&Math.max(w,h)>=MIN_IMAGE_LONG_SIDE;
+    }
     private static final long MAX_IMAGE_CACHE = 100L * 1024 * 1024;
     private static final long CLEAN_TO = 80L * 1024 * 1024;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -138,7 +148,10 @@ public final class MainActivity extends Activity {
         if(src==null||!safeImageUrl(src))return response(403,"text/plain",new byte[0]);
         try {
             File f=new File(imageDir,hashUrl(src)+".img");
-            if(f.isFile()&&f.length()>0){f.setLastModified(System.currentTimeMillis());return new WebResourceResponse(sniffMime(f),null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));}
+            if(f.isFile()&&f.length()>0){
+                if(highResolution(f)){f.setLastModified(System.currentTimeMillis());return new WebResourceResponse(sniffMime(f),null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));}
+                f.delete(); // Purge low-resolution cached files.
+            }
             HttpURLConnection con=(HttpURLConnection)new URL(src).openConnection();
             con.setConnectTimeout(10000);con.setReadTimeout(18000);con.setInstanceFollowRedirects(false);
             con.setRequestProperty("Accept","image/jpeg,image/png,image/webp");
@@ -153,6 +166,7 @@ public final class MainActivity extends Activity {
                     while((read=input.read(buf))>=0){total+=read;if(total>MAX_IMAGE_BYTES)throw new IOException("이미지 용량 제한 초과");out.write(buf,0,read);}
                     out.flush();
                 }catch(Exception err){tmp.delete();throw err;}
+                if(!highResolution(tmp)){tmp.delete();return response(422,"text/plain",new byte[0]);}
                 if(!tmp.renameTo(f)){tmp.delete();throw new IOException("캐시 저장 실패");}
                 f.setLastModified(System.currentTimeMillis());
                 pruneImageCache();
@@ -222,7 +236,7 @@ public final class MainActivity extends Activity {
             String query="deepcategory:\""+category+"\"";
             return "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=50&gsrsearch="+
                 URLEncoder.encode(query,"UTF-8")+"&gsroffset="+off+
-                "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=843&format=json&formatversion=2";
+                "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=2000&format=json&formatversion=2";
         }
         if(type.equals("metSearch")){
             String[] parts=p.split(":",-1);if(parts.length!=2||!Arrays.asList("11","9","21","6").contains(parts[0]))throw new IOException("잘못된 검색 조건");

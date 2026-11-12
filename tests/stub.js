@@ -66,7 +66,7 @@ window.__GALLERY_TEST__={
       const data=Array.from({length:130},(_,i)=>({
         id:i+1,title:'Artwork '+(i+1),creators:[{description:'Artist '+(i+1)}],
         type:'Painting',technique:'Oil on canvas',share_license_status:'CC0',
-        images:{web:{url:'https://openaccess-cdn.clevelandart.org/mock/'+(i<91?'p':'l')+(i+1)+'.jpg',width:i<91?400:620,height:i<91?620:400}}
+        images:{web:{url:'https://openaccess-cdn.clevelandart.org/mock/'+(i<91?'p':'l')+(i+1)+'.jpg',width:i<91?1250:1850,height:i<91?1850:1250}}
       }));
       return {info:{total:130},data};
     }

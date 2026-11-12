@@ -6,6 +6,19 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+  // Minimum decoded image resolution. Never upscale a small original.
+  const MIN_IMAGE_SHORT_SIDE = 1200;
+  const MIN_IMAGE_LONG_SIDE = 1600;
+  function highResolution(width,height){
+    const w=Number(width),h=Number(height);
+    return Number.isFinite(w)&&Number.isFinite(h)&&w>0&&h>0&&Math.min(w,h)>=MIN_IMAGE_SHORT_SIDE&&Math.max(w,h)>=MIN_IMAGE_LONG_SIDE;
+  }
+  function metadataResolutionOkay(a){
+    if(!a)return false;
+    // Commons source dimensions and Cleveland web rendition can be checked before download.
+    if(a.museumRegion==='asia'||a.source==='클리블랜드')return highResolution(a.width,a.height);
+    return true; // Other sources must pass the decoded-image check.
+  }
   const BLOCKLIST = /(?:\bsculpture\b|\bceramic(?:s)?\b|\bpottery\b|\bfurniture\b|\btextile\b|\btapestry\b|\barmor\b|\barmour\b|\bweapon\b|\bphotograph(?:y)?\b|\binstallation\b|\bstatue\b|\bvase\b|\bcoin\b|\bmedal\b|\bjewelry\b|\bjewellery\b|\barchitecture\b|\bdecorative art\b|\bframe(?:d)?\b|\bgallery view\b|\bexhibition view\b|\b3d\b|\bvideo\b|\bfilm\b|\bglass\b|\bcarpet\b|\bcostume\b|\bcarving\b|\brelief\b|\bbook cover\b)/i;
   const ALLOW_TYPES = /(?:painting|paintings|drawing|drawings|print|prints|watercolo[u]?r|etching|lithograph|woodblock|woodcut|illustration|gouache|collage|pastel|ink on paper|oil on canvas|oil on panel|acrylic on|tempera on|aquatint|serigraph|screenprint|engraving)/i;
   function string(x) { return typeof x === 'string' ? x : ''; }
@@ -119,7 +132,7 @@
     const base = string(iiifBase).replace(/\/$/, '');
     // image_id comes from museum metadata; path may only contain safe token characters.
     const image = imgid && /^[a-zA-Z0-9_-]{15,100}$/.test(imgid) && /^https:\/\/www\.artic\.edu\/iiif\/2$/i.test(base)
-      ? `${base}/${imgid}/full/843,/0/default.jpg` : '';
+      ? `${base}/${imgid}/full/2000,/0/default.jpg` : '';
     return {
       key: `aic:${item && item.id}`,
       source: '시카고', title: string(item && item.title) || '제목 미상',
@@ -140,7 +153,7 @@
       key: `met:${item && item.objectID}`,
       source: '메트로폴리탄', title: string(item && item.title) || '제목 미상',
       artist: string(item && item.artistDisplayName) || '작가 미상',
-      image: string(item && item.primaryImageSmall),
+      image: string(item && (item.primaryImage || item.primaryImageSmall)),
       width: 0, height: 0,
       type: string(item && item.objectName), medium: string(item && item.medium),
       classification: string(item && item.classification),
@@ -247,7 +260,7 @@
     const v = Number(bytes) || 0;
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
   }
-  return { NINETY_DAYS_MS, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
+  return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, highResolution, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
     kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel };
 });

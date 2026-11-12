@@ -71,7 +71,7 @@
       img.onerror=()=>{if(finished)return;finished=true;clearTimeout(timeout);reject(new Error('이미지 파일 로드 실패'));};
       img.src=src;
     });
-    if(img.naturalWidth<260||img.naturalHeight<260)throw new Error('이미지 해상도 부족');
+    if(!C.highResolution(img.naturalWidth,img.naturalHeight))throw new Error('저해상도 또는 소형 이미지 제외');
     return {art,src,width:img.naturalWidth,height:img.naturalHeight,orient:img.naturalHeight>img.naturalWidth*1.02?'portrait':'other'};
   }
   function normalizeBatch(kind,result){
@@ -123,7 +123,7 @@
       const query='deepcategory:"'+museum.category+'"';
       const qs=new URLSearchParams({action:'query',generator:'search',gsrsearch:query,
         gsrnamespace:'6',gsrlimit:'50',gsroffset:String(offset),prop:'imageinfo',
-        iiprop:'url|size|mime|extmetadata',iiurlwidth:'843',format:'json',formatversion:'2',origin:'*'});
+        iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',format:'json',formatversion:'2',origin:'*'});
       url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
     }else if(kind==='metSearch'){
       const [dept,offset]=String(param).split(':');
@@ -218,7 +218,7 @@
   function addCandidates(items){
     for(const a of items){
       if(state.pool.length>=CONFIG.maxQueue)break;
-      if(!C.eligibleArt(a)||state.pendingKeys.has(a.key))continue;
+      if(!C.eligibleArt(a)||!C.metadataResolutionOkay(a)||state.pendingKeys.has(a.key))continue;
       // Unknown/ambiguous style metadata cannot be silently labelled as a movement.
       a.movement=C.classifyMovement(a);
       if(!a.movement)continue;
@@ -306,7 +306,7 @@
   async function restoreLastShown(){
     try{
       const saved=await dbGet('settings','lastArtwork');
-      if(!saved||!C.eligibleArt(saved.value))return false;
+      if(!saved||!C.eligibleArt(saved.value)||!C.metadataResolutionOkay(saved.value))return false;
       const last=await loadImage(saved.value);
       ui.a.src=last.src;ui.a.alt=last.art.title+' — '+last.art.artist;
       ui.a.classList.add('visible');ui.b.classList.remove('visible');
