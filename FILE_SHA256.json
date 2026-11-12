@@ -1,0 +1,121 @@
+{
+  "project": "Quiet Art Gallery Android v1.1",
+  "files": {
+    ".github/workflows/build-apk.yml": {
+      "bytes": 1638,
+      "sha256": "ffb5c5089156d8515b36e7da2a11eba52ed7b6037d05a15924e3ddf9044031ed"
+    },
+    "GITHUB_BUILD_GUIDE_KO.md": {
+      "bytes": 1857,
+      "sha256": "3a5dcb996ea7afecf3431d1b11a32358dac5f82442d4f54e1bb3223380dba387"
+    },
+    "README_KO.md": {
+      "bytes": 9587,
+      "sha256": "8c13c3daf43107e9f4c8bf0f6aa19cf4543fab759002c7177afc7e98bfea0e0e"
+    },
+    "android-app/app/build.gradle": {
+      "bytes": 455,
+      "sha256": "0a2abe1b7c6c8fae43545adc182e846c76128adc0f52b62d9390b3cc32d3000e"
+    },
+    "android-app/app/src/main/AndroidManifest.xml": {
+      "bytes": 989,
+      "sha256": "fdbb47fcd7dbe6f6c6a799b5adbbc5aa2442ad39fd3504aa86e064250be8df96"
+    },
+    "android-app/app/src/main/assets/app.js": {
+      "bytes": 27063,
+      "sha256": "c6934d3bf04a58b0b680367ad83b6340082fe1de2af7e13e02c5cb3b418b43cf"
+    },
+    "android-app/app/src/main/assets/core.js": {
+      "bytes": 7066,
+      "sha256": "b3693e0308974833379336f80dc5ea24166b2432f6308407dcbf479cfbfbe630"
+    },
+    "android-app/app/src/main/assets/icon-192.png": {
+      "bytes": 924,
+      "sha256": "0f52719b426509232d7b6ad48e2c0d0e52ed36a8a7feec9de5ed857eda96a68f"
+    },
+    "android-app/app/src/main/assets/icon-512.png": {
+      "bytes": 2868,
+      "sha256": "fe3c410f3aace751587a06c1a7811501dbee5c937ec323601b0defa99492db61"
+    },
+    "android-app/app/src/main/assets/index.html": {
+      "bytes": 4309,
+      "sha256": "ed3f3b03d8f9939c15c6b76399e47c7fbbffcba78e546b80d0d9608b342f12a4"
+    },
+    "android-app/app/src/main/assets/manifest.webmanifest": {
+      "bytes": 389,
+      "sha256": "ab325970d6468c97d5c0903e36be12e74992d55fbcb6bcbf80ce39b422812656"
+    },
+    "android-app/app/src/main/assets/style.css": {
+      "bytes": 4847,
+      "sha256": "59b6ed81ce966c7ed7c01f0cd283c2a6ba3c9d3348a330e6ea4a91df76208891"
+    },
+    "android-app/app/src/main/assets/sw.js": {
+      "bytes": 788,
+      "sha256": "8ddd0e4cc56706a0ccc7082ca65445c55d0c33735a7f0ff3885f64183621aa59"
+    },
+    "android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java": {
+      "bytes": 19113,
+      "sha256": "cab57d36ef90db6b59438ddac1e57337ff37bc912a0f544cfe77c5d721a9aa69"
+    },
+    "android-app/app/src/main/res/drawable/gallery_icon.png": {
+      "bytes": 924,
+      "sha256": "0f52719b426509232d7b6ad48e2c0d0e52ed36a8a7feec9de5ed857eda96a68f"
+    },
+    "android-app/build.gradle": {
+      "bytes": 73,
+      "sha256": "c3c0cf04da0fc239f391c774554d97d890018ab6e37e87cc62f6070d0c8c9909"
+    },
+    "android-app/gradle.properties": {
+      "bytes": 76,
+      "sha256": "4d4c82226865844bdc85391d907a383da4a35d3a3f5348985d5ec3997ab932fe"
+    },
+    "android-app/settings.gradle": {
+      "bytes": 276,
+      "sha256": "6e4c1bf635874908034628d9186b895e0c7c83c4eaa8a948eb6c8c347c2c37bc"
+    },
+    "tests/core.test.cjs": {
+      "bytes": 3507,
+      "sha256": "e7aa9b5ef6d9849c3f1cce58d0ccc5f4e19fd75b8a066c38c454116034f78a98"
+    },
+    "tests/e2e_playwright.py": {
+      "bytes": 4130,
+      "sha256": "d2301cf8eb4c1655b5d6848fc7c08ac5fd450c81f04fa292160e91947e612b86"
+    },
+    "tests/stub.js": {
+      "bytes": 3055,
+      "sha256": "74439b0a5c437ad478a8c8d919648ae94db190859297cb6e076d49617971f9e2"
+    },
+    "web/app.js": {
+      "bytes": 27063,
+      "sha256": "c6934d3bf04a58b0b680367ad83b6340082fe1de2af7e13e02c5cb3b418b43cf"
+    },
+    "web/core.js": {
+      "bytes": 7066,
+      "sha256": "b3693e0308974833379336f80dc5ea24166b2432f6308407dcbf479cfbfbe630"
+    },
+    "web/icon-192.png": {
+      "bytes": 924,
+      "sha256": "0f52719b426509232d7b6ad48e2c0d0e52ed36a8a7feec9de5ed857eda96a68f"
+    },
+    "web/icon-512.png": {
+      "bytes": 2868,
+      "sha256": "fe3c410f3aace751587a06c1a7811501dbee5c937ec323601b0defa99492db61"
+    },
+    "web/index.html": {
+      "bytes": 4309,
+      "sha256": "ed3f3b03d8f9939c15c6b76399e47c7fbbffcba78e546b80d0d9608b342f12a4"
+    },
+    "web/manifest.webmanifest": {
+      "bytes": 389,
+      "sha256": "ab325970d6468c97d5c0903e36be12e74992d55fbcb6bcbf80ce39b422812656"
+    },
+    "web/style.css": {
+      "bytes": 4847,
+      "sha256": "59b6ed81ce966c7ed7c01f0cd283c2a6ba3c9d3348a330e6ea4a91df76208891"
+    },
+    "web/sw.js": {
+      "bytes": 788,
+      "sha256": "8ddd0e4cc56706a0ccc7082ca65445c55d0c33735a7f0ff3885f64183621aa59"
+    }
+  }
+}

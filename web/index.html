@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#11100f">
+<meta name="description" content="무료 미술관 공개 작품으로 운영하는 24시간 자동 그림 갤러리">
+<link rel="manifest" href="manifest.webmanifest">
+<title>고요한 미술관 | 24시간 자동 명화 갤러리</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="viewer" aria-label="현재 전시 작품" tabindex="0">
+  <img id="art-a" class="art visible" alt="" referrerpolicy="no-referrer">
+  <img id="art-b" class="art" alt="" referrerpolicy="no-referrer">
+  <div id="placeholder" class="placeholder">
+    <div class="logomark" aria-hidden="true"><span></span></div>
+    <div class="app-name">고요한 미술관</div>
+    <div id="main-status" class="intro-status" role="status">공개 작품을 불러오는 중입니다</div>
+    <div class="intro-sub">그림만, 조용하게.</div>
+  </div>
+  <div class="touch-hint">화면을 터치하면 메뉴가 열립니다</div>
+</main>
+<header id="hud" class="hud" aria-label="전시 제어">
+  <div class="header-left"><div class="live-dot"></div><span id="hud-name">고요한 미술관</span><span class="micro">30초 자동 전시</span></div>
+  <div class="header-right">
+    <button id="toggle-pause" title="일시정지/재생" aria-label="일시정지">Ⅱ</button>
+    <button id="next" title="다음 작품" aria-label="다음 작품">→</button>
+    <button id="open-settings" title="설정" aria-label="설정">⚙</button>
+  </div>
+</header>
+<footer id="caption" class="caption" aria-live="polite"><div id="art-title"></div><div id="art-meta"></div></footer>
+<div id="settings-backdrop" class="backdrop" hidden></div>
+<section id="settings" class="settings" aria-label="전시 설정" aria-modal="true" role="dialog" hidden>
+  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
+  <p class="sheet-copy">회화·드로잉·판화·평면 현대미술만 전시합니다. 작품은 잘라내지 않으며 액자·조각·전시실 사진은 가능한 한 자동 제외합니다.</p>
+  <div class="pill-row"><div class="metric"><small>전환 주기</small><strong>30초</strong></div><div class="metric"><small>세로형 목표</small><strong>70%</strong></div><div class="metric"><small>재사용 제한</small><strong>90일</strong></div></div>
+  <div class="rule"><span>작품 수집</span><strong>무료 미술관 API 3곳</strong></div>
+  <div class="rule"><span>이미지 캐시 최대</span><strong>100MB (초과 시 80MB까지 정리)</strong></div>
+  <div class="rule"><span>전시한 작품</span><strong id="seen-count">0점</strong></div>
+  <div class="rule"><span>현재 방향 비율</span><strong id="ratio-count">–</strong></div>
+  <div class="rule"><span>이미지 캐시</span><strong id="cache-count">확인 중</strong></div>
+  <div class="rule"><span>최근 갱신</span><strong id="refresh-count">–</strong></div>
+  <div class="rule"><span>연결 상태</span><strong id="source-status">확인 중</strong></div>
+  <div class="action-grid">
+    <button class="wide-btn" id="refresh-now">작품 목록 새로 가져오기</button>
+    <button class="wide-btn" id="free-space">이미지 캐시 비우기</button>
+    <button class="wide-btn" id="export-history">감상 기록 백업</button>
+    <button class="wide-btn" id="import-history">감상 기록 복원</button>
+    <input id="history-file" type="file" accept=".csv,text/csv" hidden>
+  </div>
+  <p id="setting-message" class="small-note">10GB 이상 남은 태블릿도 용량 증가를 막도록 관리합니다. 이미지 캐시와 감상 기록은 별도로 보관합니다.</p>
+  <p class="small-note">모든 공급원이 고갈되면 90일 제한을 어기지 않고 마지막 작품을 유지합니다. 액자 자동 감지는 완벽하지 않으며 출처별 이미지 상태에 따라 누락될 수 있습니다.</p>
+  <button class="done" id="settings-done">그림으로 돌아가기</button>
+</section>
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
