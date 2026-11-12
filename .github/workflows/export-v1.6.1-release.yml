@@ -1,0 +1,30 @@
+name: Export canonical v1.6.1 release APK
+on:
+  push:
+    paths:
+      - '.github/workflows/export-v1.6.1-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the same public release APK used by users
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download v1.6.1 --repo "$GITHUB_REPOSITORY" --pattern 'QuietArtGallery_v1.6.1.apk' --pattern SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          unzip -t QuietArtGallery_v1.6.1.apk | tail -n 2
+      - name: Export canonical installation APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuietArtGallery-v1.6.1-PUBLIC-RELEASE
+          path: |
+            QuietArtGallery_v1.6.1.apk
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
