@@ -14,8 +14,52 @@
       const u = new URL(url);
       if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return false;
       const h = u.hostname.toLowerCase();
-      return h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
+      return h === 'upload.wikimedia.org' || h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
     } catch (_) { return false; }
+  }
+  // Wikimedia Commons collection categories; not direct museum-operated APIs.
+  const ASIAN_MUSEUMS = Object.freeze([
+    {id:'korea', label:'국립중앙박물관', category:'Paintings in the National Museum of Korea'},
+    {id:'tokyo', label:'도쿄국립박물관', category:'Japanese paintings in the Tokyo National Museum'},
+    {id:'kyoto', label:'교토국립박물관', category:'Paintings in the Kyoto National Museum'},
+    {id:'nara', label:'나라국립박물관', category:'Paintings in the Nara National Museum'},
+    {id:'taipei', label:'타이완 국립고궁박물원', category:'Paintings in the National Palace Museum'}
+  ]);
+  function wikimediaText(v) {
+    return string(v).replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&')
+      .replace(/&#(?:x([0-9a-f]+)|([0-9]+));/gi, (all,h,d)=>{
+        const cp=parseInt(h||d, h?16:10);
+        return cp>31&&cp<=0x10ffff?String.fromCodePoint(cp):' ';
+      }).replace(/&(?:nbsp|quot|lt|gt|#39);/gi,' ').replace(/\s+/g,' ').trim().slice(0,160);
+  }
+  function commonsPublicDomain(meta) {
+    const short=wikimediaText(meta && meta.LicenseShortName && meta.LicenseShortName.value).toLowerCase();
+    const license=wikimediaText(meta && meta.License && meta.License.value).toLowerCase();
+    return /^(?:public domain|pd|cc0(?: 1\.0)?|cc0 1\.0 universal)$/.test(short) ||
+      /^(?:pd|cc0)$/.test(license);
+  }
+  function normalizeAsianCommons(data, museumId) {
+    const museum=ASIAN_MUSEUMS.find(m=>m.id===museumId);
+    if(!museum)return [];
+    const pages=data&&data.query&&data.query.pages;
+    return (Array.isArray(pages)?pages:[]).map(page=>{
+      const info=page&&Array.isArray(page.imageinfo)?page.imageinfo[0]:null;
+      const metadata=info&&info.extmetadata||{};
+      const mime=string(info&&info.mime).toLowerCase();
+      const title=string(page&&page.title).replace(/^File:/i,'').replace(/\.(?:jpg|jpeg|png|webp)$/i,'').replace(/_/g,' ');
+      return {
+        key:'commons:'+String(page&&page.pageid),source:museum.label,
+        title:wikimediaText(title)||'제목 미상',
+        artist:wikimediaText(metadata.Artist&&metadata.Artist.value)||'작가 미상',
+        image:string(info&&(info.thumburl||info.url)),
+        width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
+        type:'Painting',classification:'Painting',medium:'',
+        description:'',license:wikimediaText(metadata.LicenseShortName&&metadata.LicenseShortName.value),
+        rightsOK:commonsPublicDomain(metadata)&&/^(?:image\/(?:jpeg|png|webp))$/.test(mime),
+        museumRegion:'asia',verifiedCollectionCategory:true,style:'',styles:[],date:'',
+        page:string(info&&info.descriptionurl)
+      };
+    });
   }
   function fingerprint(a) {
     const norm = value => string(value).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '').slice(0, 95);
@@ -103,7 +147,7 @@
       description: '', license: 'CC0',
       rightsOK: !!(item && item.isPublicDomain),
       style: string(item && item.period), styles: [], date: string(item && item.objectDate),
-      page: string(item && item.objectURL)
+      department: string(item && item.department), page: string(item && item.objectURL)
     };
   }
   function pickCandidate(candidates, goal, seen, now) {
@@ -134,7 +178,8 @@
     {id:'cubism', label:'입체주의', en:'Cubism'},
     {id:'surrealism', label:'초현실주의', en:'Surrealism'},
     {id:'abstract', label:'추상미술', en:'Abstract Art'},
-    {id:'contemporary', label:'현대미술', en:'Contemporary Art'}
+    {id:'contemporary', label:'현대미술', en:'Contemporary Art'},
+    {id:'asian', label:'아시아 회화', en:'Asian painting'}
   ]);
   const STYLE_RULES = [
     ['post-impressionism',/\bpost[\s-]*impressionis(?:m|t)\b/i],
@@ -174,6 +219,8 @@
   }
   function classifyMovement(a) {
     if(!a)return null;
+    if(a.museumRegion==='asia' && a.verifiedCollectionCategory === true && a.rightsOK)return 'asian';
+    if(a.source==='메트로폴리탄' && a.department==='Asian Art' && a.rightsOK)return 'asian';
     const styles = [string(a.style), ...(Array.isArray(a.styles)?a.styles.filter(x=>typeof x==='string'):[])].join(' | ');
     // Only curator-provided style fields can justify classifications such as cubism
     // for artists who worked in several movements.
@@ -201,6 +248,6 @@
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
   }
   return { NINETY_DAYS_MS, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
-    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet,
+    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel };
 });

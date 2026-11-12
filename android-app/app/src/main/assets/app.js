@@ -11,13 +11,13 @@
   const state = {
     db:null,pool:[],pendingKeys:new Set(), prepared:null,current:null,currentNode:ui.b,
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
-    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0}},
-    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, movementPages:{},lastMovementTry:{}, flipped:false,
-    failures:{cleveland:0,chicago:0,met:0},backoff:{},
+    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{}},
+    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, movementPages:{},lastMovementTry:{}, flipped:false,
+    failures:{cleveland:0,chicago:0,met:0,asian:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄'};
+  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -115,9 +115,19 @@
       const params={query:{bool:{filter:[{term:{is_public_domain:true}},{exists:{field:'image_id'}}]}},page,limit:100,fields:['id','title','artist_title','image_id','is_public_domain','artwork_type_title','medium_display','thumbnail','style_title','style_titles','date_display','date_start']};
       if(isMovement)params.query.bool.must=[{multi_match:{query:movement.en,fields:['style_title^5','style_titles^4','term_titles^2','artist_title','title']}}];
       url=`https://api.artic.edu/api/v1/artworks/search?params=${encodeURIComponent(JSON.stringify(params))}`;
+    }else if(kind==='asianCommons'){
+      const [museumId, offsetText]=String(param).split(':');
+      const museum=C.ASIAN_MUSEUMS.find(m=>m.id===museumId);
+      const offset=Number(offsetText);
+      if(!museum||!Number.isInteger(offset)||offset<0||offset>100000)throw Error('아시아 소장품 조회 범위 오류');
+      const query='deepcategory:"'+museum.category+'"';
+      const qs=new URLSearchParams({action:'query',generator:'search',gsrsearch:query,
+        gsrnamespace:'6',gsrlimit:'50',gsroffset:String(offset),prop:'imageinfo',
+        iiprop:'url|size|mime|extmetadata',iiurlwidth:'843',format:'json',formatversion:'2',origin:'*'});
+      url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
     }else if(kind==='metSearch'){
       const [dept,offset]=String(param).split(':');
-      if(!['11','9','21'].includes(dept))throw Error('부서 ID 오류');
+      if(!['11','9','21','6'].includes(dept))throw Error('부서 ID 오류');
       url=`https://collectionapi.metmuseum.org/public/collection/v1.1/search?hasImages=true&departmentId=${dept}&limit=100&offset=${Number(offset)||0}`;
     }else if(kind==='metObject'){
       const n=Number(param);if(!Number.isInteger(n)||n<1)throw Error('잘못된 작품 ID');
@@ -147,8 +157,17 @@
         addCandidates(normalizeBatch(source,res).filter(C.eligibleArt));
         const totalPages=Number(res.pagination&&res.pagination.total_pages)||999999;
         state.cursors.chicago=page>=totalPages?1:page+1;
+      }else if(source==='asian'){
+        const museum=C.ASIAN_MUSEUMS[state.asianOrder++%C.ASIAN_MUSEUMS.length];
+        const offset=Number(state.cursors.asian[museum.id])||0;
+        const res=await request('asianCommons',museum.id+':'+offset);
+        const normalized=C.normalizeAsianCommons(res,museum.id).filter(C.eligibleArt);
+        addCandidates(normalized);
+        const rows=Array.isArray(res.query&&res.query.pages)?res.query.pages.length:0;
+        const total=Number(res.query&&res.query.searchinfo&&res.query.searchinfo.totalhits)||0;
+        state.cursors.asian[museum.id]=(rows===0||rows<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
       }else if(source==='met'){
-        const departments=['11','9','21'];const m=departments[(state.metType++)%3];
+        const departments=['11','9','21','6'];const m=departments[(state.metType++)%3];
         if(!state.metIDs.length||state.metIndex>=state.metIDs.length){
           const off=state.cursors.met[m]||0;
           const res=await request('metSearch',m+':'+off);
@@ -177,7 +196,9 @@
   }
   async function fetchForMovement(movementId){
     const movement=C.MOVEMENTS.find(m=>m.id===movementId);
-    if(!movement||!sourceIsAllowed('chicago'))return 0;
+    if(!movement)return 0;
+    if(movementId==='asian')return sourceIsAllowed('asian')?fetchSource('asian'):0;
+    if(!sourceIsAllowed('chicago'))return 0;
     const last=state.lastMovementTry[movementId]||0;
     if(Date.now()-last<CONFIG.movementRetryMs)return 0;
     state.lastMovementTry[movementId]=Date.now();
@@ -208,13 +229,13 @@
     if(state.filling)return state.filling;
     state.filling=(async()=>{
       let attempts=0, progress=0;
-      while(state.pool.length<target && attempts<6){
-        const source=['cleveland','chicago','met'][state.sourceOrder++%3];
+      while(state.pool.length<target && attempts<8){
+        const source=['cleveland','chicago','met','asian'][state.sourceOrder++%4];
         attempts++;
         progress+=await fetchSource(source);
         if(test&&typeof test.afterFetch==='function')test.afterFetch(source);
         if(state.pool.length>=target)break;
-        if(attempts>=3&&!progress)break;
+        if(attempts>=4&&!progress)break;
       }
       if(state.pool.length===0&&state.lastErr) inform('새 작품을 가져오지 못했습니다. 네트워크를 확인해 주세요.');
       return state.pool.length;
@@ -531,6 +552,8 @@
       const [a,b,flip,movements]=await Promise.all([dbGet('settings','stats'),dbGet('settings','cursors'),dbGet('settings','flipped'),dbGet('settings','movementPages')]);
       if(a&&a.value){state.stats=Object.assign(state.stats,a.value);}
       if(b&&b.value){state.cursors=Object.assign(state.cursors,b.value);}
+      state.cursors.asian=state.cursors.asian||{};
+      state.cursors.met=Object.assign({'11':0,'9':0,'21':0,'6':0},state.cursors.met||{});
       state.movementPages=(movements&&movements.value&&typeof movements.value==='object')?movements.value:{};
       state.flipped=!!(flip&&flip.value);
       document.body.classList.toggle('upside-down',state.flipped);

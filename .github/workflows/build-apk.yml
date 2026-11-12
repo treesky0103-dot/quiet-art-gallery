@@ -30,7 +30,7 @@ jobs:
           grep -q "versionName '1.2.0'" android-app/app/build.gradle
           node --check web/app.js
           node --check web/core.js
-          node --test tests/core.test.cjs
+          node --test tests/*.test.cjs
           for f in app.js core.js index.html style.css sw.js manifest.webmanifest icon-192.png icon-512.png; do
             cmp "web/$f" "android-app/app/src/main/assets/$f"
           done
