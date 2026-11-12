@@ -19,6 +19,9 @@ jobs:
           node --check web/app.js
           node --check web/core.js
           node --test tests/*.test.cjs
+          grep -q 'Openverse' web/index.html
+          grep -q 'MODERN_CATEGORIES' web/core.js
+          grep -q 'C.targetModern' web/app.js
           for f in app.js core.js index.html style.css sw.js manifest.webmanifest icon-192.png icon-512.png; do
             cmp "web/$f" "android-app/app/src/main/assets/$f"
           done
