@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Validate version and JS
         run: |
-          grep -q "versionName '1.6.3'" android-app/app/build.gradle
+          grep -q "versionName '1.6.4'" android-app/app/build.gradle
           node --check web/app.js
           node --check web/core.js
           node --test tests/*.test.cjs
