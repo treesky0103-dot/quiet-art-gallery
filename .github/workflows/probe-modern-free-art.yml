@@ -1,0 +1,19 @@
+name: Probe modern art free rights metadata
+on:
+  push:
+    paths: ['.github/workflows/probe-modern-free-art.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/probe_modern_sources.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: modern-art-source-audit
+          path: modern_source_probe.json
+          if-no-files-found: error
+          retention-days: 14
