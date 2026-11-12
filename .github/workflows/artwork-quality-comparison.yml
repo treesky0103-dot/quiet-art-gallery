@@ -1,0 +1,24 @@
+name: Generate 12 Real Artwork Display Condition Comparisons
+on:
+  push:
+    paths:
+      - '.github/workflows/artwork-quality-comparison.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pillow
+      - run: python scripts/generate_quality_comparison.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quiet-art-gallery-12-screen-quality-comparison
+          path: comparison/
+          retention-days: 14
+          if-no-files-found: error
