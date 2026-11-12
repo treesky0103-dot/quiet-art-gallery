@@ -1,0 +1,48 @@
+name: Build Gallery APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Verify JavaScript core tests and Android/Web asset integrity
+        run: |
+          node --test tests/core.test.cjs
+          for f in app.js core.js index.html style.css sw.js manifest.webmanifest icon-192.png icon-512.png; do
+            cmp "web/$f" "android-app/app/src/main/assets/$f"
+          done
+      - name: Install Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+      - name: Install Android platform 35 and tools
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.9'
+          cache-provider: basic
+      - name: Build Android debug APK
+        working-directory: android-app
+        run: gradle :app:assembleDebug --no-daemon
+      - name: Confirm APK exists and compute SHA-256
+        run: |
+          test -s android-app/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum android-app/app/build/outputs/apk/debug/app-debug.apk
+      - name: Archive installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuietArtGallery-debug-APK
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
