@@ -1,0 +1,22 @@
+name: Fetch actual 75 percent painting comparison samples
+on:
+  push:
+    paths: ['.github/workflows/fetch-75-percent-comparison.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pillow without paid services
+        run: python3 -m pip install --quiet pillow --break-system-packages
+      - name: Verify artwork metadata and fetch only 75 to 79.9 percent samples
+        run: python3 scripts/fetch_75_percent_comparison.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-75-percent-paintings
+          path: comparison_75_candidates/
+          retention-days: 7
+          if-no-files-found: error
