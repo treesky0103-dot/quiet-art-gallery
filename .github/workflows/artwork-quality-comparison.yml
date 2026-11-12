@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/artwork-quality-comparison.yml'
+      - 'scripts/generate_quality_comparison.py'
   workflow_dispatch:
 permissions: {contents: read}
 jobs:
