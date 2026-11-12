@@ -18,7 +18,7 @@ test('Public domain Asian paintings enter a separate slot after thirteen western
   assert.equal(a.title,'Joseon painting');
   assert.equal(C.eligibleArt(a),true);
   assert.equal(C.classifyMovement(a),'asian');
-  assert.equal(C.MOVEMENTS.length,16);
+  assert.equal(C.MOVEMENTS.length,17);
   assert.equal(C.MOVEMENTS[0].id,'renaissance');
   assert.equal(C.MOVEMENTS[12].id,'contemporary');
   assert.equal(C.MOVEMENTS[13].id,'asian');

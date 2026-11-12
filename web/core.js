@@ -16,7 +16,7 @@
   function metadataResolutionOkay(a){
     if(!a)return false;
     // Commons source dimensions and Cleveland web rendition can be checked before download.
-    if(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.source==='클리블랜드')return highResolution(a.width,a.height);
+    if(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.museumRegion==='modern'||a.source==='클리블랜드')return highResolution(a.width,a.height);
     return true; // Other sources must pass the decoded-image check.
   }
   const BLOCKLIST = /(?:\bsculpture\b|\bceramic(?:s)?\b|\bpottery\b|\bfurniture\b|\btextile\b|\btapestry\b|\barmor\b|\barmour\b|\bweapon\b|\bphotograph(?:y)?\b|\binstallation\b|\bstatue\b|\bvase\b|\bcoin\b|\bmedal\b|\bjewelry\b|\bjewellery\b|\barchitecture\b|\bdecorative art\b|\bframe(?:d)?\b|\bgallery view\b|\bexhibition view\b|\b3d\b|\bvideo\b|\bfilm\b|\bglass\b|\bcarpet\b|\bcostume\b|\bcarving\b|\brelief\b|\bbook cover\b)/i;
@@ -71,6 +71,82 @@
     {id:"uruguay-mnav",label:"우루과이 국립시각예술박물관",category:"Paintings in the Museo Nacional de Artes Visuales"},
     {id:"brasil-pina",label:"브라질 상파울루 피나코테카",category:"Paintings in the Pinacoteca do Estado de São Paulo"}
   ]);
+
+  // "Modern" is a verified category with explicit year evidence or original
+  // digital-art title, NOT a broad keyword search of historic reproductions.
+  const MODERN_CATEGORIES = Object.freeze([
+    {id:'2020s',label:'2020년대 회화',category:'2020s paintings'},
+    {id:'2010s',label:'2010년대 회화',category:'2010s paintings'},
+    {id:'contemporary',label:'현대 회화',category:'Contemporary paintings'},
+    {id:'creator',label:'창작자 직접 공개 회화',category:'Paintings by Wikipedians'},
+    {id:'century',label:'21세기 회화',category:'21st-century paintings'}
+  ]);
+  const MODERN_OPENVERSE_TERMS = Object.freeze([
+    'digital painting','digital illustration','abstract digital artwork'
+  ]);
+  const MODERN_TITLE_BLOCK = /(?:photograph(?:y)?|photo of|portrait of visitors|exhibition|gallery view|museum interior|sculpture|statue|installation|poster for|album cover|book cover|screenshot|game screen|t-shirt|logo|wallpaper|sample scan|reproduction|recreated|copy after|printed in|image from page|manuscript of|circa 1[0-9]{3}|circa 19[0-8][0-9])/i;
+  function modernYear(title,metaDate){
+    const years=[...(string(title)+' '+string(metaDate)).matchAll(/\b20(?:0\d|1\d|2[0-6])\b/g)]
+      .map(m=>Number(m[0]));
+    return years.length?Math.max(...years):0;
+  }
+  function modernTitleEligible(title,metaDate){
+    const t=string(title);
+    if(MODERN_TITLE_BLOCK.test(t))return false;
+    if(/\b(?:1[0-9]{3}|19[0-8][0-9])\b/.test(t))return false;
+    return modernYear(t,metaDate)>=2000;
+  }
+  function normalizeModernCommons(data,categoryId){
+    if(!MODERN_CATEGORIES.some(c=>c.id===categoryId))return [];
+    const pages=data&&data.query&&data.query.pages;
+    return (Array.isArray(pages)?pages:[]).map(page=>{
+      const info=page&&Array.isArray(page.imageinfo)?page.imageinfo[0]:null;
+      const meta=info&&info.extmetadata||{};
+      const title=string(page&&page.title).replace(/^File:/i,'').replace(/\.(?:jpg|jpeg|png|webp)$/i,'').replace(/_/g,' ');
+      const originalDate=wikimediaText(meta.DateTimeOriginal&&meta.DateTimeOriginal.value);
+      const maker=wikimediaText(meta.Artist&&meta.Artist.value);
+      const modern=modernTitleEligible(title,originalDate);
+      return {
+        key:'commons:'+String(page&&page.pageid),
+        source:'위키미디어 현대 창작',title:wikimediaText(title)||'제목 미상',
+        artist:maker||'작가 미상',image:string(info&&(info.thumburl||info.url)),
+        width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
+        type:'Painting',classification:'Painting',medium:'',
+        description:'',license:wikimediaText(meta.LicenseShortName&&meta.LicenseShortName.value),
+        rightsOK:modern&&commonsPublicDomain(meta)&&/^(?:image\/(?:jpeg|png|webp))$/.test(string(info&&info.mime).toLowerCase()),
+        museumRegion:'modern',modern,modernEvidence:modern?'year-title':'',
+        verifiedCollectionCategory:true,style:'Contemporary Art',styles:[],
+        date:originalDate||String(modernYear(title,'')),page:string(info&&info.descriptionurl)
+      };
+    }).filter(a=>a.modern&&a.rightsOK);
+  }
+  function normalizeModernOpenverse(data){
+    const results=data&&data.results;
+    return (Array.isArray(results)?results:[]).map(item=>{
+      const title=string(item&&item.title).replace(/<[^>]*>/g,' ').trim();
+      const src=string(item&&item.url);
+      const license=string(item&&item.license).toLowerCase();
+      const directArt=/\b(?:digital painting|digital illustration|original digital artwork)\b/i.test(title);
+      const reject=MODERN_TITLE_BLOCK.test(title)||/\b(?:1[0-9]{3}|19[0-9]{2})\b/.test(title);
+      const sourceOK=item&&item.source==='wikimedia'&&safeURL(src)&&new URL(src).hostname==='upload.wikimedia.org';
+      const rightsOK=directArt&&!reject&&sourceOK&&['cc0','pdm'].includes(license)&&!item.watermarked;
+      return {
+        key:'openverse:'+string(item&&item.id), source:'Openverse · 위키미디어',
+        title:wikimediaText(title)||'제목 미상',
+        artist:wikimediaText(item&&item.creator)||'작가 미상',
+        image:src,width:Number(item&&item.width)||0,height:Number(item&&item.height)||0,
+        type:/illustration/i.test(title)?'Illustration':'Painting',classification:'',medium:'',
+        description:'',license,rightsOK, museumRegion:'modern',modern:rightsOK,
+        modernEvidence:rightsOK?'original-digital-title':'',
+        verifiedCollectionCategory:false,style:'Contemporary Art',styles:[],
+        date:'',page:string(item&&item.foreign_landing_url)
+      };
+    }).filter(a=>a.modern&&a.rightsOK);
+  }
+  function targetModern(slot){
+    return ((Math.max(0,Math.floor(slot))*7+3)%20)<7;
+  }
+
   // 14 verified Oceania/South America Commons categories appended to the original seven.
   // Existing metadata licensing rules also apply to all new sources.
   // Conservative exclusions for exhibition-room, 3-D-object and framed photography filenames.
@@ -315,7 +391,8 @@
     {id:'contemporary', label:'현대미술', en:'Contemporary Art'},
     {id:'asian', label:'아시아 회화', en:'Asian painting'},
     {id:'african', label:'아프리카 소장 회화', en:'Paintings from African museum collections'},
-    {id:'additional',label:'세계 미술관 소장 회화',en:'Museum painting collections worldwide'}
+    {id:'additional',label:'세계 미술관 소장 회화',en:'Museum painting collections worldwide'},
+    {id:'modern',label:'현대 디지털 아트·회화',en:'Modern original flat artwork'}
   ]);
   const STYLE_RULES = [
     ['post-impressionism',/\bpost[\s-]*impressionis(?:m|t)\b/i],
@@ -355,6 +432,7 @@
   }
   function classifyMovement(a) {
     if(!a)return null;
+    if(a.museumRegion==='modern' && a.modern===true && a.rightsOK)return 'modern';
     if(a.museumRegion==='asia' && a.verifiedCollectionCategory === true && a.rightsOK)return 'asian';
     if(a.museumRegion==='africa' && a.verifiedCollectionCategory === true && a.rightsOK)return 'african';
     if(a.source==='메트로폴리탄' && a.department==='Asian Art' && a.rightsOK)return 'asian';
@@ -388,5 +466,6 @@
   return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, highResolution, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
     kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
+    MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
     portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance };
 });

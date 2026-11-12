@@ -11,8 +11,8 @@ test('seven public collection categories including Paris Municipal Museum repres
  assert.equal(C.ADDITIONAL_MUSEUMS.length,21);
  assert.equal(new Set(C.ADDITIONAL_MUSEUMS.map(x=>x.category)).size,21);
  assert.equal(C.ADDITIONAL_MUSEUMS.find(x=>x.id==='paris').category,'Paintings in Musée Carnavalet');
- assert.equal(C.MOVEMENTS.length,16);
- assert.deepEqual(C.MOVEMENTS.slice(-3).map(x=>x.id),['asian','african','additional']);
+ assert.equal(C.MOVEMENTS.length,17);
+ assert.deepEqual(C.MOVEMENTS.slice(-4).map(x=>x.id),['asian','african','additional','modern']);
 });
 test('Public-domain 2D extra museum image qualifies; smaller or restricted files do not',()=>{
  for(const m of C.ADDITIONAL_MUSEUMS){
