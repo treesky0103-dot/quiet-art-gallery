@@ -1,0 +1,21 @@
+name: Audit 16 gallery category total search hits
+on:
+  push:
+    paths:
+      - '.github/workflows/audit-portrait-category-totals.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/audit_category_totals.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portrait-source-totals-20261113
+          path: portrait_source_totals_20261113.json
+          if-no-files-found: error
+          retention-days: 14
