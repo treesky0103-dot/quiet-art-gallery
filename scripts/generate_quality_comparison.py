@@ -86,7 +86,7 @@ picked=[]
 for band in ("80","75"):
  used_sources=set()
  matches=[x for x in candidates if x["band"]==band]
- matches.sort(key=lambda x:(-x["fill"] if band=="80" else abs(x["fill"]-.77),-min(x["source_w"],x["source_h"])))
+ matches.sort(key=lambda x:(abs(x["fill"]-(.845 if band=="80" else .77)),-min(x["source_w"],x["source_h"])))
  tries=0
  for entry in matches:
   if sum(x["band"]==band for x in picked)>=3:break
