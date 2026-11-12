@@ -1,0 +1,24 @@
+name: Audit portrait screen fill from artwork metadata
+on:
+  push:
+    paths:
+      - '.github/workflows/audit-portrait-fill.yml'
+      - 'scripts/audit_portrait_fill.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read-only ratio sample of 19 sources
+        run: python3 scripts/audit_portrait_fill.py
+      - name: Archive audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: portrait-fill-audit-20261113
+          path: portrait_fill_audit_20261113.json
+          if-no-files-found: error
+          retention-days: 14
