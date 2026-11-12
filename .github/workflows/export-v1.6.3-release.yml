@@ -1,0 +1,60 @@
+name: Verify Canonical v1.6.3 Worldwide APK Release
+on:
+  push:
+    paths:
+      - '.github/workflows/export-v1.6.3-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact public APK and verify contents
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download v1.6.3 --repo "$GITHUB_REPOSITORY" --pattern 'QuietArtGallery_v1.6.3.apk' --pattern SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          import hashlib,json
+          f="QuietArtGallery_v1.6.3.apk"
+          with ZipFile(f) as z:
+              assert z.testzip() is None
+              assert 'classes.dex' in z.namelist()
+              core=z.read('assets/core.js').decode()
+              app=z.read('assets/app.js').decode()
+              ui=z.read('assets/index.html').decode()
+              assert 'portraitScreenFill' in core and 'fillsPortraitScreen' in core
+              assert 'visualHash' in app and 'hydrateHistory' in app
+              assert '중복 재생하지 않습니다' in app
+              assert '80% 이상' in ui and '33개 미술관' in ui
+              for id in ('ngv','nsw','aus-nga','south-aus','queensland','auckland','dunedin','brasil-mnba','argentina-mnba','chile-mnba','peru-mali','colombia-mnc','uruguay-mnav','brasil-pina'):
+                  assert 'id:"'+id+'"' in core,id
+              art=json.loads(z.read('assets/offline-deck.json'))
+              assert len(art)==8,len(art)
+              keys=set();hashes=set()
+              for i,a in enumerate(art):
+                  b=z.read('assets/offline/fallback-'+str(i)+'.jpg')
+                  assert hashlib.sha256(b).hexdigest()==a['sha256']
+                  assert a['key'] not in keys
+                  assert a['sha256'] not in hashes
+                  assert a['rightsOK'] and a['license']=='Public domain'
+                  w,h=a['width'],a['height']
+                  assert min(w,h)>=1200 and max(w,h)>=1600 and h>w
+                  assert .50<=w/h<=.703125,(w,h)
+                  keys.add(a['key']);hashes.add(a['sha256'])
+              print('PASS canonical public v1.6.3 APK, SHA256, CRC, 14 worldwide new sources, 8 distinct 80%-fill public domain paintings')
+          PY
+      - name: Preserve canonical release file for direct attachment
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuietArtGallery-v1.6.3-CANONICAL-PUBLIC-RELEASE
+          path: |
+            QuietArtGallery_v1.6.3.apk
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
