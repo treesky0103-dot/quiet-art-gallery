@@ -7,8 +7,9 @@ function sample(license='Public domain',width=2500,height=3600,title='File:Sampl
  return {query:{pages:[{pageid:91827,title,imageinfo:[{width,height,mime:'image/jpeg',thumburl:'https://upload.wikimedia.org/wikipedia/commons/thumb/painting.jpg',descriptionurl:'https://commons.wikimedia.org/wiki/File:Sample_painting.jpg',extmetadata:{LicenseShortName:{value:license},Artist:{value:artist}}}]}]}};
 }
 test('seven public collection categories including Paris Municipal Museum representative',()=>{
- assert.deepEqual(C.ADDITIONAL_MUSEUMS.map(x=>x.id),ids);
- assert.equal(new Set(C.ADDITIONAL_MUSEUMS.map(x=>x.category)).size,7);
+ assert.deepEqual(C.ADDITIONAL_MUSEUMS.slice(0,7).map(x=>x.id),ids);
+ assert.equal(C.ADDITIONAL_MUSEUMS.length,21);
+ assert.equal(new Set(C.ADDITIONAL_MUSEUMS.map(x=>x.category)).size,21);
  assert.equal(C.ADDITIONAL_MUSEUMS.find(x=>x.id==='paris').category,'Paintings in Musée Carnavalet');
  assert.equal(C.MOVEMENTS.length,16);
  assert.deepEqual(C.MOVEMENTS.slice(-3).map(x=>x.id),['asian','african','additional']);

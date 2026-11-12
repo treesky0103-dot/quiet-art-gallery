@@ -15,7 +15,7 @@ def image64():
 def main():
  with sync_playwright() as p:
   browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox'])
-  page=browser.new_page(viewport={'width':400,'height':720})
+  page=browser.new_page(viewport={'width':400,'height':640})
   page.goto('about:blank')
   html=(ROOT/'index.html').read_text().replace('<script src="core.js"></script>','').replace('<script src="app.js"></script>','').replace('<link rel="stylesheet" href="style.css">','')
   page.set_content(html)
@@ -48,23 +48,27 @@ def main():
   page.add_script_tag(content=(ROOT/'core.js').read_text())
   page.add_script_tag(content=(ROOT/'app.js').read_text())
   page.wait_for_function('window.__galleryDiagnostic().offlineReady===4',timeout=12000)
-  page.wait_for_function('window.__galleryDiagnostic().shown>=9',timeout=12000)
+  page.wait_for_function('window.__galleryDiagnostic().tickCount>=9',timeout=12000)
   diag=page.evaluate('window.__galleryDiagnostic()')
   frames=page.evaluate('window.__GALLERY_TEST__.shown')
-  assert diag['emergencySwaps']>=9,diag
+  assert diag['emergencySwaps']==4,diag
+  assert diag['shown']==4,diag
+  assert diag['exhaustedTicks']>=5,diag
   assert diag['offlineReady']==4,diag
   assert all(x['key']!=y['key'] for x,y in zip(frames,frames[1:])),frames
   diff=[(b['when']-a['when']) for a,b in zip(frames,frames[1:])]
   assert min(diff)>=140 and max(diff)<650,diff
+  assert len(frames)==len({x['key'] for x in frames})==4,frames
   assert all(x['emergency'] for x in frames),frames
-  print('PASS: blocked API, 4 offline art assets, 8+ swaps, cadence ms',diff,flush=True)
+  print('PASS: blocked API, 4 unique artworks, exhausted without repeating, cadence ms',diff,flush=True)
   page.locator('#viewer').click(position={'x':30,'y':100})
   page.locator('#toggle-pause').click()
-  before=page.evaluate('window.__galleryDiagnostic().shown')
+  before=page.evaluate('window.__galleryDiagnostic().tickCount')
   time.sleep(.75)
-  assert page.evaluate('window.__galleryDiagnostic().shown')==before,'pause did not stop rotation'
+  assert page.evaluate('window.__galleryDiagnostic().tickCount')==before,'pause did not stop rotation'
   page.locator('#toggle-pause').click()
-  page.wait_for_function('(n)=>window.__galleryDiagnostic().shown>n',arg=before,timeout=3000)
+  page.wait_for_function('(n)=>window.__galleryDiagnostic().tickCount>n',arg=before,timeout=3000)
+  assert page.evaluate('window.__galleryDiagnostic().shown')==4,'unexpected repeat after resuming'
   print('PASS: pause/resume retains native-style 30sec clock contract',flush=True)
   assert not errors,errors
   browser.close()

@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 22, targetPool: 140, maxQueue: 500, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000});
+  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.80});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -12,6 +12,7 @@
     db:null,pool:[],pendingKeys:new Set(), prepared:null,current:null,currentNode:ui.b,
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
+    recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
     cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{}},
     sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
@@ -19,7 +20,7 @@
     stats:{slot:0,shown:0,portrait:0,other:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'유럽·미국 미술관 7곳(공용 자료)'};
+  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관 21곳(공용 자료)'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -40,26 +41,91 @@
     t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);
   });}
   async function persist(){await dbPutMany('settings',[{key:'stats',value:state.stats},{key:'cursors',value:state.cursors}]);}
-  async function seenRecently(art){
-    const now=Date.now();
-    const exact=await dbGet('seen',art.key);
-    if(exact&&!C.canReshow(exact.when,now))return true;
-    const fp=C.fingerprint(art);
-    if(fp){const near=await dbGet('seen',fp); if(near&&!C.canReshow(near.when,now))return true;}
+  function rowKeys(art,hash){
+    const keys=C.identityKeys(art);
+    if(hash)keys.push('vis:'+hash);
+    return [...new Set(keys)];
+  }
+  function visuallySeen(hash,now=Date.now()){
+    if(!hash)return false;
+    for(const [prior,when] of state.visualHashes)
+      if(!C.canReshow(when,now)&&C.hashDistance(hash,prior)<=2)return true;
     return false;
   }
-  async function recordSeen(art,orient){
+  function seenInMemory(art,hash){
+    const now=Date.now();
+    if(rowKeys(art,hash).some(k=>
+      state.recentKeys.has(k)&&!C.canReshow(state.recentKeys.get(k),now)))return true;
+    return visuallySeen(hash,now);
+  }
+  async function hydrateHistory(){
+    if(!state.db)return;
+    state.recentKeys.clear();state.visualHashes.clear();
+    await new Promise((resolve,reject)=>{
+      const tx=state.db.transaction('seen','readonly'),cursor=tx.objectStore('seen').openCursor();
+      cursor.onsuccess=()=>{
+        const c=cursor.result;if(!c)return;
+        const when=Number(c.value&&c.value.when),key=String(c.key);
+        if(Number.isFinite(when)&&!C.canReshow(when,Date.now())){
+          state.recentKeys.set(key,when);
+          if(/^vis:[0-9a-f]{16}$/.test(key))state.visualHashes.set(key.slice(4),when);
+        }
+        c.continue();
+      };
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+    });
+  }
+  async function seenRecently(art,hash){
+    if(seenInMemory(art,hash))return true;
+    const now=Date.now();
+    for(const key of rowKeys(art,hash)){
+      const entry=await dbGet('seen',key);
+      if(entry&&!C.canReshow(entry.when,now)){
+        state.recentKeys.set(key,entry.when);
+        if(key.startsWith('vis:'))state.visualHashes.set(key.slice(4),entry.when);
+        return true;
+      }
+    }
+    return visuallySeen(hash,now);
+  }
+  function markSeen(show){
     const when=Date.now();
-    const values=[{key:art.key,when}];const fp=C.fingerprint(art);if(fp)values.push({key:fp,when});
-    await dbPutMany('seen',values);
-    state.stats.slot+=1; state.stats.shown+=1;
-    state.stats[orient==='portrait'?'portrait':'other']+=1;
+    for(const key of rowKeys(show.art,show.visualHash)){
+      state.recentKeys.set(key,when);
+      if(key.startsWith('vis:'))state.visualHashes.set(key.slice(4),when);
+    }
+  }
+  async function recordSeen(show){
+    const when=Date.now();
+    await dbPutMany('seen',rowKeys(show.art,show.visualHash).map(key=>({key,when})));
+    state.stats.slot++;state.stats.shown++;
+    state.stats[show.orient==='portrait'?'portrait':'other']++;
     await persist();
+  }
+  function visualHash(img){
+    try{
+      const c=document.createElement('canvas');c.width=9;c.height=8;
+      const g=c.getContext('2d',{willReadFrequently:true});if(!g)return null;
+      g.drawImage(img,0,0,9,8);
+      const px=g.getImageData(0,0,9,8).data;
+      const l=[];let low=255,high=0;
+      for(let i=0;i<px.length;i+=4){
+        const v=Math.round(.299*px[i]+.587*px[i+1]+.114*px[i+2]);
+        l.push(v);low=Math.min(low,v);high=Math.max(high,v);
+      }
+      if(high-low<18)return null; // Flat synthetic image does not support a perceptual hash.
+      let hex='',bits=0,n=0;
+      for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+        bits=(bits<<1)|(l[y*9+x]>l[y*9+x+1]?1:0);
+        if(++n===4){hex+=bits.toString(16);bits=0;n=0;}
+      }
+      return hex;
+    }catch(_){return null;} // Cross-origin browser images retain URL/title protections.
   }
   function imageURL(art){
     if(!C.safeURL(art.image))return '';
     // Strict offline-asset whitelist; runtime JSON cannot inject arbitrary asset paths.
-    if(window.GalleryAndroid && /^offline\/fallback-[0-3]\.jpg$/.test(art.offlineAsset||'')){
+    if(window.GalleryAndroid && /^offline\/fallback-(?:[0-9]|1[0-5])\.jpg$/.test(art.offlineAsset||'')){
       return 'https://appassets.gallery/'+art.offlineAsset;
     }
     if(window.GalleryAndroid) return 'https://appassets.gallery/art-image?u='+encodeURIComponent(art.image);
@@ -78,7 +144,9 @@
       img.src=src;
     });
     if(!C.highResolution(img.naturalWidth,img.naturalHeight))throw new Error('저해상도 또는 소형 이미지 제외');
-    return {art,src,width:img.naturalWidth,height:img.naturalHeight,orient:img.naturalHeight>img.naturalWidth*1.02?'portrait':'other'};
+    if(!C.fillsPortraitScreen(img.naturalWidth,img.naturalHeight,innerWidth,innerHeight,CONFIG.minimumPortraitFill))
+      throw new Error('세로 화면 80% 미만 작품 제외');
+    return {art,src,width:img.naturalWidth,height:img.naturalHeight,orient:'portrait',visualHash:visualHash(img)};
   }
 
   async function loadOfflineDeck(){
@@ -87,10 +155,10 @@
       const r=await fetch('https://appassets.gallery/offline-deck.json',{cache:'no-store'});
       if(!r.ok)throw Error('비상 작품 목록 없음');
       const items=await r.json();
-      if(!Array.isArray(items)||items.length<2||items.length>4)throw Error('비상 작품 목록 형식 오류');
+      if(!Array.isArray(items)||items.length<2||items.length>16)throw Error('비상 작품 목록 형식 오류');
       const loaded=[];
       for(const art of items){
-        if(!/^offline\/fallback-[0-3]\.jpg$/.test(art.offlineAsset||'')||
+        if(!/^offline\/fallback-(?:[0-9]|1[0-5])\.jpg$/.test(art.offlineAsset||'')||
           !C.eligibleArt(art)||!C.metadataResolutionOkay(art))continue;
         art.movement=C.classifyMovement(art)||'additional';
         try{loaded.push(await loadImage(art));}catch(e){state.lastErr='비상 작품: '+e.message;}
@@ -201,7 +269,7 @@
         const total=Number(res.query&&res.query.searchinfo&&res.query.searchinfo.totalhits)||0;
         state.cursors.african[museum.id]=(rows===0||rows<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
       }else if(source==='additional'){
-        const museum=C.ADDITIONAL_MUSEUMS[state.additionalOrder++%C.ADDITIONAL_MUSEUMS.length];
+        const museum=C.ADDITIONAL_MUSEUMS[(state.additionalOrder++*8)%C.ADDITIONAL_MUSEUMS.length];
         const offset=Number(state.cursors.additional[museum.id])||0;
         const res=await request('additionalCommons',museum.id+':'+offset);
         addCandidates(C.normalizeAdditionalCommons(res,museum.id).filter(C.eligibleArt));
@@ -263,6 +331,9 @@
     for(const a of items){
       if(state.pool.length>=CONFIG.maxQueue)break;
       if(!C.eligibleArt(a)||!C.metadataResolutionOkay(a)||state.pendingKeys.has(a.key))continue;
+      if(Number(a.width)>0&&Number(a.height)>0&&
+        !C.fillsPortraitScreen(a.width,a.height,innerWidth,innerHeight,CONFIG.minimumPortraitFill))continue;
+      if(seenInMemory(a,null))continue;
       // Unknown/ambiguous style metadata cannot be silently labelled as a movement.
       a.movement=C.classifyMovement(a);
       if(!a.movement)continue;
@@ -274,12 +345,12 @@
     state.filling=(async()=>{
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<12){
-        const source=['cleveland','chicago','met','asian','african','additional'][state.sourceOrder++%6];
+        const source=['cleveland','chicago','met','asian','african','additional','additional'][state.sourceOrder++%7];
         attempts++;
         progress+=await fetchSource(source);
         if(test&&typeof test.afterFetch==='function')test.afterFetch(source);
         if(state.pool.length>=target)break;
-        if(attempts>=6&&!progress)break;
+        if(attempts>=7&&!progress)break;
       }
       if(state.pool.length===0&&state.lastErr) inform('새 작품을 가져오지 못했습니다. 네트워크를 확인해 주세요.');
       return state.pool.length;
@@ -305,7 +376,7 @@
     if(state.prepared)return state.prepared;
     if(state.preparing)return state.preparing;
     state.preparing=(async()=>{
-      const orientationGoal=C.targetOrientation(state.stats.slot);
+      const orientationGoal='portrait';
       if(!state.pool.length)await fillPool(CONFIG.minPool);
       const firstIdx=(Number(state.stats.movementIndex)||0)%C.MOVEMENTS.length;
       // One targeted lookup for the next movement. If unavailable, skip it
@@ -333,6 +404,7 @@
           if(!art)break;
           try{
             const loaded=await loadImage(art);
+            if(await seenRecently(art,loaded.visualHash)){state.dedupBlocked++;continue;}
             if(loaded.orient===orientationGoal){state.prepared=loaded;break;}
             if(!fallback)fallback=loaded;
             else addCandidates([loaded.art]);
@@ -374,6 +446,8 @@
   // requests. The tick is driven independently by the native Android clock.
   function displayLoaded(show,emergency=false){
     if(!show || (state.current&&state.current.art.key===show.art.key))return false;
+    if(seenInMemory(show.art,show.visualHash)){state.dedupBlocked++;return false;}
+    markSeen(show); // Reserve identities before asynchronous disk writes.
     const target=state.currentNode===ui.a?ui.b:ui.a;
     target.alt=show.art.title+' — '+show.art.artist;
     target.src=show.src;
@@ -391,7 +465,7 @@
     if(emergency)state.emergencySwaps++;
     if(test&&test.onShow)test.onShow(show.art,show.orient,emergency);
     // Persist in the background: storage latency may not delay a visual transition.
-    recordSeen(show.art,show.orient).then(()=>
+    recordSeen(show).then(()=>
       dbPutMany('settings',[{key:'lastArtwork',value:show.art}])
     ).catch(e=>{
       state.lastErr='감상 기록 저장 실패: '+String(e.message||e);
@@ -402,16 +476,18 @@
     return true;
   }
   function emergencyChoice(){
-    // The four genuine CC0 paintings are shipped INSIDE the Android APK.
-    // If the online sources are not ready, cycle these rather than freeze.
-    const previous=state.current&&state.current.art.key;
-    const all=[...state.offlineReady,...state.recentLoaded];
-    const unique=new Map();
-    for(const item of all)if(item&&item.art.key!==previous&&!unique.has(item.art.key))
-      unique.set(item.art.key,item);
-    const choices=[...unique.values()];
-    if(!choices.length)return null;
-    return choices[state.emergencyIndex++%choices.length];
+    // Previously v1.6.2 repeatedly cycled four bundled paintings.
+    // The 90-day embargo now includes every bundled painting.
+    const all=state.offlineReady;
+    for(let offset=0;offset<all.length;offset++){
+      const item=all[(state.emergencyIndex+offset)%all.length];
+      if(item&&!seenInMemory(item.art,item.visualHash) &&
+         (!state.current || state.current.art.key!==item.art.key)){
+        state.emergencyIndex=(state.emergencyIndex+offset+1)%all.length;
+        return item;
+      }
+    }
+    return null; // HOLD current image when candidates run out.
   }
   function advanceSlide(){
     if(!state.playing)return;
@@ -429,7 +505,8 @@
       if(emergency)shown=displayLoaded(emergency,true);
     }
     if(!shown){
-      state.lastErr='준비된 서로 다른 그림이 없습니다. 예비 작품을 확인해 주세요.';
+      state.exhaustedTicks++;
+      state.lastErr='최근 90일 내 보지 않은 새 그림을 준비 중입니다. 중복 재생하지 않습니다.';
     }
     // This may take minutes; it NEVER blocks the next 30-second tick.
     prepareNext().catch(e=>{state.lastErr='다음 그림 준비: '+e.message;});
@@ -524,6 +601,7 @@
         if(!C.eligibleArt(a))continue;
         rec.eligible++;out.eligible++;
         if(!C.metadataResolutionOkay(a))continue;
+        if(Number(a.width)>0&&Number(a.height)>0&&!C.fillsPortraitScreen(a.width,a.height,innerWidth,innerHeight,CONFIG.minimumPortraitFill))continue;
         const verifiedSize=(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.source==='클리블랜드');
         if(verifiedSize){rec.resolutionChecked++;out.resolutionChecked++;}
         else {rec.pixelUnknown++;out.pixelUnknown++;}
@@ -576,8 +654,10 @@
     const count=state.stats.portrait+state.stats.other;
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
+    if(el('dedup-count'))el('dedup-count').textContent=
+      '중복 차단 '+state.dedupBlocked+'건 · 후보 부족 '+state.exhaustedTicks+'회';
     const backup=el('fallback-status');
-    if(backup)backup.textContent=state.offlineReady.length+'점 준비 · 비상 사용 '+state.emergencySwaps+'회';
+    if(backup)backup.textContent=state.offlineReady.length+'점 준비 · 중복 없이 '+state.emergencySwaps+'회 사용';
     el('refresh-count').textContent=state.stats.updatedAt?new Date(state.stats.updatedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',hour12:false}):'–';
     el('source-status').textContent=state.sourceReady.length?state.sourceReady.map(s=>sourceNames[s]).join(' · '):state.lastErr||'연결 대기';
     const m=C.MOVEMENTS[(Number(state.stats.movementIndex)||0)%C.MOVEMENTS.length];
@@ -651,7 +731,7 @@
       try{key=JSON.parse(line.slice(0,comma));}catch(_){skipped++;continue;}
       const date=line.slice(comma+1).trim();
       const when=Date.parse(date);
-      if(typeof key!=='string'||key.length>270||!(/^(?:cma|aic|met):[1-9][0-9]{0,12}$|^fp:[^\s]{4,270}$/u.test(key))||
+      if(typeof key!=='string'||key.length>270||!(/^(?:cma|aic|met):[1-9][0-9]{0,12}$|^commons:[1-9][0-9]{0,14}$|^fp:[^\s]{4,270}$|^url:[^\s]{4,266}$|^vis:[0-9a-f]{16}$/u.test(key))||
          !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(date)||
          !Number.isFinite(when)||when>now||now-when>C.NINETY_DAYS_MS){skipped++;continue;}
       valid.set(key,Math.max(valid.get(key)||0,when));
@@ -679,7 +759,8 @@
     // Newly restored history might invalidate an already-prefetched image.
     // Do not disturb the image currently on screen, but force the next selection through the database.
     state.prepared=null;
-    state.pool=state.pool.filter(a=>C.eligibleArt(a));
+    await hydrateHistory();
+    state.pool=state.pool.filter(a=>C.eligibleArt(a)&&!seenInMemory(a,null));
     ui.msg.textContent=`감상 기록 ${imported.toLocaleString('ko-KR')}건 복원 완료 · 건너뜀 ${parsed.skipped.toLocaleString('ko-KR')}건`;
     return {imported, skipped:parsed.skipped};
   }
@@ -760,9 +841,11 @@
       if(!Number.isInteger(state.stats.movementIndex)||state.stats.movementIndex<0||state.stats.movementIndex>=C.MOVEMENTS.length)state.stats.movementIndex=0;
       // APK ships four true paintings. Load before starting the clock so a
       // transient outage or slow museum search cannot freeze a displayed work.
+      await hydrateHistory();
       await loadOfflineDeck();
-      if(state.offlineReady.length){
-        displayLoaded(state.offlineReady[0],true);
+      const firstUnseen=state.offlineReady.find(x=>!seenInMemory(x.art,x.visualHash));
+      if(firstUnseen){
+        displayLoaded(firstUnseen,true);
       }else{
         await restoreLastShown();
         if(!state.current){
@@ -793,6 +876,8 @@
     apiCalls:state.apiCalls,day:state.stats.day,playing:state.playing,
     movementIndex:state.stats.movementIndex,movement:state.current&&state.current.art.movement,
     flipped:state.flipped,caption:[ui.title.textContent,ui.meta.textContent],
+    dedupBlocked:state.dedupBlocked,exhaustedTicks:state.exhaustedTicks,recentKeys:state.recentKeys.size,
+    visualHashes:state.visualHashes.size,sourceCount:3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length,
     lastSwapAt:state.lastSwapAt,tickCount:state.tickCount,emergencySwaps:state.emergencySwaps,
     offlineReady:state.offlineReady.length,nativeClock:state.nativeClock,nextDueAt:state.nextDueAt});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

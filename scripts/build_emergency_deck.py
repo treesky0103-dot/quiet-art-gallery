@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bundle 4 independently checked public-domain paintings for emergency offline rotation.
+"""Bundle 8+ independently checked public-domain paintings for emergency offline rotation.
 
 The source is Wikimedia Commons, category-linked to named museum collections.
 This requires no network on the tablet; fails the build rather than silently
@@ -17,19 +17,31 @@ import socket
 
 OUT=Path("android-app/app/src/main/assets")
 MAX_BYTES=8*1024*1024
+COUNT=8
 COLLECTIONS=[
  ("암스테르담 국립미술관","Paintings in the Rijksmuseum Amsterdam"),
  ("미국 국립미술관","Paintings in the National Gallery of Art (Washington, D.C.)"),
  ("게티 미술관","Paintings in The J. Paul Getty Museum"),
  ("덴마크 국립미술관","Paintings in Statens Museum for Kunst"),
- ("런던 내셔널갤러리","Paintings in the National Gallery, London")
+ ("런던 내셔널갤러리","Paintings in the National Gallery, London"),
+ ("호주 빅토리아 국립미술관","Paintings in the National Gallery of Victoria"),
+ ("호주 뉴사우스웨일스 미술관","Paintings in the Art Gallery of New South Wales"),
+ ("호주 국립미술관","Paintings in the National Gallery of Australia"),
+ ("남호주 미술관","Paintings in the Art Gallery of South Australia"),
+ ("뉴질랜드 더니든 미술관","Paintings in the Dunedin Public Art Gallery"),
+ ("브라질 국립미술관","Brazilian paintings in the Museu Nacional de Belas Artes"),
+ ("아르헨티나 국립미술관","Paintings in the Museo Nacional de Bellas Artes (Argentina)"),
+ ("페루 리마 미술관","Paintings in the Museo de Arte de Lima"),
+ ("칠레 국립미술관","Paintings in the Museo Nacional de Bellas Artes (Chile)"),
+ ("콜롬비아 국립박물관","Paintings in the Museo Nacional de Colombia"),
+ ("월터스 미술관","Paintings in the Walters Art Museum")
 ]
 BAD=re.compile(r"(?:interior|gallery view|exhibition view|museum hall|sculpture|statue|frame|detail|reverse|verso)",re.I)
 DOMAIN="upload.wikimedia.org"
 
 def read_http(url,limit=MAX_BYTES,timeout=16):
     req=urllib.request.Request(url,headers={
-      "User-Agent":"QuietArtGallery/1.6.2 (+https://github.com/treesky0103-dot/quiet-art-gallery; personal art gallery)",
+      "User-Agent":"QuietArtGallery/1.6.3 (+https://github.com/treesky0103-dot/quiet-art-gallery; personal art gallery)",
       "Accept":"application/json,image/jpeg"})
     with urllib.request.urlopen(req,timeout=timeout) as conn:
         ct=conn.headers.get("Content-Type","").lower().split(";")[0].strip()
@@ -67,7 +79,7 @@ def main():
     target.mkdir(parents=True,exist_ok=True)
     deck=[]; seen=set()
     for museum,category in COLLECTIONS:
-        if len(deck)>=4:break
+        if len(deck)>=COUNT:break
         params={
           "action":"query","generator":"search","gsrsearch":'deepcategory:"'+category+'"',
           "gsrnamespace":"6","gsrlimit":"50","gsroffset":"0",
@@ -84,7 +96,7 @@ def main():
             continue
         found=False
         for page in pages:
-            if len(deck)>=4:break
+            if len(deck)>=COUNT:break
             title=str(page.get("title") or "")
             imageinfos=page.get("imageinfo") or []
             if not imageinfos or BAD.search(title):continue
@@ -98,6 +110,9 @@ def main():
             if u.scheme!="https" or u.hostname!=DOMAIN:continue
             originalw=int(inf.get("width") or 0);originalh=int(inf.get("height") or 0)
             if min(originalw,originalh)<1200 or max(originalw,originalh)<1600:continue
+            if not (originalh>originalw and .50<=originalw/originalh<=.703125):continue
+            # Emergency paintings must fill >=80% on both common portrait
+            # Android tablet aspect ratios (16:10 and 16:9), without cropping.
             id=page.get("pageid")
             if not isinstance(id,int) or id in seen:continue
             try:
@@ -105,6 +120,7 @@ def main():
                 if mime!="image/jpeg" or len(pixels)<15000:raise ValueError("Not JPEG bytes")
                 w,h=jpeg_dimensions(pixels)
                 if min(w,h)<1200 or max(w,h)<1600:raise ValueError("Thumbnail not full enough")
+                if not (h>w and .50<=w/h<=.703125):raise ValueError("Portrait screen fill below 80%")
                 name="fallback-"+str(len(deck))+".jpg"
                 (target/name).write_bytes(pixels)
                 item={
@@ -126,8 +142,8 @@ def main():
                 print("REJECT IMAGE",id,str(ex)[:100],flush=True)
             time.sleep(.1)
         if not found:print("NO ELIGIBLE WORK",museum,flush=True)
-    if len(deck)<4:raise RuntimeError("Failed to verify 4 CC0/PD JPG paintings; refuse APK build")
+    if len(deck)<COUNT:raise RuntimeError(f"Failed to verify {COUNT} public domain 80%-fill paintings; refuse APK build")
     (OUT/"offline-deck.json").write_text(json.dumps(deck,ensure_ascii=False,indent=2),encoding="utf-8")
-    print("PASS four high-res offline artworks, total bytes",sum((target/("fallback-"+str(i)+".jpg")).stat().st_size for i in range(4)),flush=True)
+    print("PASS high-res 80 percent fill offline artworks",len(deck),"total bytes",sum((target/("fallback-"+str(i)+".jpg")).stat().st_size for i in range(COUNT)),flush=True)
 
 if __name__=="__main__":main()

@@ -32,13 +32,14 @@
 <footer id="caption" class="caption" aria-live="polite"><div id="art-title"></div><div id="art-meta"></div></footer>
 <div id="settings-backdrop" class="backdrop" hidden></div>
 <section id="settings" class="settings" aria-label="전시 설정" aria-modal="true" role="dialog" hidden>
-  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.6.2</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
-  <p class="sheet-copy">서양 미술사조 13개와 아시아·아프리카·유럽/미국 소장 회화 3개를 더해 총 16개 구간을 순환합니다. 총 19개 미술관·기관의 공개 이미지를 조회합니다. 저해상도는 자동 제외합니다(이미지 짧은 변 1200px·긴 변 1600px 이상). 회화·드로잉·판화·평면 현대미술만 전시합니다. 작품은 잘라내지 않으며 액자·조각·전시실 사진은 가능한 한 자동 제외합니다.</p>
-  <div class="pill-row"><div class="metric"><small>전환 주기</small><strong>30초</strong></div><div class="metric"><small>세로형 목표</small><strong>70%</strong></div><div class="metric"><small>재사용 제한</small><strong>90일*</strong></div></div>
-  <div class="rule"><span>작품 수집</span><strong>미국 3 · 아시아 5 · 아프리카 4 · 추가 7</strong></div>
+  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.6.3</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
+  <p class="sheet-copy">서양 미술사조 13개와 아시아·아프리카·세계 미술관 소장 회화 3개를 더해 16개 구간을 순환합니다. 총 33개 미술관·기관의 공개 이미지를 조회합니다. 저해상도와 세로 화면 80% 미만 작품을 제외합니다(이미지 짧은 변 1200px·긴 변 1600px 이상). 회화·드로잉·판화·평면 현대미술만 전시합니다. 작품은 잘라내지 않으며 액자·조각·전시실 사진은 가능한 한 자동 제외합니다.</p>
+  <div class="pill-row"><div class="metric"><small>전환 주기</small><strong>30초</strong></div><div class="metric"><small>화면 채움</small><strong>80% 이상</strong></div><div class="metric"><small>재사용 제한</small><strong>90일 엄격</strong></div></div>
+  <div class="rule"><span>작품 수집</span><strong>기존 19곳 + 오세아니아 7곳 + 남미 7곳</strong></div>
   <div class="rule"><span>이미지 캐시 최대</span><strong>100MB (초과 시 80MB까지 정리)</strong></div>
   <div class="rule"><span>전시한 작품</span><strong id="seen-count">0점</strong></div>
   <div class="rule"><span>현재 방향 비율</span><strong id="ratio-count">–</strong></div>
+  <div class="rule"><span>중복 방지 작동</span><strong id="dedup-count">확인 중</strong></div>
   <div class="rule"><span>오프라인 비상 작품</span><strong id="fallback-status">확인 중</strong></div>
   <div class="rule"><span>이미지 캐시</span><strong id="cache-count">확인 중</strong></div>
   <div class="rule"><span>최근 갱신</span><strong id="refresh-count">–</strong></div>
@@ -48,7 +49,7 @@
   <div class="action-grid">
     <button class="wide-btn" id="rotate-180">화면 180° 회전 · 그림으로 돌아가기</button>
     <button class="wide-btn" id="refresh-now">작품 목록 새로 가져오기</button>
-    <button class="wide-btn" id="audit-now">19개 공급원별 작품 후보 수 조사(표본)</button>
+    <button class="wide-btn" id="audit-now">33개 공급원별 작품 후보 수 조사(표본)</button>
     <button class="wide-btn" id="free-space">이미지 캐시 비우기</button>
     <button class="wide-btn" id="export-history">감상 기록 백업</button>
     <button class="wide-btn" id="import-history">감상 기록 복원</button>
@@ -57,7 +58,7 @@
   <div class="rule"><span>작품 수 조사</span><strong>표본·미확정</strong></div>
   <p id="audit-summary" class="small-note" style="white-space:pre-wrap;max-height:36vh;overflow:auto">조사 전 · 전체 수 미확인</p>
   <p id="setting-message" class="small-note">10GB 이상 남은 태블릿도 용량 증가를 막도록 관리합니다. 이미지 캐시와 감상 기록은 별도로 보관합니다.</p>
-  <p class="small-note">30초 전환을 우선합니다. 새 작품이 준비되지 않은 때에는 APK에 들어 있는 퍼블릭 도메인 회화 4점을 비상 순환합니다. 이 경우에만 90일 재사용 제한의 예외가 발생합니다. 일반 전시는 기존 90일 중복 방지 규칙을 따릅니다. Android가 절전·중단되거나 화면이 꺼져 앱 실행이 중지되면 실제 전환은 지연될 수 있습니다. 액자 자동 감지는 완벽하지 않습니다.</p>
+  <p class="small-note">새 그림을 준비하지 못할 때에는 APK에 내장된 공개 회화를 미전시 작품부터 사용합니다. 일반 작품과 비상 작품 모두 최근 90일 내 중복 전시하지 않습니다. 새 작품이 모두 소진되면 그림을 반복하지 않고 현재 그림을 유지합니다. 따라서 새 후보가 없는 동안에는 30초 전환이 불가능합니다. 24시간 90일 무중복을 위해서는 259,200개 작품이 필요하며 현재 확보 수량은 미확인입니다. Android 절전·중단 시에도 전환 시각이 지연될 수 있습니다.</p>
   <button class="done" id="settings-done">그림으로 돌아가기</button>
 </section>
 <script src="core.js"></script>

@@ -55,8 +55,24 @@
     {id:'smk',label:'덴마크 국립미술관',category:'Paintings in Statens Museum for Kunst'},
     {id:'paris',label:'파리 시립미술관 연합(카르나발레)',category:'Paintings in Musée Carnavalet'},
     {id:'london',label:'런던 내셔널갤러리',category:'Paintings in the National Gallery, London'},
-    {id:'walters',label:'월터스 미술관',category:'Paintings in the Walters Art Museum'}
+    {id:'walters',label:'월터스 미술관',category:'Paintings in the Walters Art Museum'},
+    {id:"ngv",label:"호주 빅토리아 국립미술관",category:"Paintings in the National Gallery of Victoria"},
+    {id:"nsw",label:"호주 뉴사우스웨일스 미술관",category:"Paintings in the Art Gallery of New South Wales"},
+    {id:"aus-nga",label:"호주 국립미술관",category:"Paintings in the National Gallery of Australia"},
+    {id:"south-aus",label:"남호주 미술관",category:"Paintings in the Art Gallery of South Australia"},
+    {id:"queensland",label:"호주 퀸즐랜드 미술관",category:"Paintings in the Queensland Art Gallery"},
+    {id:"auckland",label:"뉴질랜드 오클랜드 미술관",category:"Paintings in the Auckland Art Gallery"},
+    {id:"dunedin",label:"뉴질랜드 더니든 미술관",category:"Paintings in the Dunedin Public Art Gallery"},
+    {id:"brasil-mnba",label:"브라질 국립미술관",category:"Brazilian paintings in the Museu Nacional de Belas Artes"},
+    {id:"argentina-mnba",label:"아르헨티나 국립미술관",category:"Paintings in the Museo Nacional de Bellas Artes (Argentina)"},
+    {id:"chile-mnba",label:"칠레 국립미술관",category:"Paintings in the Museo Nacional de Bellas Artes (Chile)"},
+    {id:"peru-mali",label:"페루 리마 미술관",category:"Paintings in the Museo de Arte de Lima"},
+    {id:"colombia-mnc",label:"콜롬비아 국립박물관",category:"Paintings in the Museo Nacional de Colombia"},
+    {id:"uruguay-mnav",label:"우루과이 국립시각예술박물관",category:"Paintings in the Museo Nacional de Artes Visuales"},
+    {id:"brasil-pina",label:"브라질 상파울루 피나코테카",category:"Paintings in the Pinacoteca do Estado de São Paulo"}
   ]);
+  // 14 verified Oceania/South America Commons categories appended to the original seven.
+  // Existing metadata licensing rules also apply to all new sources.
   // Conservative exclusions for exhibition-room, 3-D-object and framed photography filenames.
   const COMMONS_SCENE_BLOCK = /(?:gallery (?:interior|view|room)|museum (?:interior|hall|room)|exhibition (?:view|room|hall)|on (?:the )?wall|framed (?:painting|art)|sculpture|statue|installation|museum building|art gallery building|visitor|tour group|gallery entrance)/i;
   function wikimediaText(v) {
@@ -145,6 +161,43 @@
     const norm = value => string(value).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '').slice(0, 95);
     const title = norm(a.title), artist = norm(a.artist);
     return title.length >= 4 && artist.length >= 3 ? `fp:${title}:${artist}` : null;
+  }
+  // 'contain' occupies this fraction of a portrait display. Does not crop artwork.
+  function portraitScreenFill(w,h,viewportW,viewportH){
+    w=Number(w);h=Number(h);viewportW=Number(viewportW);viewportH=Number(viewportH);
+    if(!(w>0&&h>0&&viewportW>0&&viewportH>0)||w>=h)return 0;
+    const artRatio=w/h,screenRatio=Math.min(viewportW,viewportH)/Math.max(viewportW,viewportH);
+    return Math.min(artRatio/screenRatio,screenRatio/artRatio);
+  }
+  function fillsPortraitScreen(w,h,vw,vh,threshold=.80){
+    return portraitScreenFill(w,h,vw,vh)+1e-8>=threshold;
+  }
+  // Multiple museum records can point to one original Commons file.
+  // Normalize URLs of Commons thumbnails and IIIF renditions before 90d lookup.
+  function imageIdentity(a){
+    const src=string(a&&a.image);
+    try{
+      const u=new URL(src);
+      if(!safeURL(src))return null;
+      let p=decodeURIComponent(u.pathname).replace(/\/thumb\/(?=[0-9a-f]\/)/i,'/');
+      if(u.hostname==='upload.wikimedia.org')p=p.replace(/\/(?:\d+px-[^\/]+)$/i,'');
+      if(u.hostname==='www.artic.edu'||u.hostname==='artic.edu')p=p.replace(/\/full\/[^/]+\/0\/default\.jpg$/i,'');
+      return 'url:'+u.hostname.toLowerCase()+p.normalize('NFKC').toLowerCase().slice(0,225);
+    }catch(_){return null;}
+  }
+  function identityKeys(a){
+    if(!a)return [];
+    const keys=[a.key,fingerprint(a),imageIdentity(a)];
+    return [...new Set(keys.filter(x=>typeof x==='string'&&x.length>0&&x.length<=270))];
+  }
+  function hashDistance(a,b){
+    if(!/^[0-9a-f]{16}$/.test(a||'')||!/^[0-9a-f]{16}$/.test(b||''))return 64;
+    let n=0;
+    for(let i=0;i<16;i++){
+      let v=parseInt(a[i],16)^parseInt(b[i],16);
+      while(v){n++;v&=v-1;}
+    }
+    return n;
   }
   function orientation(a) {
     const w = Number(a.width), h = Number(a.height);
@@ -262,7 +315,7 @@
     {id:'contemporary', label:'현대미술', en:'Contemporary Art'},
     {id:'asian', label:'아시아 회화', en:'Asian painting'},
     {id:'african', label:'아프리카 소장 회화', en:'Paintings from African museum collections'},
-    {id:'additional',label:'유럽·미국 소장 회화',en:'European and American museum paintings'}
+    {id:'additional',label:'세계 미술관 소장 회화',en:'Museum painting collections worldwide'}
   ]);
   const STYLE_RULES = [
     ['post-impressionism',/\bpost[\s-]*impressionis(?:m|t)\b/i],
@@ -334,5 +387,6 @@
   }
   return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, highResolution, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
     kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, commonsPublicDomain,
-    pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel };
+    pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
+    portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance };
 });

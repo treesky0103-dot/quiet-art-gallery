@@ -114,7 +114,7 @@ public final class MainActivity extends Activity {
                     }catch(IOException e){return response(404,"text/plain",new byte[0]);}
                 }
                 String assetPath = (path == null || path.equals("/")) ? "index.html" : path.substring(1);
-                boolean offlineImage=assetPath.matches("offline/fallback-[0-3]\\.jpg");
+                boolean offlineImage=assetPath.matches("offline/fallback-(?:[0-9]|1[0-5])\\.jpg");
                 if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json").contains(assetPath))
                     return response(404, "text/plain", new byte[0]);
                 try {
@@ -259,7 +259,7 @@ public final class MainActivity extends Activity {
         if(type.equals("additionalCommons")){
             String[] parts=p.split(":",-1);
             if(parts.length!=2)throw new IOException("추가 미술관 검색 조건 오류");
-            String[] ids={"rijks","nga","getty","smk","paris","london","walters"};
+            String[] ids={"rijks","nga","getty","smk","paris","london","walters","ngv","nsw","aus-nga","south-aus","queensland","auckland","dunedin","brasil-mnba","argentina-mnba","chile-mnba","peru-mali","colombia-mnc","uruguay-mnav","brasil-pina"};
             String[] cats={
                 "Paintings in the Rijksmuseum Amsterdam",
                 "Paintings in the National Gallery of Art (Washington, D.C.)",
@@ -267,7 +267,21 @@ public final class MainActivity extends Activity {
                 "Paintings in Statens Museum for Kunst",
                 "Paintings in Musée Carnavalet",
                 "Paintings in the National Gallery, London",
-                "Paintings in the Walters Art Museum"
+                "Paintings in the Walters Art Museum",
+                "Paintings in the National Gallery of Victoria",
+                "Paintings in the Art Gallery of New South Wales",
+                "Paintings in the National Gallery of Australia",
+                "Paintings in the Art Gallery of South Australia",
+                "Paintings in the Queensland Art Gallery",
+                "Paintings in the Auckland Art Gallery",
+                "Paintings in the Dunedin Public Art Gallery",
+                "Brazilian paintings in the Museu Nacional de Belas Artes",
+                "Paintings in the Museo Nacional de Bellas Artes (Argentina)",
+                "Paintings in the Museo Nacional de Bellas Artes (Chile)",
+                "Paintings in the Museo de Arte de Lima",
+                "Paintings in the Museo Nacional de Colombia",
+                "Paintings in the Museo Nacional de Artes Visuales",
+                "Paintings in the Pinacoteca do Estado de São Paulo"
             };
             String category=null;
             for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))category=cats[i];
@@ -329,7 +343,7 @@ public final class MainActivity extends Activity {
         HttpURLConnection conn=(HttpURLConnection)new URL(url).openConnection();
         conn.setConnectTimeout(10000);conn.setReadTimeout(16000);conn.setInstanceFollowRedirects(false);
         conn.setRequestProperty("Accept","application/json");
-        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.2 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
+        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.3 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
         conn.setRequestProperty("AIC-User-Agent","Quiet-Art-Gallery (local personal project)");
         try{
             if(conn.getResponseCode()!=200)throw new IOException("HTTP "+conn.getResponseCode());

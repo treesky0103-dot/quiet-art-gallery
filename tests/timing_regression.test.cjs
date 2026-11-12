@@ -18,7 +18,7 @@ test('Native Android uses non-blocking fixed-interval scheduler',()=>{
 test('Emergency offline high-res assets served by a strict Android path whitelist',()=>{
  const java=load('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java');
  assert.match(java,/offline-deck\.json/);
- assert.match(java,/offline\/fallback-\[0-3\]/);
+ assert.match(java,/offline\/fallback-\(\?:\[0-9\]\|1\[0-5\]\)/);
  assert.match(java,/image\/jpeg/);
  const app=load('web/app.js');
  assert.match(app,/function emergencyChoice\(\)/);

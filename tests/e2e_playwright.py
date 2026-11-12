@@ -15,7 +15,7 @@ STUB = (Path(__file__).with_name('stub.js')).read_text()
 def main():
  with sync_playwright() as p:
   browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox'])
-  page=browser.new_page(viewport={'width':416,'height':800})
+  page=browser.new_page(viewport={'width':416,'height':680})
   page.goto('about:blank')
   html=(ROOT/'index.html').read_text()
   html=html.replace('<script src="core.js"></script>','').replace('<script src="app.js"></script>','').replace('<link rel="stylesheet" href="style.css">','')
@@ -30,7 +30,7 @@ def main():
 
   page.wait_for_function('window.__galleryDiagnostic().shown >= 11',timeout=20000)
   d=page.evaluate('window.__galleryDiagnostic()');print('MOCK DIAG',json.dumps(d,ensure_ascii=False))
-  assert d['shown']>=11 and d['portrait']>=7 and d['other']>=3,d
+  assert d['shown']>=11 and d['portrait']>=11 and d['other']==0,d
   keys=page.evaluate('window.__GALLERY_TEST__.shown.map(x=>x.key)')
   assert len(keys)==len(set(keys)),'duplicate during cycle'
   shown=page.evaluate('window.__GALLERY_TEST__.shown')
@@ -101,6 +101,6 @@ def main():
   assert bad,'invalid CSV header accepted'
   print('PASS: CSV restore validation, out-of-window and future entries blocked')
   assert not errors,errors
-  print('PASS: Chrome DOM, switching, 70/30, persistence calls, pause/resume, settings, object-fit')
+  print('PASS: Chrome DOM, 80%+ portrait only, no-repeat, persistence calls, rotation and settings')
   browser.close()
 if __name__=='__main__':main()
