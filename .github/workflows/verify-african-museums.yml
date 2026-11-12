@@ -1,0 +1,22 @@
+name: Verify African Museum Painting Samples
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  metadata-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query painting metadata in four African museum collection categories
+        run: python3 scripts/audit_african_sources.py
+      - name: Archive limited source audit with limitations
+        uses: actions/upload-artifact@v4
+        with:
+          name: AfricanMuseums-v1.5-METADATA-SAMPLE
+          path: africa_audit_sample.json
+          if-no-files-found: error
+          retention-days: 14

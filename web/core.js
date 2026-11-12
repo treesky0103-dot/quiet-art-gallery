@@ -16,7 +16,7 @@
   function metadataResolutionOkay(a){
     if(!a)return false;
     // Commons source dimensions and Cleveland web rendition can be checked before download.
-    if(a.museumRegion==='asia'||a.source==='클리블랜드')return highResolution(a.width,a.height);
+    if(a.museumRegion==='asia'||a.museumRegion==='africa'||a.source==='클리블랜드')return highResolution(a.width,a.height);
     return true; // Other sources must pass the decoded-image check.
   }
   const BLOCKLIST = /(?:\bsculpture\b|\bceramic(?:s)?\b|\bpottery\b|\bfurniture\b|\btextile\b|\btapestry\b|\barmor\b|\barmour\b|\bweapon\b|\bphotograph(?:y)?\b|\binstallation\b|\bstatue\b|\bvase\b|\bcoin\b|\bmedal\b|\bjewelry\b|\bjewellery\b|\barchitecture\b|\bdecorative art\b|\bframe(?:d)?\b|\bgallery view\b|\bexhibition view\b|\b3d\b|\bvideo\b|\bfilm\b|\bglass\b|\bcarpet\b|\bcostume\b|\bcarving\b|\brelief\b|\bbook cover\b)/i;
@@ -38,6 +38,16 @@
     {id:'nara', label:'나라국립박물관', category:'Paintings in the Nara National Museum'},
     {id:'taipei', label:'타이완 국립고궁박물원', category:'Paintings in the National Palace Museum'}
   ]);
+  // Paintings located in African museums, discovered through Wikimedia Commons
+  // collection categories (not the institutions' own authenticated APIs).
+  const AFRICAN_MUSEUMS = Object.freeze([
+    {id:'iziko', label:'이지코 남아공 국립미술관', category:'Paintings in the South African National Gallery'},
+    {id:'ethiopia', label:'에티오피아 국립박물관', category:'Paintings in the National Museum of Ethiopia'},
+    {id:'zimbabwe', label:'짐바브웨 국립미술관', category:'Paintings in the National Gallery of Zimbabwe'},
+    {id:'johannesburg', label:'요하네스버그 미술관', category:'Paintings by Paul Signac in the Johannesburg Art Gallery'}
+  ]);
+  // Conservative exclusions for exhibition-room, 3-D-object and framed photography filenames.
+  const COMMONS_SCENE_BLOCK = /(?:gallery (?:interior|view|room)|museum (?:interior|hall|room)|exhibition (?:view|room|hall)|on (?:the )?wall|framed (?:painting|art)|sculpture|statue|installation|museum building|art gallery building|visitor|tour group|gallery entrance)/i;
   function wikimediaText(v) {
     return string(v).replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&')
       .replace(/&#(?:x([0-9a-f]+)|([0-9]+));/gi, (all,h,d)=>{
@@ -70,6 +80,29 @@
         description:'',license:wikimediaText(metadata.LicenseShortName&&metadata.LicenseShortName.value),
         rightsOK:commonsPublicDomain(metadata)&&/^(?:image\/(?:jpeg|png|webp))$/.test(mime),
         museumRegion:'asia',verifiedCollectionCategory:true,style:'',styles:[],date:'',
+        page:string(info&&info.descriptionurl)
+      };
+    });
+  }
+  function normalizeAfricanCommons(data, museumId) {
+    const museum=AFRICAN_MUSEUMS.find(m=>m.id===museumId);
+    if(!museum)return [];
+    const pages=data&&data.query&&data.query.pages;
+    return (Array.isArray(pages)?pages:[]).filter(page=>!COMMONS_SCENE_BLOCK.test(string(page&&page.title))).map(page=>{
+      const info=page&&Array.isArray(page.imageinfo)?page.imageinfo[0]:null;
+      const metadata=info&&info.extmetadata||{};
+      const mime=string(info&&info.mime).toLowerCase();
+      const title=string(page&&page.title).replace(/^File:/i,'').replace(/\.(?:jpg|jpeg|png|webp)$/i,'').replace(/_/g,' ');
+      return {
+        key:'commons:'+String(page&&page.pageid),source:museum.label,
+        title:wikimediaText(title)||'제목 미상',
+        artist:wikimediaText(metadata.Artist&&metadata.Artist.value)||'작가 미상',
+        image:string(info&&(info.thumburl||info.url)),
+        width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
+        type:'Painting',classification:'Painting',medium:'',
+        description:'',license:wikimediaText(metadata.LicenseShortName&&metadata.LicenseShortName.value),
+        rightsOK:commonsPublicDomain(metadata)&&/^(?:image\/(?:jpeg|png|webp))$/.test(mime),
+        museumRegion:'africa',verifiedCollectionCategory:true,style:'',styles:[],date:'',
         page:string(info&&info.descriptionurl)
       };
     });
@@ -192,7 +225,8 @@
     {id:'surrealism', label:'초현실주의', en:'Surrealism'},
     {id:'abstract', label:'추상미술', en:'Abstract Art'},
     {id:'contemporary', label:'현대미술', en:'Contemporary Art'},
-    {id:'asian', label:'아시아 회화', en:'Asian painting'}
+    {id:'asian', label:'아시아 회화', en:'Asian painting'},
+    {id:'african', label:'아프리카 소장 회화', en:'Paintings from African museum collections'}
   ]);
   const STYLE_RULES = [
     ['post-impressionism',/\bpost[\s-]*impressionis(?:m|t)\b/i],
@@ -233,6 +267,7 @@
   function classifyMovement(a) {
     if(!a)return null;
     if(a.museumRegion==='asia' && a.verifiedCollectionCategory === true && a.rightsOK)return 'asian';
+    if(a.museumRegion==='africa' && a.verifiedCollectionCategory === true && a.rightsOK)return 'african';
     if(a.source==='메트로폴리탄' && a.department==='Asian Art' && a.rightsOK)return 'asian';
     const styles = [string(a.style), ...(Array.isArray(a.styles)?a.styles.filter(x=>typeof x==='string'):[])].join(' | ');
     // Only curator-provided style fields can justify classifications such as cubism
@@ -261,6 +296,6 @@
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
   }
   return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, highResolution, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
-    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, commonsPublicDomain,
+    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel };
 });

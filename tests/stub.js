@@ -72,6 +72,17 @@ window.__GALLERY_TEST__={
     }
     if(kind==='chicago')return {config:{iiif_url:'https://www.artic.edu/iiif/2'},pagination:{total_pages:1},data:TEST_ARTWORKS};
     if(kind==='chicagoMovement'){const id=String(param).split(':')[0];const m=window.GalleryCore.MOVEMENTS.find(x=>x.id===id);return {config:{iiif_url:'https://www.artic.edu/iiif/2'},pagination:{total_pages:1},data:TEST_ARTWORKS.filter(a=>a.style_title===m?.en)};}
+    if(kind==='asianCommons'||kind==='africanCommons'){
+      const museumId=String(param).split(':')[0];
+      const seed=Array.from(museumId).reduce((n,c)=>n+c.charCodeAt(0),0)*1000;
+      const pages=Array.from({length:12},(_,i)=>({
+        pageid:seed+i+1,title:'File:Art_'+museumId+'_'+(i+1)+'.jpg',
+        imageinfo:[{mime:'image/jpeg',width:1250,height:1850,
+          thumburl:'https://upload.wikimedia.org/wikipedia/commons/thumb/mock_'+museumId+'_'+(i+1)+'.jpg',
+          extmetadata:{LicenseShortName:{value:'Public domain'},Artist:{value:'Test Painter'}}}]
+      }));
+      return {query:{pages,searchinfo:{totalhits:12}}};
+    }
     if(kind==='metSearch')return {total:0,objectIDs:[]};
     throw Error('Unexpected API '+kind);
   }
