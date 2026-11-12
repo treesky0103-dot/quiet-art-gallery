@@ -1,0 +1,20 @@
+name: Probe Oceania and South American painting categories
+on:
+  push:
+    paths: ['.github/workflows/probe-oceania-southamerica.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify category results rights resolution and portrait coverage
+        run: python3 scripts/probe_oceania_southamerica.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oceania-southamerica-verified-sample
+          path: oceania_southamerica_source_probe.json
+          if-no-files-found: error
+          retention-days: 14
