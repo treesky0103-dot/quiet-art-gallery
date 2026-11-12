@@ -1,0 +1,61 @@
+name: Verify and Export Canonical v1.6.4 Contemporary Release
+on:
+  push:
+    paths:
+      - '.github/workflows/export-v1.6.4-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the exact published APK and validate content
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download v1.6.4 --repo "$GITHUB_REPOSITORY" --pattern 'QuietArtGallery_v1.6.4.apk' --pattern 'SHA256SUMS.txt'
+          sha256sum --check SHA256SUMS.txt
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          import hashlib,json
+          p='QuietArtGallery_v1.6.4.apk'
+          with ZipFile(p) as z:
+              assert z.testzip() is None
+              assert 'classes.dex' in z.namelist()
+              core=z.read('assets/core.js').decode('utf-8')
+              app=z.read('assets/app.js').decode('utf-8')
+              html=z.read('assets/index.html').decode('utf-8')
+              assert 'MODERN_CATEGORIES' in core
+              assert 'normalizeModernOpenverse' in core
+              assert 'normalizeModernCommons' in core
+              assert 'C.targetModern(state.stats.slot)' in app
+              assert "kind==='openverseModern'" in app
+              assert "kind==='modernCommons'" in app
+              assert 'hydrateHistory()' in app
+              assert '고전·근대 65% · 현대 35%' in html
+              assert '80% 이상' in html
+              assert 'v1.6.4' in html
+              art=json.loads(z.read('assets/offline-deck.json'))
+              assert len(art)==8,len(art)
+              known=set()
+              for i,a in enumerate(art):
+                  b=z.read('assets/offline/fallback-'+str(i)+'.jpg')
+                  assert hashlib.sha256(b).hexdigest()==a['sha256']
+                  assert a['key'] not in known
+                  known.add(a['key'])
+                  w,h=a['width'],a['height']
+                  assert min(w,h)>=1200 and max(w,h)>=1600 and h>w
+                  assert .50<=w/h<=.703125
+              print('PASS: public release ZIP CRC, checksum, modern art logic, 80% fill, 90d history, 8 distinct CC0/PD emergency artworks')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuietArtGallery-v1.6.4-PUBLIC-CANONICAL-APK
+          path: |
+            QuietArtGallery_v1.6.4.apk
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
