@@ -4,6 +4,7 @@ import html
 import json
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 
@@ -15,11 +16,11 @@ CATEGORIES = {
     "hermitage": "Paintings in the Hermitage",
 }
 USER_AGENT = "QuietArtGallerySourceProbe/1.0 (+https://github.com/treesky0103-dot/quiet-art-gallery)"
-def fetch(cat):
+def fetch(cat, offset=0):
     args = {
         "action": "query", "generator": "search",
         "gsrsearch": f'deepcategory:"{cat}"', "gsrnamespace": "6",
-        "gsrlimit": "50", "gsroffset": "0", "prop": "imageinfo",
+        "gsrlimit": "50", "gsroffset": str(offset), "prop": "imageinfo",
         "iiprop": "url|size|mime|extmetadata", "iiurlwidth": "2000",
         "format": "json", "formatversion": "2",
     }
@@ -43,19 +44,37 @@ def eligible(info):
     fill=min((w/h)/screen_ratio,screen_ratio/(w/h))
     return fill>=.75 and info.get("thumburl",info.get("url","")).startswith("https://upload.wikimedia.org/")
 def main():
+    # Bounded sample: twenty result pages per museum, never a full catalog count.
+    sample_limit=1000
     ok=0
     for mid,category in CATEGORIES.items():
-        try:
-            data=fetch(category)
-            if "error" in data:raise RuntimeError(str(data["error"])[:180])
-            pages=(data.get("query") or {}).get("pages") or []
-            images=[p.get("imageinfo",[None])[0] for p in pages if p.get("imageinfo")]
-            candidates=[x for x in images if eligible(x)]
-            print(json.dumps({"museum":mid,"category":category,"pages":len(pages),"images":len(images),
-                "eligible_metadata":len(candidates),"first_pageid":pages[0].get("pageid") if pages else None},ensure_ascii=False))
-            if pages:ok+=1
-        except Exception as exc:
-            print(json.dumps({"museum":mid,"error":str(exc)[:200]},ensure_ascii=False))
-    print(f"Sources responding with image file search results: {ok}/5")
+        pages_seen=set()
+        qualifying=set()
+        errors=[]
+        requests=0
+        for offset in range(0,sample_limit,50):
+            try:
+                data=fetch(category, offset)
+                requests+=1
+                if "error" in data:raise RuntimeError(str(data["error"])[:180])
+                pages=(data.get("query") or {}).get("pages") or []
+                if not pages:break
+                for p in pages:
+                    pid=p.get("pageid")
+                    if pid in pages_seen:continue
+                    pages_seen.add(pid)
+                    info=(p.get("imageinfo") or [None])[0]
+                    if eligible(info):qualifying.add(pid)
+                if len(pages)<50:break
+                time.sleep(.18)
+            except Exception as exc:
+                errors.append({"offset":offset,"error":str(exc)[:120]})
+                break
+        row={"museum":mid,"sampled_unique_files":len(pages_seen),
+             "eligible_metadata":len(qualifying),"requests":requests,
+             "errors":errors,"full_collection_count":"NOT_MEASURED"}
+        print(json.dumps(row,ensure_ascii=False),flush=True)
+        if len(pages_seen)>0:ok+=1
+    print(f"Sources responding with image file search results: {ok}/5",flush=True)
     return 0 if ok==5 else 1
 if __name__=="__main__": sys.exit(main())
