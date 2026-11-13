@@ -247,8 +247,12 @@ def main():
              "known_candidates_non_verified":known,"acquired_verified":acquired,
              "gap_min_without_future_collection":required-acquired,"evidence":source_type})
     # The only acquired files are the at-most-three explicit decoded sample files.
+    all_ready=all(x["acquired_verified"]>=x["required_unique_90d"] for x in summary)
+    verified_hashes=[x["sha256"] for x in samples["files"]]
+    if len(set(verified_hashes)) != len(verified_hashes):
+        raise RuntimeError("Downloaded sample contains duplicate image bytes")
     results={"required_90day":TOTAL,"categories":29,
-         "all_29_ready":False,"actual_verified_downloads":samples["verified_image_files"],
+         "all_29_ready":all_ready,"actual_verified_downloads":samples["verified_image_files"],
          "note":"No 259200-image catalog was built. Metadata samples and object record totals are not images.",
          "slots":summary,"commons_samples":rows,"registry_source_categories_found":registry_count,
          "official_api_probes":official,
@@ -259,7 +263,7 @@ def main():
         "".join(f"{x['slot']},{x['id']},{x['label']},{x['required_unique_90d']},{x['known_candidates_non_verified']},{x['acquired_verified']}\n" for x in summary),
         encoding="utf-8")
     print("AUDIT_FINAL "+json.dumps({"required_90day":TOTAL,"categories":29,
-        "all_29_ready":False,"actual_verified_downloads":samples["verified_image_files"],
+        "all_29_ready":all_ready,"actual_verified_downloads":samples["verified_image_files"],
         "commons_metadata_eligible_sample_total":sum(x["first_page_eligible_metadata"] for x in rows if x["kind"]=="movement"),
         "registered_photo_animation_candidates":sum(x[3] for x in SPECIAL),
         "museum_and_modern_source_categories_in_app":registry_count,
