@@ -8,19 +8,21 @@ const src=p=>fs.readFileSync(path.join(ROOT,p),'utf8');
 const first=['rijks','nga','getty','smk','paris','london','walters'];
 const oceania=['ngv','nsw','aus-nga','south-aus','queensland','auckland','dunedin'];
 const latam=['brasil-mnba','argentina-mnba','chile-mnba','peru-mali','colombia-mnc','uruguay-mnav','brasil-pina'];
+const major=['louvre','orsay','british','prado','hermitage'];
 test('all 14 independently probed Oceania / South America museums are configured in Java and JS',()=>{
- assert.equal(C.ADDITIONAL_MUSEUMS.length,21);
+ assert.equal(C.ADDITIONAL_MUSEUMS.length,26);
  assert.deepEqual(C.ADDITIONAL_MUSEUMS.slice(0,7).map(x=>x.id),first);
  assert.deepEqual(C.ADDITIONAL_MUSEUMS.slice(7,14).map(x=>x.id),oceania);
- assert.deepEqual(C.ADDITIONAL_MUSEUMS.slice(14).map(x=>x.id),latam);
- assert.equal(new Set(C.ADDITIONAL_MUSEUMS.map(x=>x.category)).size,21);
+ assert.deepEqual(C.ADDITIONAL_MUSEUMS.slice(14,21).map(x=>x.id),latam);
+ assert.deepEqual(C.ADDITIONAL_MUSEUMS.slice(21).map(x=>x.id),major);
+ assert.equal(new Set(C.ADDITIONAL_MUSEUMS.map(x=>x.category)).size,26);
  const java=src('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java');
  for(const m of C.ADDITIONAL_MUSEUMS){
    assert(java.includes('"'+m.category+'"'),m.id+' missing from Android whitelist');
    assert(java.includes('"'+m.id+'"'),m.id+' missing from Android ID list');
  }
  const app=src('web/app.js');
- assert.match(app,/state\.additionalOrder\+\+\*8/);
+ assert.match(app,/state\.additionalOrder\+\+\*11/);
  assert.match(app,/CONFIG\.minimumPortraitFill/);
 });
 test('minimum 80% area on the ACTUAL portrait tablet size; never crop landscape/near-square',()=>{
