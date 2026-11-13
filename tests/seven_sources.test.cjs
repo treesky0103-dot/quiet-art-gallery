@@ -8,8 +8,8 @@ function sample(license='Public domain',width=2500,height=3600,title='File:Sampl
 }
 test('seven public collection categories including Paris Municipal Museum representative',()=>{
  assert.deepEqual(C.ADDITIONAL_MUSEUMS.slice(0,7).map(x=>x.id),ids);
- assert.equal(C.ADDITIONAL_MUSEUMS.length,21);
- assert.equal(new Set(C.ADDITIONAL_MUSEUMS.map(x=>x.category)).size,21);
+ assert.equal(C.ADDITIONAL_MUSEUMS.length,26);
+ assert.equal(new Set(C.ADDITIONAL_MUSEUMS.map(x=>x.category)).size,26);
  assert.equal(C.ADDITIONAL_MUSEUMS.find(x=>x.id==='paris').category,'Paintings in Musée Carnavalet');
  assert.equal(C.MOVEMENTS.length,17);
  assert.deepEqual(C.MOVEMENTS.slice(-4).map(x=>x.id),['asian','african','additional','modern']);
