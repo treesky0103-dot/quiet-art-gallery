@@ -183,10 +183,39 @@ def download_sample(rows):
             except Exception as e:errors.append(str(e)[:100])
     return {"verified_image_files":len(verified),"files":verified,"errors":errors[:10]}
 
+
+def discover_repo_museum_categories():
+    """Extract all existing regional/other museum Commons categories from original app code."""
+    source=Path("web/core.js").read_text(encoding="utf-8")
+    groups=[
+        ("asian_museum","ASIAN_MUSEUMS"),
+        ("african_museum","AFRICAN_MUSEUMS"),
+        ("world_museum","ADDITIONAL_MUSEUMS"),
+        ("world_museum","SMITHSONIAN_MUSEUMS"),
+        ("modern_topic","MODERN_CATEGORIES"),
+    ]
+    collected=[]
+    for kind,name in groups:
+        match=re.search(r"const\s+"+name+r"\s*=\s*Object\.freeze\(\[(.*?)\]\);",source,re.S)
+        if not match:raise RuntimeError("Missing museum source group: "+name)
+        body=match.group(1)
+        categories=[cat for _,cat in re.findall(r"\bcategory\s*:\s*(['\"])(.*?)\1",body,re.S)]
+        for inner in re.findall(r"\bcategories\s*:\s*\[(.*?)\]",body,re.S):
+            categories += [cat for _,cat in re.findall(r"(['\"])(.*?)\1",inner,re.S)]
+        for i,cat in enumerate(categories):
+            actual_kind=("asian_museum" if "Freer Gallery" in cat else kind)
+            collected.append((actual_kind,name.lower()+"-"+str(i),cat))
+    unique={};existing={cat for _,cat in MUSEUMS}
+    for kind,ident,cat in collected:
+        if cat not in existing and cat not in unique:unique[cat]=(kind,ident,cat)
+    assert len(collected)>=40, "Museum+modern registry was unexpectedly incomplete"
+    return list(unique.values()),len(collected)
+
 def main():
     assert len(MOVEMENTS)==17 and len(SPECIAL)==12
     assert len(TARGET)==29 and sum(TARGET.values())==TOTAL
-    tasks=[("movement",key,cat) for key,label,cat in MOVEMENTS]+[("museum",key,cat) for key,cat in MUSEUMS]
+    registry,registry_count=discover_repo_museum_categories()
+    tasks=[("movement",key,cat) for key,label,cat in MOVEMENTS]+[("museum",key,cat) for key,cat in MUSEUMS]+registry
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
         rows=list(pool.map(audit_task,tasks))
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
@@ -207,6 +236,13 @@ def main():
             key,label,kind,registered=SPECIAL[i-17]
             acquired=0;known=registered
             source_type="legacy candidate URL count, not downloaded/decoded"
+        if i<17 and key in ("asian","african","additional","modern"):
+            kinds={"asian":["asian_museum"],"african":["african_museum"],
+                   "additional":["world_museum","museum"],
+                   "modern":["modern_topic"]}[key]
+            ids={item["pageid"] for row in rows if row["kind"] in kinds
+                 for item in row.get("sample_candidates",[]) if item.get("pageid")}
+            known=len(ids)
         summary.append({"slot":i+1,"id":key,"label":label,"required_unique_90d":required,
              "known_candidates_non_verified":known,"acquired_verified":acquired,
              "gap_min_without_future_collection":required-acquired,"evidence":source_type})
@@ -214,7 +250,8 @@ def main():
     results={"required_90day":TOTAL,"categories":29,
          "all_29_ready":False,"actual_verified_downloads":samples["verified_image_files"],
          "note":"No 259200-image catalog was built. Metadata samples and object record totals are not images.",
-         "slots":summary,"commons_samples":rows,"official_api_probes":official,
+         "slots":summary,"commons_samples":rows,"registry_source_categories_found":registry_count,
+         "official_api_probes":official,
          "downloaded_sample_proof":samples}
     (OUT/"global_29_readiness.json").write_text(json.dumps(results,ensure_ascii=False,indent=2),encoding="utf-8")
     (OUT/"29_categories.csv").write_text(
@@ -224,6 +261,8 @@ def main():
     print("AUDIT_FINAL "+json.dumps({"required_90day":TOTAL,"categories":29,
         "all_29_ready":False,"actual_verified_downloads":samples["verified_image_files"],
         "commons_metadata_eligible_sample_total":sum(x["first_page_eligible_metadata"] for x in rows if x["kind"]=="movement"),
-        "registered_photo_animation_candidates":sum(x[3] for x in SPECIAL)},ensure_ascii=False),flush=True)
+        "registered_photo_animation_candidates":sum(x[3] for x in SPECIAL),
+        "museum_and_modern_source_categories_in_app":registry_count,
+        "additional_categories_queried":len(registry)},ensure_ascii=False),flush=True)
 
 if __name__=="__main__":main()
