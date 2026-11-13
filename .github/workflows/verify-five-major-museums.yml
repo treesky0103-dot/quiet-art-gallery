@@ -1,0 +1,18 @@
+name: Verify 5 museum Commons live metadata
+on:
+  push:
+    branches: [feat-five-major-museums-20261114]
+    paths:
+      - 'scripts/probe_five_major_museums.py'
+      - '.github/workflows/verify-five-major-museums.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  metadata-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query 5 Commons collection categories (no image download)
+        run: python3 scripts/probe_five_major_museums.py

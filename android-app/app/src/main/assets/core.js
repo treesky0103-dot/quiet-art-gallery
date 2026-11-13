@@ -80,7 +80,12 @@
     {id:"peru-mali",label:"페루 리마 미술관",category:"Paintings in the Museo de Arte de Lima"},
     {id:"colombia-mnc",label:"콜롬비아 국립박물관",category:"Paintings in the Museo Nacional de Colombia"},
     {id:"uruguay-mnav",label:"우루과이 국립시각예술박물관",category:"Paintings in the Museo Nacional de Artes Visuales"},
-    {id:"brasil-pina",label:"브라질 상파울루 피나코테카",category:"Paintings in the Pinacoteca do Estado de São Paulo"}
+    {id:"brasil-pina",label:"브라질 상파울루 피나코테카",category:"Paintings in the Pinacoteca do Estado de São Paulo"},
+    {id:'louvre',label:'루브르 박물관',category:'Paintings in the Louvre'},
+    {id:'orsay',label:'오르세 미술관',category:"Paintings in the Musée d'Orsay"},
+    {id:'british',label:'대영박물관',category:'Prints in the British Museum',type:'Print'},
+    {id:'prado',label:'프라도 미술관',category:'Paintings in the Museo del Prado'},
+    {id:'hermitage',label:'에르미타시 박물관',category:'Paintings in the Hermitage'}
   ]);
 
   // Smithsonian collection images are discovered from the paintings-category
@@ -251,7 +256,7 @@
         artist:wikimediaText(metadata.Artist&&metadata.Artist.value)||'작가 미상',
         image:string(info&&(info.thumburl||info.url)),
         width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
-        type:'Painting',classification:'Painting',medium:'',
+        type:museum.type||'Painting',classification:museum.type||'Painting',medium:'',
         description:'',license:wikimediaText(metadata.LicenseShortName&&metadata.LicenseShortName.value),
         rightsOK:commonsPublicDomain(metadata)&&/^(?:image\/(?:jpeg|png|webp))$/.test(mime),
         museumRegion:'additional',verifiedCollectionCategory:true,style:'',styles:[],date:'',
