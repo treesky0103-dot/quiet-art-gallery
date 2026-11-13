@@ -83,6 +83,21 @@
     {id:"brasil-pina",label:"브라질 상파울루 피나코테카",category:"Paintings in the Pinacoteca do Estado de São Paulo"}
   ]);
 
+  // Smithsonian collection images are discovered from the paintings-category
+  // pages on Wikimedia Commons. These are NOT a direct Smithsonian EDAN API
+  // integration. NMAA spans the Freer Gallery's Chinese, Japanese and Indian
+  // painting collections; count the three categories as one museum.
+  const SMITHSONIAN_MUSEUMS=Object.freeze([
+    {id:'saam',label:'스미스소니언 미국미술관',
+      museumRegion:'additional',
+      categories:['Paintings in the Smithsonian American Art Museum']},
+    {id:'nmaa',label:'스미스소니언 국립아시아미술관',
+      museumRegion:'asia',
+      categories:['Paintings from China in the Freer Gallery',
+        'Paintings from Japan in the Freer Gallery of Art',
+        'Paintings from India in the Freer Gallery of Art']}
+  ]);
+
   // "Modern" is a verified category with explicit year evidence or original
   // digital-art title, NOT a broad keyword search of historic reproductions.
   const MODERN_CATEGORIES = Object.freeze([
@@ -243,6 +258,32 @@
         page:string(info&&info.descriptionurl)
       };
     });
+  }
+  function normalizeSmithsonianCommons(data,museumId){
+    const museum=SMITHSONIAN_MUSEUMS.find(m=>m.id===museumId);
+    if(!museum)return [];
+    const pages=data&&data.query&&data.query.pages;
+    const blocked=/\b(?:detail(?:ed)?|verso|back side|frame|gallery wall|portrait of visitors|original photograph|interior shot)\b/i;
+    return (Array.isArray(pages)?pages:[])
+      .filter(page=>!COMMONS_SCENE_BLOCK.test(string(page&&page.title))&&!blocked.test(string(page&&page.title)))
+      .map(page=>{
+        const info=page&&Array.isArray(page.imageinfo)?page.imageinfo[0]:null;
+        const metadata=info&&info.extmetadata||{};
+        const mime=string(info&&info.mime).toLowerCase();
+        const title=string(page&&page.title).replace(/^File:/i,'').replace(/\.(?:jpg|jpeg|png|webp)$/i,'').replace(/_/g,' ');
+        return {
+          key:'commons:'+String(page&&page.pageid),source:museum.label,
+          title:wikimediaText(title)||'제목 미상',
+          artist:wikimediaText(metadata.Artist&&metadata.Artist.value)||'작가 미상',
+          image:string(info&&(info.thumburl||info.url)),
+          width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
+          type:'Painting',classification:'Painting',medium:'',
+          description:'',license:wikimediaText(metadata.LicenseShortName&&metadata.LicenseShortName.value),
+          rightsOK:commonsPublicDomain(metadata)&&/^(?:image\/(?:jpeg|png|webp))$/.test(mime),
+          museumRegion:museum.museumRegion,verifiedCollectionCategory:true,style:'',styles:[],date:'',
+          page:string(info&&info.descriptionurl)
+        };
+      });
   }
   function fingerprint(a) {
     const norm = value => string(value).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '').slice(0, 95);
@@ -475,7 +516,7 @@
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
   }
   return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, MIN_ACCEPTABLE_SHORT_SIDE, MIN_ACCEPTABLE_LONG_SIDE, highResolution, acceptableResolution, qualityTier, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
-    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, commonsPublicDomain,
+    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, SMITHSONIAN_MUSEUMS, normalizeSmithsonianCommons, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
     portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance };

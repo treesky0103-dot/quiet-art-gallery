@@ -14,15 +14,15 @@
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
     recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
-    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},modern:{},openverseModern:{}},
-    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0,
+    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{}},
+    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,
     modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,modernFetched:0,modernErrors:0,
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
-    failures:{cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,modern:0},backoff:{},
+    failures:{cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관 21곳(공용 자료)',modern:'현대 창작 · Openverse / 위키미디어'};
+  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관 21곳(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -225,6 +225,18 @@
         gsrnamespace:'6',gsrlimit:'50',gsroffset:String(offset),prop:'imageinfo',
         iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',format:'json',formatversion:'2',origin:'*'});
       url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
+    }else if(kind==='smithsonianCommons'){
+      const [museumId,catText,offsetText]=String(param).split(':');
+      const museum=C.SMITHSONIAN_MUSEUMS.find(m=>m.id===museumId);
+      const idx=Number(catText),offset=Number(offsetText);
+      if(!museum||!Number.isInteger(idx)||idx<0||idx>=museum.categories.length||
+         !Number.isInteger(offset)||offset<0||offset>100000)throw Error('스미스소니언 작품 검색 조건 오류');
+      const qs=new URLSearchParams({action:'query',generator:'search',
+        gsrsearch:'deepcategory:"'+museum.categories[idx]+'"',gsrnamespace:'6',
+        gsrlimit:'50',gsroffset:String(offset),prop:'imageinfo',
+        iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',format:'json',
+        formatversion:'2',origin:'*'});
+      url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
     }else if(kind==='modernCommons'){
       const [id,offsetText]=String(param).split(':');
       const cat=C.MODERN_CATEGORIES.find(c=>c.id===id);
@@ -301,6 +313,16 @@
         const rows=Array.isArray(res.query&&res.query.pages)?res.query.pages.length:0;
         const total=Number(res.query&&res.query.searchinfo&&res.query.searchinfo.totalhits)||0;
         state.cursors.additional[museum.id]=(rows===0||rows<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
+      }else if(source==='smithsonian'){
+        const museum=C.SMITHSONIAN_MUSEUMS[state.smithsonianOrder++%C.SMITHSONIAN_MUSEUMS.length];
+        const idx=museum.id==='nmaa' ? state.smithsonianCategoryOrder++%museum.categories.length:0;
+        const cursorKey=museum.id+':'+idx,offset=Number(state.cursors.smithsonian[cursorKey])||0;
+        const res=await request('smithsonianCommons',museum.id+':'+idx+':'+offset);
+        const items=C.normalizeSmithsonianCommons(res,museum.id).filter(C.eligibleArt);
+        addCandidates(items);
+        const rows=Array.isArray(res.query&&res.query.pages)?res.query.pages.length:0;
+        const total=Number(res.query&&res.query.searchinfo&&res.query.searchinfo.totalhits)||0;
+        state.cursors.smithsonian[cursorKey]=(rows===0||rows<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
       }else if(source==='modern'){
         const mode=state.modernOrder++%3;
         if(mode!==2){
@@ -391,7 +413,7 @@
     state.filling=(async()=>{
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<14){
-        const sources=['cleveland','chicago','met','asian','african','additional','additional','modern','modern'];
+        const sources=['cleveland','chicago','met','asian','african','additional','additional','smithsonian','modern','modern'];
         const source=sources[state.sourceOrder++%sources.length];
         attempts++;
         progress+=await fetchSource(source);
@@ -703,6 +725,10 @@
         await perform(m.label,'africanCommons',m.id+':0',r=>({count:Array.isArray(r.query&&r.query.pages)?r.query.pages.length:0,items:C.normalizeAfricanCommons(r,m.id)}));
       for(const m of C.ADDITIONAL_MUSEUMS)
         await perform(m.label,'additionalCommons',m.id+':0',r=>({count:Array.isArray(r.query&&r.query.pages)?r.query.pages.length:0,items:C.normalizeAdditionalCommons(r,m.id)}));
+      for(const m of C.SMITHSONIAN_MUSEUMS)for(let idx=0;idx<m.categories.length;idx++)
+        await perform(m.label+' · '+(m.id==='nmaa'?['중국','일본','인도'][idx]:'미국 회화'),
+          'smithsonianCommons',m.id+':'+idx+':0',
+          r=>({count:Array.isArray(r.query&&r.query.pages)?r.query.pages.length:0,items:C.normalizeSmithsonianCommons(r,m.id)}));
       for(const m of C.MODERN_CATEGORIES)
         await perform('현대: '+m.label,'modernCommons',m.id+':0',r=>({count:Array.isArray(r.query&&r.query.pages)?r.query.pages.length:0,items:C.normalizeModernCommons(r,m.id)}));
       for(let idx=0;idx<C.MODERN_OPENVERSE_TERMS.length;idx++)
@@ -907,6 +933,7 @@
       state.cursors.asian=state.cursors.asian||{};
       state.cursors.african=state.cursors.african||{};
       state.cursors.additional=state.cursors.additional||{};
+      state.cursors.smithsonian=state.cursors.smithsonian||{};
       state.cursors.modern=state.cursors.modern||{};
       state.cursors.openverseModern=state.cursors.openverseModern||{};
       state.stats.modernShown=Number(state.stats.modernShown)||0;
@@ -954,7 +981,7 @@
     movementIndex:state.stats.movementIndex,movement:state.current&&state.current.art.movement,
     flipped:state.flipped,caption:[ui.title.textContent,ui.meta.textContent],
     dedupBlocked:state.dedupBlocked,exhaustedTicks:state.exhaustedTicks,recentKeys:state.recentKeys.size,
-    visualHashes:state.visualHashes.size,sourceCount:3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length,
+    visualHashes:state.visualHashes.size,sourceCount:3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length+C.SMITHSONIAN_MUSEUMS.length,
     modernShown:state.stats.modernShown,modernFetched:state.modernFetched,modernPool:state.pool.filter(a=>a.modern).length,modernTargetNext:C.targetModern(state.stats.slot),
     lastSwapAt:state.lastSwapAt,tickCount:state.tickCount,emergencySwaps:state.emergencySwaps,
     offlineReady:state.offlineReady.length,nativeClock:state.nativeClock,nextDueAt:state.nextDueAt});

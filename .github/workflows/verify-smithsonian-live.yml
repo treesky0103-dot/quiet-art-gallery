@@ -1,0 +1,23 @@
+name: Verify Two Smithsonian Museum Live Artwork Sources
+on:
+  push:
+    paths: ['.github/workflows/verify-smithsonian-live.yml','scripts/verify_smithsonian_live.py']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Pillow
+        run: python3 -m pip install --quiet pillow --break-system-packages
+      - name: Read-only Commons API and actual painting pixel audit
+        run: python3 scripts/verify_smithsonian_live.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smithsonian-saam-nmaa-commons-live-verification
+          path: smithsonian_audit/report.json
+          retention-days: 14
+          if-no-files-found: warn

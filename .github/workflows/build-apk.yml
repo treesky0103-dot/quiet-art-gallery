@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-      - name: Check v1.6.5 portrait 75 percent medium fallback high-priority regression
+      - name: Check v1.6.6 Smithsonian two institutions, portrait 75 percent, 90d no-repeat regression
         run: |
           grep -q "versionName '1.6.5'" android-app/app/build.gradle
           node --check web/app.js
@@ -37,17 +37,17 @@ jobs:
         with:
           gradle-version: '8.9'
           cache-provider: basic
-      - name: Build v1.6.5 APK
+      - name: Build v1.6.6 APK
         working-directory: android-app
         run: gradle :app:assembleDebug --no-daemon
       - name: Verify APK and SHA256
         run: |
           test -s android-app/app/build/outputs/apk/debug/app-debug.apk
           sha256sum android-app/app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload installable v1.6.5 APK
+      - name: Upload installable v1.6.6 APK
         uses: actions/upload-artifact@v4
         with:
-          name: QuietArtGallery-v1.6.5-debug-APK
+          name: QuietArtGallery-v1.6.6-debug-APK
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
@@ -55,7 +55,7 @@ jobs:
       - name: Archive web and browser-test source
         uses: actions/upload-artifact@v4
         with:
-          name: QuietArtGallery-v1.6.5-browser-test-source
+          name: QuietArtGallery-v1.6.6-browser-test-source
           path: |
             web/
             tests/

@@ -280,6 +280,26 @@ public final class MainActivity extends Activity {
                     URLEncoder.encode(terms[idx],"UTF-8")+
                     "&license=cc0%2Cpdm&source=wikimedia&page="+page+"&page_size=20";
         }
+        if(type.equals("smithsonianCommons")){
+            String[] parts=p.split(":",-1);
+            if(parts.length!=3)throw new IOException("스미스소니언 작품 검색 인자 오류");
+            String[] ids={"saam","nmaa"};
+            String[][] categories={
+                {"Paintings in the Smithsonian American Art Museum"},
+                {"Paintings from China in the Freer Gallery",
+                 "Paintings from Japan in the Freer Gallery of Art",
+                 "Paintings from India in the Freer Gallery of Art"}
+            };
+            int museum=-1;
+            for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))museum=i;
+            if(museum<0)throw new IOException("등록되지 않은 스미스소니언 미술관");
+            int catIndex=bounded(parts[1],0,categories[museum].length-1);
+            int off=bounded(parts[2],0,100000);
+            String query="deepcategory:\""+categories[museum][catIndex]+"\"";
+            return "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=50&gsrsearch="+
+                URLEncoder.encode(query,"UTF-8")+"&gsroffset="+off+
+                "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=2000&format=json&formatversion=2";
+        }
         if(type.equals("additionalCommons")){
             String[] parts=p.split(":",-1);
             if(parts.length!=2)throw new IOException("추가 미술관 검색 조건 오류");
@@ -367,7 +387,7 @@ public final class MainActivity extends Activity {
         HttpURLConnection conn=(HttpURLConnection)new URL(url).openConnection();
         conn.setConnectTimeout(10000);conn.setReadTimeout(16000);conn.setInstanceFollowRedirects(false);
         conn.setRequestProperty("Accept","application/json");
-        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.5 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
+        conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.6 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
         conn.setRequestProperty("AIC-User-Agent","Quiet-Art-Gallery (local personal project)");
         try{
             if(conn.getResponseCode()!=200)throw new IOException("HTTP "+conn.getResponseCode());
