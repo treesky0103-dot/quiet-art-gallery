@@ -16,12 +16,18 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p=Path("android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java")
           s=p.read_text()
           def replace(old,new):
               global s
-              assert s.count(old)==1,(old,s.count(old))
-              s=s.replace(old,new)
+              if s.count(old)==1:
+                  s=s.replace(old,new)
+                  return
+              pattern=r"\\s*".join(re.escape(line.strip()) for line in old.splitlines() if line.strip())
+              matches=list(re.finditer(pattern,s))
+              assert len(matches)==1,(old,len(matches))
+              s=s[:matches[0].start()]+new+s[matches[0].end():]
           replace("MAX_IMAGE_BYTES = 8 * 1024 * 1024","MAX_IMAGE_BYTES = 16 * 1024 * 1024")
           replace("private synchronized WebResourceResponse artworkResponse(String src)", "private WebResourceResponse artworkResponse(String src)")
           replace('''            HttpURLConnection con=(HttpURLConnection)new URL(src).openConnection();
