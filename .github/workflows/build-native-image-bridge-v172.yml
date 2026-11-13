@@ -1,0 +1,84 @@
+name: Build native image bridge verification v1.7.2
+on:
+  push:
+    branches:
+      - fix-gallery-image-bridge-20261113
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Safely patch native image bridge, preserving same-origin and host whitelist
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java")
+          s=p.read_text()
+          def replace(old,new):
+              global s
+              assert s.count(old)==1,(old,s.count(old))
+              s=s.replace(old,new)
+          replace("MAX_IMAGE_BYTES = 8 * 1024 * 1024","MAX_IMAGE_BYTES = 16 * 1024 * 1024")
+          replace("private synchronized WebResourceResponse artworkResponse(String src)", "private WebResourceResponse artworkResponse(String src)")
+          replace('''            HttpURLConnection con=(HttpURLConnection)new URL(src).openConnection();
+            con.setConnectTimeout(10000);con.setReadTimeout(18000);con.setInstanceFollowRedirects(false);
+            con.setRequestProperty("Accept","image/jpeg,image/png,image/webp");
+            try {
+                if(con.getResponseCode()!=200)return response(502,"text/plain",new byte[0]);''','''            URL target=new URL(src);
+            HttpURLConnection con=null;
+            for(int hop=0;hop<4;hop++){
+                con=(HttpURLConnection)target.openConnection();
+                con.setConnectTimeout(10000);con.setReadTimeout(25000);con.setInstanceFollowRedirects(false);
+                con.setRequestProperty("Accept","image/jpeg,image/png,image/webp");
+                int status=con.getResponseCode();
+                if(status>=300&&status<400){
+                    String location=con.getHeaderField("Location");
+                    if(location==null){con.disconnect();return response(502,"text/plain",new byte[0]);}
+                    URL next=new URL(target,location);
+                    if(!safeImageUrl(next.toExternalForm())){con.disconnect();return response(403,"text/plain",new byte[0]);}
+                    con.disconnect();con=null;target=next;continue;
+                }
+                break;
+            }
+            if(con==null)return response(502,"text/plain",new byte[0]);
+            try {
+                int http=con.getResponseCode();
+                if(http!=200)return response(http>=400&&http<=599?http:502,"text/plain",new byte[0]);''')
+          replace('''}catch(Exception err){tmp.delete();throw err;}''','''}catch(Exception err){
+                    tmp.delete();
+                    if(String.valueOf(err.getMessage()).contains("이미지 용량 제한 초과"))
+                        return response(413,"text/plain",new byte[0]);
+                    throw err;
+                }''')
+          p.write_text(s)
+          assert "MAX_IMAGE_BYTES = 16 * 1024 * 1024" in s
+          assert "if(!safeImageUrl(next.toExternalForm()))" in s
+          print("NATIVE_PATCH_APPLIED")
+          PY
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android platform and tools
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile patched native Android bridge
+        working-directory: android-app
+        run: gradle :app:assembleDebug --no-daemon
+      - name: Verify native APK payload
+        run: |
+          unzip -t android-app/app/build/outputs/apk/debug/app-debug.apk | tail -1
+          sha256sum android-app/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuietArtGallery-v172-native-bridge-debug-unsigned-source
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
