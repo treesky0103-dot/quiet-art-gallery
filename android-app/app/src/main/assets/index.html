@@ -33,12 +33,12 @@
 <div id="settings-backdrop" class="backdrop" hidden></div>
 <section id="settings" class="settings" aria-label="전시 설정" aria-modal="true" role="dialog" hidden>
   <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.6.6</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
-  <p class="sheet-copy">서양 미술사조 13개와 지역별 소장 회화 3개, 현대 창작 그림 전용 1개까지 17개 구간을 운영합니다. 기존 33개 미술관·기관에 스미스소니언 미국미술관과 스미스소니언 국립아시아미술관 2곳을 더해 총 35곳의 소장 회화를 조회합니다. 국립아시아미술관은 프리어 미술관의 중국·일본·인도 회화를 이용합니다. Openverse·위키미디어 현대 공개작품 검색도 유지합니다. 세로 화면의 75% 미만을 채우는 작품과 중화질 미만 이미지는 제외합니다(짧은 변 1000px·긴 변 1400px 이상). 고화질 우선(짧은 변 1200px·긴 변 1600px 이상), 부족할 때 중화질을 허용합니다. 회화·드로잉·판화·평면 현대미술만 전시합니다. 작품은 잘라내지 않으며 액자·조각·전시실 사진은 가능한 한 자동 제외합니다.</p>
+  <p class="sheet-copy">서양 미술사조 13개와 지역별 소장 회화 3개, 현대 창작 그림 전용 1개까지 17개 구간을 운영합니다. 기존 33개 미술관·기관과 스미스소니언 2곳에 루브르·오르세·대영박물관·프라도·에르미타시 5곳을 더해 총 40곳의 평면 작품을 조회합니다. 국립아시아미술관은 프리어 미술관의 중국·일본·인도 회화를 이용합니다. Openverse·위키미디어 현대 공개작품 검색도 유지합니다. 세로 화면의 75% 미만을 채우는 작품과 중화질 미만 이미지는 제외합니다(짧은 변 1000px·긴 변 1400px 이상). 고화질 우선(짧은 변 1200px·긴 변 1600px 이상), 부족할 때 중화질을 허용합니다. 회화·드로잉·판화·평면 현대미술만 전시합니다. 작품은 잘라내지 않으며 액자·조각·전시실 사진은 가능한 한 자동 제외합니다.</p>
   <div class="pill-row"><div class="metric"><small>전환 주기</small><strong>30초</strong></div><div class="metric"><small>화면 채움</small><strong>75% 이상</strong></div><div class="metric"><small>재사용 제한</small><strong>90일 엄격</strong></div></div>
   <div class="rule"><span>화질 선택</span><strong>고화질 우선 · 중화질 허용</strong></div>
   <div class="rule"><span>전시 구성 목표</span><strong>고전·근대 65% · 현대 35% (후보 부족 시 탄력 운영)</strong></div>
   <div class="rule"><span>현대 작품 실제 전시</span><strong id="modern-count">0점</strong></div>
-  <div class="rule"><span>작품 수집</span><strong>기존 33곳 + 스미스소니언 2곳 = 총 35곳</strong></div>
+  <div class="rule"><span>작품 수집</span><strong>기존 35곳 + 유럽 주요 미술관 5곳 = 총 40곳</strong></div>
   <div class="rule"><span>이미지 캐시 최대</span><strong>100MB (초과 시 80MB까지 정리)</strong></div>
   <div class="rule"><span>전시한 작품</span><strong id="seen-count">0점</strong></div>
   <div class="rule"><span>현재 방향 비율</span><strong id="ratio-count">–</strong></div>
@@ -52,7 +52,7 @@
   <div class="action-grid">
     <button class="wide-btn" id="rotate-180">화면 180° 회전 · 그림으로 돌아가기</button>
     <button class="wide-btn" id="refresh-now">작품 목록 새로 가져오기</button>
-    <button class="wide-btn" id="audit-now">35개 미술관 + 현대 공개작품 공급원 표본 조사</button>
+    <button class="wide-btn" id="audit-now">40개 미술관 + 현대 공개작품 공급원 표본 조사</button>
     <button class="wide-btn" id="free-space">이미지 캐시 비우기</button>
     <button class="wide-btn" id="export-history">감상 기록 백업</button>
     <button class="wide-btn" id="import-history">감상 기록 복원</button>
@@ -61,7 +61,8 @@
   <div class="rule"><span>작품 수 조사</span><strong>표본·미확정</strong></div>
   <p id="audit-summary" class="small-note" style="white-space:pre-wrap;max-height:36vh;overflow:auto">조사 전 · 전체 수 미확인</p>
   <p id="setting-message" class="small-note">10GB 이상 남은 태블릿도 용량 증가를 막도록 관리합니다. 이미지 캐시와 감상 기록은 별도로 보관합니다.</p>
-  <p class="small-note">스미스소니언 작품은 미술관 자체 API가 아닌 Wikimedia Commons의 소장품별 분류를 통해 검색합니다. 작품마다 퍼블릭 도메인 또는 CC0 표기를 확인하며, 개별 이미지가 부족하거나 권리가 제한된 경우 전시하지 않습니다. 국립아시아미술관(NMAA)의 프리어 미술관은 중국·일본·인도 회화 세 분류를 번갈아 검색합니다.</p>
+  <p class="small-note">추가된 5곳은 공식 미술관 API가 아니라 Wikimedia Commons의 작품 분류에서 조회합니다. 대영박물관은 판화를, 나머지 4곳은 회화를 수집합니다. 퍼블릭 도메인 또는 CC0 작품만 후보로 삼습니다.</p>
+   <p class="small-note">스미스소니언 작품은 미술관 자체 API가 아닌 Wikimedia Commons의 소장품별 분류를 통해 검색합니다. 작품마다 퍼블릭 도메인 또는 CC0 표기를 확인하며, 개별 이미지가 부족하거나 권리가 제한된 경우 전시하지 않습니다. 국립아시아미술관(NMAA)의 프리어 미술관은 중국·일본·인도 회화 세 분류를 번갈아 검색합니다.</p>
   <p class="small-note">현대 작품은 2000년 이후 제작 연도 또는 원본 디지털 회화라는 근거가 있는 공개 작품만 후보로 삼습니다. Openverse는 CC0·퍼블릭 도메인과 위키미디어 원본만 검색하며, Behance 포트폴리오를 허가 없이 내려받지는 않습니다. 현대 비중 35%는 후보가 충분할 때의 목표이지 보장된 실제 비율이 아닙니다.</p>
   <p class="small-note">새 그림을 준비하지 못할 때에는 APK에 내장된 공개 회화를 미전시 작품부터 사용합니다. 일반 작품과 비상 작품 모두 최근 90일 내 중복 전시하지 않습니다. 새 작품이 모두 소진되면 그림을 반복하지 않고 현재 그림을 유지합니다. 따라서 새 후보가 없는 동안에는 30초 전환이 불가능합니다. 24시간 90일 무중복을 위해서는 259,200개 작품이 필요하며 현재 확보 수량은 미확인입니다. Android 절전·중단 시에도 전환 시각이 지연될 수 있습니다.</p>
   <button class="done" id="settings-done">그림으로 돌아가기</button>
