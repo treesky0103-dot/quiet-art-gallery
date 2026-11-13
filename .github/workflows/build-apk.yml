@@ -1,7 +1,7 @@
 name: Build Gallery APK
 on:
   push:
-    branches: [main]
+    branches: [main, feat-five-major-museums-20261114]
   workflow_dispatch:
 permissions:
   contents: read
