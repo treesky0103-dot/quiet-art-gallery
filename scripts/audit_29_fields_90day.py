@@ -200,7 +200,7 @@ def main():
             matched=next(x for x in rows if x["kind"]=="movement" and x["id"]==key)
             sample_count=matched["first_page_eligible_metadata"]
             # Metadata-sample count is NOT acquired.
-            acquired=0
+            acquired=sum(1 for proof in samples["files"] if proof["kind"]=="movement" and proof["id"]==key)
             known=sample_count
             source_type="Wikimedia Commons category metadata (non-exhaustive)"
         else:
@@ -209,7 +209,7 @@ def main():
             source_type="legacy candidate URL count, not downloaded/decoded"
         summary.append({"slot":i+1,"id":key,"label":label,"required_unique_90d":required,
              "known_candidates_non_verified":known,"acquired_verified":acquired,
-             "gap_min_without_future_collection":required,"evidence":source_type})
+             "gap_min_without_future_collection":required-acquired,"evidence":source_type})
     # The only acquired files are the at-most-three explicit decoded sample files.
     results={"required_90day":TOTAL,"categories":29,
          "all_29_ready":False,"actual_verified_downloads":samples["verified_image_files"],
