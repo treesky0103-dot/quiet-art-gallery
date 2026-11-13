@@ -1,0 +1,598 @@
+{
+  "timestamp_utc": "2026-11-13T18:25:42Z",
+  "run_id": 43482476441,
+  "method": "Wikimedia Commons deepcategory first 50 file hits + PD/CC0 source metadata + original size + 75% portrait; zero is not entire archive count",
+  "evidence_only": true,
+  "required_90day_unique": 259200,
+  "registered_special_urls": 123,
+  "verified_downloaded_decoded_image_files": 3,
+  "download_sha256_and_images_location": "GitHub Actions artifact global-29-category-90day-evidence-audit",
+  "scope": "61 search paths are category queries not 61 individual museums; actual installed APK unchanged",
+  "sample_rows": [
+    {
+      "kind": "movement",
+      "id": "rococo",
+      "category": "Rococo paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 22891,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "baroque",
+      "category": "Baroque paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 60929,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "renaissance",
+      "category": "Renaissance paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 61095,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "neoclassicism",
+      "category": "Neoclassical paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 10123,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "realism",
+      "category": "Realist paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 8395,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "romanticism",
+      "category": "Romantic paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 3,
+      "index_hits_unverified": 13891,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "expressionism",
+      "category": "Expressionist paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 8448,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "post-impressionism",
+      "category": "Post-Impressionist paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 12057,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "impressionism",
+      "category": "Impressionist paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 32734,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "cubism",
+      "category": "Cubist paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 2,
+      "index_hits_unverified": 1092,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "abstract",
+      "category": "Abstract paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 12403,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "contemporary",
+      "category": "Contemporary paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 726,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "asian",
+      "category": "Asian paintings",
+      "first_page_files": 0,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 0,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "african",
+      "category": "Paintings in African museums",
+      "first_page_files": 0,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 0,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "additional",
+      "category": "Paintings in museums",
+      "first_page_files": 0,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 0,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "modern",
+      "category": "Digital paintings",
+      "first_page_files": 0,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 0,
+      "error": null
+    },
+    {
+      "kind": "movement",
+      "id": "surrealism",
+      "category": "Surrealist paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 2,
+      "index_hits_unverified": 424,
+      "error": null
+    },
+    {
+      "kind": "museum",
+      "id": "orsay",
+      "category": "Paintings in the Musée d'Orsay",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 3,
+      "index_hits_unverified": 4933,
+      "error": null
+    },
+    {
+      "kind": "museum",
+      "id": "louvre",
+      "category": "Paintings in the Louvre",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 15288,
+      "error": null
+    },
+    {
+      "kind": "museum",
+      "id": "british",
+      "category": "Prints in the British Museum",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 18,
+      "index_hits_unverified": 71439,
+      "error": null
+    },
+    {
+      "kind": "museum",
+      "id": "prado",
+      "category": "Paintings in the Museo del Prado",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 8,
+      "index_hits_unverified": 8806,
+      "error": null
+    },
+    {
+      "kind": "asian_museum",
+      "id": "asian_museums-0",
+      "category": "Paintings in the National Museum of Korea",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 116,
+      "error": null
+    },
+    {
+      "kind": "museum",
+      "id": "hermitage",
+      "category": "Paintings in the Hermitage",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 3,
+      "index_hits_unverified": 7341,
+      "error": null
+    },
+    {
+      "kind": "asian_museum",
+      "id": "asian_museums-2",
+      "category": "Paintings in the Kyoto National Museum",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 4,
+      "index_hits_unverified": 194,
+      "error": null
+    },
+    {
+      "kind": "asian_museum",
+      "id": "asian_museums-1",
+      "category": "Japanese paintings in the Tokyo National Museum",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 2,
+      "index_hits_unverified": 1251,
+      "error": null
+    },
+    {
+      "kind": "asian_museum",
+      "id": "asian_museums-3",
+      "category": "Paintings in the Nara National Museum",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 157,
+      "error": null
+    },
+    {
+      "kind": "african_museum",
+      "id": "african_museums-0",
+      "category": "Paintings in the South African National Gallery",
+      "first_page_files": 47,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 47,
+      "error": null
+    },
+    {
+      "kind": "asian_museum",
+      "id": "asian_museums-4",
+      "category": "Paintings in the National Palace Museum",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 7,
+      "index_hits_unverified": 2155,
+      "error": null
+    },
+    {
+      "kind": "african_museum",
+      "id": "african_museums-2",
+      "category": "Paintings in the National Gallery of Zimbabwe",
+      "first_page_files": 6,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 6,
+      "error": null
+    },
+    {
+      "kind": "african_museum",
+      "id": "african_museums-1",
+      "category": "Paintings in the National Museum of Ethiopia",
+      "first_page_files": 25,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 25,
+      "error": null
+    },
+    {
+      "kind": "african_museum",
+      "id": "african_museums-3",
+      "category": "Paintings by Paul Signac in the Johannesburg Art Gallery",
+      "first_page_files": 1,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 1,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-0",
+      "category": "Paintings in the Rijksmuseum Amsterdam",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 2,
+      "index_hits_unverified": 27597,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-1",
+      "category": "Paintings in the National Gallery of Art (Washington, D.C.)",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 7661,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-2",
+      "category": "Paintings in The J. Paul Getty Museum",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 1675,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-4",
+      "category": "Paintings in Musée Carnavalet",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 3302,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-5",
+      "category": "Paintings in the National Gallery, London",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 7331,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-3",
+      "category": "Paintings in Statens Museum for Kunst",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 3,
+      "index_hits_unverified": 9266,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-6",
+      "category": "Paintings in the Walters Art Museum",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 15,
+      "index_hits_unverified": 2444,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-7",
+      "category": "Paintings in the National Gallery of Victoria",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 4,
+      "index_hits_unverified": 481,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-8",
+      "category": "Paintings in the Art Gallery of New South Wales",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 398,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-9",
+      "category": "Paintings in the National Gallery of Australia",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 4,
+      "index_hits_unverified": 189,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-10",
+      "category": "Paintings in the Art Gallery of South Australia",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 3,
+      "index_hits_unverified": 221,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-11",
+      "category": "Paintings in the Queensland Art Gallery",
+      "first_page_files": 41,
+      "first_page_eligible_metadata": 2,
+      "index_hits_unverified": 41,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-12",
+      "category": "Paintings in the Auckland Art Gallery",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 2,
+      "index_hits_unverified": 592,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-13",
+      "category": "Paintings in the Dunedin Public Art Gallery",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 51,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-14",
+      "category": "Brazilian paintings in the Museu Nacional de Belas Artes",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 4,
+      "index_hits_unverified": 604,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-16",
+      "category": "Paintings in the Museo Nacional de Bellas Artes (Chile)",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 1,
+      "index_hits_unverified": 106,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-15",
+      "category": "Paintings in the Museo Nacional de Bellas Artes (Argentina)",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 3,
+      "index_hits_unverified": 1176,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-17",
+      "category": "Paintings in the Museo de Arte de Lima",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 6,
+      "index_hits_unverified": 95,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-19",
+      "category": "Paintings in the Museo Nacional de Artes Visuales",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 66,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-18",
+      "category": "Paintings in the Museo Nacional de Colombia",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 5,
+      "index_hits_unverified": 82,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "additional_museums-20",
+      "category": "Paintings in the Pinacoteca do Estado de São Paulo",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 3,
+      "index_hits_unverified": 589,
+      "error": null
+    },
+    {
+      "kind": "world_museum",
+      "id": "smithsonian_museums-0",
+      "category": "Paintings in the Smithsonian American Art Museum",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 7,
+      "index_hits_unverified": 5586,
+      "error": null
+    },
+    {
+      "kind": "asian_museum",
+      "id": "smithsonian_museums-1",
+      "category": "Paintings from China in the Freer Gallery",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 2,
+      "index_hits_unverified": 77,
+      "error": null
+    },
+    {
+      "kind": "asian_museum",
+      "id": "smithsonian_museums-2",
+      "category": "Paintings from Japan in the Freer Gallery of Art",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 3,
+      "index_hits_unverified": 71,
+      "error": null
+    },
+    {
+      "kind": "modern_topic",
+      "id": "modern_categories-0",
+      "category": "2020s paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 865,
+      "error": null
+    },
+    {
+      "kind": "asian_museum",
+      "id": "smithsonian_museums-3",
+      "category": "Paintings from India in the Freer Gallery of Art",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 4,
+      "index_hits_unverified": 176,
+      "error": null
+    },
+    {
+      "kind": "modern_topic",
+      "id": "modern_categories-2",
+      "category": "Contemporary paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 726,
+      "error": null
+    },
+    {
+      "kind": "modern_topic",
+      "id": "modern_categories-1",
+      "category": "2010s paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 2370,
+      "error": null
+    },
+    {
+      "kind": "modern_topic",
+      "id": "modern_categories-3",
+      "category": "Paintings by Wikipedians",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 249,
+      "error": null
+    },
+    {
+      "kind": "modern_topic",
+      "id": "modern_categories-4",
+      "category": "21st-century paintings",
+      "first_page_files": 50,
+      "first_page_eligible_metadata": 0,
+      "index_hits_unverified": 36117,
+      "error": null
+    }
+  ],
+  "official_api_queries": [
+    {
+      "id": "cleveland",
+      "response_success": true,
+      "returned_total_unverified": 41819,
+      "count_scope": "API query only, NOT verified portrait CC0 art"
+    },
+    {
+      "id": "met",
+      "response_success": true,
+      "returned_total_unverified": 61262,
+      "count_scope": "API query only, NOT verified portrait CC0 art"
+    },
+    {
+      "id": "chicago",
+      "response_success": true,
+      "returned_total_unverified": 133287,
+      "count_scope": "API query only, NOT verified portrait CC0 art"
+    },
+    {
+      "id": "rijks",
+      "response_success": true,
+      "returned_total_unverified": null,
+      "count_scope": "API query only, NOT verified portrait CC0 art"
+    }
+  ],
+  "reported_summary": {
+    "required_90day": 259200,
+    "categories": 29,
+    "all_29_ready": false,
+    "actual_verified_downloads": 3,
+    "commons_metadata_eligible_sample_total": 9,
+    "registered_photo_animation_candidates": 123,
+    "museum_and_modern_source_categories_in_app": 44,
+    "additional_categories_queried": 39
+  }
+}
