@@ -1,0 +1,52 @@
+name: Probe real artwork download and disk re-read v1.7.2
+on:
+  push:
+    branches:
+      - fix-gallery-image-bridge-20261113
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch real public-domain gallery image and verify persisted bytes
+        run: |
+          python3 - <<'PY'
+          from urllib.request import Request,urlopen
+          from pathlib import Path
+          import hashlib
+          urls=[
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Marchesa_Brigida_Spinola-Doria.jpg/1800px-Marchesa_Brigida_Spinola-Doria.jpg",
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Marchesa_Brigida_Spinola-Doria.jpg/1600px-Marchesa_Brigida_Spinola-Doria.jpg",
+          "https://upload.wikimedia.org/wikipedia/commons/2/2d/Marchesa_Brigida_Spinola-Doria.jpg"]
+          errors=[]
+          for url in urls:
+              try:
+                  req=Request(url,headers={"User-Agent":"QuietArtGalleryImageTest/1.7.2 (contact: openaccess@invalid.example)","Accept":"image/jpeg"})
+                  with urlopen(req,timeout=35) as response:
+                      code=response.status
+                      mime=response.headers.get("Content-Type","")
+                      image=response.read(16*1024*1024+1)
+                  if code!=200 or not mime.lower().startswith("image/jpeg") or not 100000<len(image)<16*1024*1024:
+                      raise ValueError("status/mime/size: "+str((code,mime,len(image))))
+                  if not(image.startswith(bytes.fromhex("ffd8")) and image.endswith(bytes.fromhex("ffd9"))):
+                      raise ValueError("not complete JPEG")
+                  path=Path("validated_public_domain_art.jpg")
+                  path.write_bytes(image)
+                  reopened=path.read_bytes()
+                  assert reopened==image
+                  digest=hashlib.sha256(reopened).hexdigest()
+                  print("PASS_PUBLIC_ART_REAL_NETWORK_AND_DISK_REOPEN",url,len(reopened),digest)
+                  break
+              except Exception as e:
+                  errors.append(type(e).__name__+": "+str(e)[:180])
+          else:
+              raise RuntimeError("Real image download unavailable: "+"; ".join(errors))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-public-art-real-network-v172
+          path: validated_public_domain_art.jpg
+          if-no-files-found: error
+          retention-days: 7
