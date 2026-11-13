@@ -1,0 +1,48 @@
+name: Audit 90-day 29-category global supply
+on:
+  push:
+    branches:
+      - research-259200-global-supply-20261114
+    paths:
+      - scripts/audit_29_fields_90day.py
+      - .github/workflows/audit-29-field-global-supply.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image decoder
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Validate audit script syntax
+        run: python -m py_compile scripts/audit_29_fields_90day.py
+      - name: Probe Commons art categories and official museum API sources
+        run: python -u scripts/audit_29_fields_90day.py
+      - name: Show independent report assertions
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('audit-global-90day/global_29_readiness.json')
+          report=json.loads(p.read_text(encoding='utf-8'))
+          assert report['required_90day']==259200
+          assert len(report['slots'])==29
+          assert sum(r['required_unique_90d'] for r in report['slots'])==259200
+          assert report['all_29_ready'] is False
+          assert len({r['id'] for r in report['slots']})==29
+          print('Report structure and 29-category exact quota: VERIFIED')
+          print('Completeness: NOT VERIFIED (never claim successful 259200 images)')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: global-29-category-90day-evidence-audit
+          path: audit-global-90day/
+          if-no-files-found: warn
+          retention-days: 14
