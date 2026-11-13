@@ -28,6 +28,9 @@ jobs:
           grep -q 'SMITHSONIAN_MUSEUMS' web/core.js
           grep -q 'smithsonianCommons' web/app.js
           grep -q 'type.equals("smithsonianCommons")' android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q '총 35곳' web/index.html
+          grep -q 'normalizeSmithsonianCommons' web/core.js
+          grep -q 'const sources=.*smithsonian' web/app.js
           for f in app.js core.js index.html style.css sw.js manifest.webmanifest icon-192.png icon-512.png; do
             cmp "web/$f" "android-app/app/src/main/assets/$f"
           done
