@@ -34,17 +34,16 @@ test('modern category discovery is bounded and does not scrape Behance',()=>{
  assert(app.includes("source==='modern'"));
  assert(app.includes("m.id==='modern'"));
 });
-test('35% target is exactly 7 evenly distributed slots in every 20',()=>{
- for(let base=0;base<200;base+=20){
-  const ids=Array.from({length:20},(_,i)=>base+i).filter(C.targetModern);
-  assert.equal(ids.length,7);
-  assert(ids.some(n=>n%20<10));
-  assert(ids.some(n=>n%20>=10));
+test('1800+ 80-percent target is exactly four of each five display slots',()=>{
+ for(let base=0;base<500;base+=5){
+   const ids=Array.from({length:5},(_,i)=>base+i).filter(C.targetPost1800);
+   assert.deepEqual(ids,[base,base+1,base+2,base+3]);
  }
+ assert.deepEqual(C.eraQuota90Days(),{total:259200,post1800:207360,remainder:51840});
  const app=source('web/app.js');
- assert.match(app,/C.targetModern\(state\.stats\.slot\)/);
- assert.match(app,/if\(wantModern\)/);
- assert.match(app,/if\(state\.prepared\)return state\.prepared;/);
+ assert.match(app,/C.targetPost1800\(state\.stats\.slot\)/);
+ assert.match(app,/C.artworkEra\(a\)/);
+ assert.match(app,/C.artworkEra\(show\.art\)/);
 });
 test('2024 CC0 portrait original is admitted and routed to a dedicated modern group',()=>{
  const v=C.normalizeModernCommons(commons(),'2020s');
@@ -90,6 +89,6 @@ test('Android API still uses 30 seconds, v1.6.6 isolated app and 90d dedup',()=>
  assert(gradle.includes("versionName '1.6.6'"));
  assert(gradle.includes("applicationId 'com.gallery.kiosk.v166'"));
  const html=source('web/index.html');
- assert(html.includes('고전·근대 65% · 현대 35%'));
+ assert(html.includes('1800년 이후 제작 80% · 기타 20%'));
  assert(html.includes('id="modern-count"'));
 });
