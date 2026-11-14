@@ -1,0 +1,37 @@
+name: Diagnose first CMA image gallery metadata rejection
+on:
+  push:
+    branches: [test-10min-displayready-2061-20261115]
+    paths: ['.github/workflows/diagnose-cma-metadata.yml']
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get official source classification for artwork 123414
+        run: |
+          python - <<'PY'
+          import json, urllib.request
+          u='https://openaccess-api.clevelandart.org/api/artworks/123414'
+          d=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'User-Agent':'QuietArtGalleryResearch/1.0'}),timeout=20))
+          a=d.get('data') or d
+          typ=a.get('type');tec=a.get('technique')
+          obj={'key':'cma:123414','source':'클리블랜드','title':a.get('title'),'type':typ,'classification':typ,'medium':tec,'image':'https://appassets.gallery/offline/pack-2061.jpg','license':'CC0','rightsOK':True,'description':'','width':1000,'height':1400}
+          open('/tmp/one-art.json','w').write(json.dumps(obj))
+          print('OFFICIAL_FIRST_ART_META',json.dumps({'title':a.get('title'),'type':typ,'technique':tec},ensure_ascii=False))
+          PY
+      - name: Run individual JS checks with exact first-art metadata
+        run: |
+          node <<'NODE'
+          const C=require('./web/core.js'),a=require('/tmp/one-art.json');
+          console.log('ACTUAL_TYPE',JSON.stringify(a.type),'ACTUAL_MEDIUM',JSON.stringify(a.medium));
+          console.log('SAFE_URL',C.safeURL(a.image));
+          console.log('ELIGIBLE_ART',C.eligibleArt(a));
+          console.log('METADATA_RESOLUTION',C.metadataResolutionOkay(a));
+          console.log('FILL',C.fillsPortraitScreen(a.width,a.height,600,960,.75));
+          console.log('ELIGIBLE_WITHOUT_MEDIUM',C.eligibleArt({...a,medium:''}));
+          console.log('ELIGIBLE_WITH_OFFICIAL_TYPE_PRINT',C.eligibleArt({...a,type:'Print',classification:'Print',medium:''}));
+          NODE
