@@ -10,6 +10,8 @@
     pause:el('toggle-pause'),done:el('settings-done'),msg:el('setting-message')};
   const state = {
     collectorStopReason:'', offlineManifestCount:0, cacheSnapshot:null, cacheSnapshotAt:0,
+    downloadedKeys:new Set(),downloadedVisualHashes:new Map(),downloadedURLs:new Set(),
+    inflightVisualHashes:new Map(),offlineUnseenReady:0,inventoryUpdatedAt:0,networkOnline:true,
     db:null,pool:[],pendingKeys:new Set(), prepared:null,current:null,currentNode:ui.b,
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
@@ -200,8 +202,8 @@
         /^(?:offline\/fallback-(?:[0-9]|1[0-5])|offline\/pack-[0-9]{4})\.jpg$/.test(art.offlineAsset||'') &&
         C.eligibleArt(art) && C.metadataResolutionOkay(art)));
       const loaded=[];
-      // Preload first 12, then validate others asynchronously, without
-      // blocking the original 30-second rotation.
+      // Load an initial dozen. Pace later decoding in small batches so
+      // background prefetch does not starve low-memory tablets.
       for(const art of all.slice(0,12)){
         art.movement=C.classifyMovement(art)||'additional';
         try{loaded.push(await loadImage(art));}catch(e){state.lastErr='내장 작품: '+e.message;}
@@ -209,16 +211,16 @@
       state.offlineReady=loaded;
       let index=12;
       async function preloadMore(){
-        for(let k=0;k<10 && index<all.length;k++,index++){
+        for(let k=0;k<4 && index<all.length;k++,index++){
           const art=all[index];
           art.movement=C.classifyMovement(art)||'additional';
           try{state.offlineReady.push(await loadImage(art));}
           catch(e){state.lastErr='내장 작품 점검: '+e.message;}
         }
-        if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),350);
+        if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),2000);
         else updateInfo();
       }
-      if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),350);
+      if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),2000);
       return loaded.length;
     }catch(e){state.lastErr='비상 작품 준비: '+e.message;return 0;}
   }
@@ -697,17 +699,68 @@
   }
   // Read at most a small page of saved unshown artworks, so 8GiB of downloads
   // need not become a single giant settings record or startup JS array.
+  function cachedArtworkExists(art){
+    if(!window.GalleryAndroid||typeof window.GalleryAndroid.cachedArtworkExists!=='function')return true;
+    try{return !!window.GalleryAndroid.cachedArtworkExists(art.image);}
+    catch(_){return false;}
+  }
+  function discardRejectedArtwork(art){
+    if(!window.GalleryAndroid||typeof window.GalleryAndroid.discardUnshownDuplicate!=='function')return;
+    try{window.GalleryAndroid.discardUnshownDuplicate(art.image);}catch(_){}
+  }
+  function similarDownloadedImage(hash,key){
+    if(!hash)return false;
+    for(const [priorKey,priorHash] of state.downloadedVisualHashes){
+      if(priorKey!==key&&priorHash&&C.hashDistance(hash,priorHash)<=2)return true;
+    }
+    for(const [priorKey,priorHash] of state.inflightVisualHashes){
+      if(priorKey!==key&&priorHash&&C.hashDistance(hash,priorHash)<=2)return true;
+    }
+    for(const item of state.offlineReady){
+      if(item.visualHash&&C.hashDistance(hash,item.visualHash)<=2)return true;
+    }
+    return false;
+  }
+  async function hydrateDownloadedIndex(){
+    if(!state.db||!state.db.objectStoreNames.contains('downloaded'))return 0;
+    state.downloadedKeys.clear();state.downloadedVisualHashes.clear();state.downloadedURLs.clear();
+    return new Promise((resolve,reject)=>{
+      let count=0;
+      const tx=state.db.transaction('downloaded','readonly'),req=tx.objectStore('downloaded').openCursor();
+      req.onsuccess=()=>{
+        const cursor=req.result;if(!cursor)return;
+        const row=cursor.value,art=row&&row.art;
+        if(art&&typeof art.key==='string'&&C.eligibleArt(art)){
+          state.downloadedKeys.add(art.key);
+          if(row.visualHash&&/^[0-9a-f]{16}$/.test(row.visualHash))
+            state.downloadedVisualHashes.set(art.key,row.visualHash);
+          if(typeof art.image==='string')state.downloadedURLs.add(art.image);
+          count++;
+        }
+        cursor.continue();
+      };
+      tx.oncomplete=()=>resolve(count);
+      tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+    });
+  }
   async function restoreDownloadedInventory(limit=300){
     if(!state.db||!state.db.objectStoreNames.contains('downloaded'))return 0;
     return new Promise((resolve,reject)=>{
-      let added=0;
+      let added=0;const staleKeys=[];
       const tx=state.db.transaction('downloaded','readonly');
       const req=tx.objectStore('downloaded').openCursor();
       req.onsuccess=()=>{
         const cursor=req.result;
         if(!cursor||added>=limit||state.pool.length>=CONFIG.maxQueue)return;
         const art=cursor.value&&cursor.value.art;
-        if(art&&C.eligibleArt(art)&&C.metadataResolutionOkay(art)&&
+        const exists=art&&cachedArtworkExists(art);
+        if(art&&!exists){
+          state.downloadedKeys.delete(art.key);
+          state.downloadedVisualHashes.delete(art.key);
+          state.downloadedURLs.delete(art.image);
+          staleKeys.push(art.key);
+        }
+        if(art&&exists&&C.eligibleArt(art)&&C.metadataResolutionOkay(art)&&
            !seenInMemory(art,null)&&!state.pendingKeys.has(art.key)){
           state.pendingKeys.add(art.key);state.pool.push(art);
           state.prefetchedKeys.add(art.key);
@@ -715,7 +768,10 @@
         }
         cursor.continue();
       };
-      tx.oncomplete=()=>resolve(added);
+      tx.oncomplete=()=>{
+        Promise.all(staleKeys.map(key=>dbDelete('downloaded',key))).then(
+          ()=>resolve(added),reject);
+      };
       tx.onerror=()=>reject(tx.error);
       tx.onabort=()=>reject(tx.error);
     });
@@ -1295,7 +1351,11 @@
         const ok=window.GalleryAndroid.clearImageCache();
         if(ok){
           state.cacheSnapshotAt=0;
-          try{await dbClear('downloaded');state.prefetchedKeys.clear();}
+          try{
+            await dbClear('downloaded');
+            state.prefetchedKeys.clear();state.downloadedKeys.clear();
+            state.downloadedVisualHashes.clear();state.downloadedURLs.clear();
+          }
           catch(e){state.lastErr='캐시 목록 정리 실패: '+String(e.message||e);}
         }
         ui.msg.textContent=ok?'이미지 캐시와 다운로드 목록을 삭제했습니다. 90일 감상 기록은 보존됩니다.':'캐시 정리에 실패했습니다.';
@@ -1350,6 +1410,7 @@
       await loadMovementCatalog();
       await restoreCollector();
       await hydrateHistory();
+      await hydrateDownloadedIndex();
       await restoreCandidatePool();
       await restoreDownloadedInventory(300);
       await loadOfflineDeck();
