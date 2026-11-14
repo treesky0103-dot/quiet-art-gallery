@@ -109,7 +109,7 @@ public final class MainActivity extends Activity {
     private final Handler galleryClock = new Handler(Looper.getMainLooper());
     private Runnable galleryTicker;
     private long galleryDeadline;
-    private static final long ART_INTERVAL_MS = 30000L;
+    private static final long ART_INTERVAL_MS = 60000L;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -280,6 +280,13 @@ public final class MainActivity extends Activity {
             if(b[0]=='R'&&b[1]=='I'&&b[2]=='F'&&b[3]=='F'&&b[8]=='W'&&b[9]=='E'&&b[10]=='B'&&b[11]=='P')return "image/webp";
         }catch(Exception ignored){}
         return "image/jpeg";
+    }
+    private synchronized int countCachedImageFiles(){
+        int count=0;
+        File[] files=imageDir.listFiles();
+        if(files!=null)for(File file:files)
+            if(file.isFile()&&file.length()>0&&file.getName().endsWith(".img"))count++;
+        return count;
     }
     private synchronized long cacheBytes(){
         long size=0;File[] files=imageDir.listFiles();
@@ -595,8 +602,8 @@ public final class MainActivity extends Activity {
     }
     final class Bridge {
         @JavascriptInterface public void startArtworkClock(int intervalMs){
-            // A fixed 30-second clock. Do not accept arbitrary values.
-            if(intervalMs!=30000)return;
+            // A fixed one-minute clock. Do not accept arbitrary values.
+            if(intervalMs!=60000)return;
             runOnUiThread(()->{if(web!=null)startGalleryTicker();});
         }
         @JavascriptInterface public void stopArtworkClock(){
@@ -659,7 +666,8 @@ public final class MainActivity extends Activity {
                 .put("cleanupBytes",CLEAN_TO).put("freeBytes",imageDir.getUsableSpace())
                 .put("reservedBytes",FREE_RESERVE).put("purgedBytes",evictionDeletedBytes)
                 .put("purgedFiles",evictionDeletedFiles)
-                .put("displayedCacheEntries",shownLedger.count()).toString();
+                .put("displayedCacheEntries",shownLedger.count())
+                .put("imageFiles",countCachedImageFiles()).toString();
             }catch(Exception e){return "{}";}
         }
         @JavascriptInterface public void markArtworkDisplayed(String url){
