@@ -21,7 +21,7 @@ test('Downloaded but unshown candidates have a durable indexed inventory',()=>{
   const app=read('web/app.js');
   assert.match(app,/indexedDB\.open\('quiet-art-gallery-v1',2\)/);
   assert.match(app,/db\.createObjectStore\('downloaded',\{keyPath:'key'\}\)/);
-  assert.match(app,/await dbPutMany\('downloaded',\[\{key:art\.key,art,when:Date\.now\(\)\}\]\)/);
+  assert.match(app,/await dbPutMany\('downloaded',\[\{key:art\.key,art,visualHash:loaded\.visualHash,when:Date\.now\(\)\}\]\)/);
   assert.match(app,/await restoreDownloadedInventory\(300\)/);
   assert.match(app,/await dbDelete\('downloaded',show\.art\.key\)/);
   assert.match(app,/await dbClear\('downloaded'\)/);
