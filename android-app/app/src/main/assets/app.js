@@ -19,10 +19,10 @@
     modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,modernFetched:0,modernErrors:0,
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
     failures:{cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0},backoff:{},
-    stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,updatedAt:'',day:'',movementIndex:0},
+    stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관 26곳(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
+  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -96,9 +96,10 @@
       state.recentKeys.set(key,when);
       if(key.startsWith('vis:'))state.visualHashes.set(key.slice(4),when);
     }
-    // Reserve the next style quota slot synchronously BEFORE prefetch begins.
-    // IndexedDB writes must not cause 65/35 scheduling drift.
+    // Reserve the next 1800+ quota slot synchronously BEFORE prefetch begins.
+    // IndexedDB writes must not cause 80/20 scheduling drift.
     state.stats.slot++;state.stats.shown++;
+    if(C.artworkEra(show.art)==='post1800')state.stats.post1800Shown=(Number(state.stats.post1800Shown)||0)+1;
     if(show.art.modern===true)state.stats.modernShown=(Number(state.stats.modernShown)||0)+1;
     state.stats[show.orient==='portrait'?'portrait':'other']++;
   }
@@ -402,9 +403,10 @@
       if(Number(a.width)>0&&Number(a.height)>0&&
         !C.fillsPortraitScreen(a.width,a.height,innerWidth,innerHeight,CONFIG.minimumPortraitFill))continue;
       if(seenInMemory(a,null))continue;
-      // Unknown/ambiguous style metadata cannot be silently labelled as a movement.
-      a.movement=C.classifyMovement(a);
-      if(!a.movement)continue;
+      // Art history schools are optional; a work is not rejected for lacking one.
+      // Never mislabel an unclassified painting as a specific art movement.
+      a.movement=C.classifyMovement(a)||'unclassified';
+      a.era=C.artworkEra(a);
       state.pool.push(a);state.pendingKeys.add(a.key);
     }
   }
@@ -413,7 +415,8 @@
     state.filling=(async()=>{
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<14){
-        const sources=['cleveland','chicago','met','asian','african','additional','additional','smithsonian','modern','modern'];
+        // Give year-dated museum APIs greater weight than undated Commons filenames.
+        const sources=['cleveland','chicago','met','cleveland','chicago','asian','african','additional','additional','smithsonian','modern'];
         const source=sources[state.sourceOrder++%sources.length];
         attempts++;
         progress+=await fetchSource(source);
@@ -426,21 +429,28 @@
     })();
     try{return await state.filling;}finally{state.filling=null; updateInfo();}
   }
-  async function takeCandidate(goal, movementId){
-    // Preserve the verified school / portrait priority, but choose a high-
-    // resolution artwork before a medium-resolution one within that group.
-    // Unknown image metadata can still enter, but only after known high/medium.
-    const order=[goal,'unknown',goal==='portrait'?'other':'portrait'];
-    for(const orient of order){
-      const eligible=state.pool.filter(a=>a.movement===movementId&&C.orientation(a)===orient);
-      eligible.sort((a,b)=>C.qualityTier(b)-C.qualityTier(a));
-      for(const a of eligible){
-        const idx=state.pool.indexOf(a);if(idx<0)continue;
-        if(await seenRecently(a)){
-          state.pool.splice(idx,1);state.pendingKeys.delete(a.key);continue;
+  async function takeEraCandidate(era){
+    // Strictly separate known dates from unknown: no guess based on upload date.
+    const eligible=state.pool.filter(a=>C.artworkEra(a)===era);
+    eligible.sort((a,b)=>{
+      const pa=C.orientation(a)==='portrait'?1:0;
+      const pb=C.orientation(b)==='portrait'?1:0;
+      return (pb-pa)*10+C.qualityTier(b)-C.qualityTier(a);
+    });
+    for(const a of eligible){
+      const idx=state.pool.indexOf(a);
+      if(idx<0)continue;
+      if(await seenRecently(a)){state.pool.splice(idx,1);state.pendingKeys.delete(a.key);continue;}
+      state.pool.splice(idx,1);state.pendingKeys.delete(a.key);
+      try{
+        const loaded=await loadImage(a);
+        if(loaded.orient!=='portrait'){
+          // Reject for the unchanged portrait-only, 75%-fill display rule.
+          continue;
         }
-        state.pool.splice(idx,1);state.pendingKeys.delete(a.key);return a;
-      }
+        if(await seenRecently(a,loaded.visualHash)){state.dedupBlocked++;continue;}
+        return loaded;
+      }catch(e){state.lastErr='작품 이미지: '+e.message;}
     }
     return null;
   }
@@ -448,63 +458,32 @@
     if(state.prepared)return state.prepared;
     if(state.preparing)return state.preparing;
     state.preparing=(async()=>{
-      const orientationGoal='portrait';
       if(!state.pool.length)await fillPool(CONFIG.minPool);
-      // Seven evenly distributed modern-art goals per twenty normal displays.
-      // A goal is intentionally not a false quota guarantee: when no genuine
-      // CC0/public-domain new art exists, preserve classic rotation instead.
-      const wantModern=C.targetModern(state.stats.slot);
-      if(wantModern){
-        if(!state.pool.some(a=>a.movement==='modern'))await fetchSource('modern');
-        for(let attempt=0;attempt<12;attempt++){
-          const art=await takeCandidate('portrait','modern');
-          if(!art)break;
-          try{
-            const loaded=await loadImage(art);
-            if(await seenRecently(art,loaded.visualHash)){state.dedupBlocked++;continue;}
-            state.prepared=loaded;break;
-          }catch(e){state.lastErr='현대 작품: '+e.message;}
-        }
-        if(state.prepared)return state.prepared;
-      }
-      const firstIdx=(Number(state.stats.movementIndex)||0)%C.MOVEMENTS.length;
-      // One targeted lookup for the next movement. If unavailable, skip it
-      // rather than inventing a label or breaking the 90-day embargo.
-      const desired=C.MOVEMENTS[firstIdx].id==='modern'?'renaissance':C.MOVEMENTS[firstIdx].id;
-      if(!state.pool.some(a=>a.movement===desired)){
-        let calls=0;
-        // Visit a few missing schools per retry so the app does not stall forever
-        // when the first museum has no supported images for a given school.
-        for(let step=0;step<C.MOVEMENTS.length && calls<3;step++){
-          const id=C.MOVEMENTS[(firstIdx+step)%C.MOVEMENTS.length].id;
-          if(id==='modern')continue;
-          if(state.pool.some(a=>a.movement===id))break;
-          if(Date.now()-(state.lastMovementTry[id]||0)<CONFIG.movementRetryMs)continue;
-          calls++;
-          await fetchForMovement(id);
-          if(state.pool.some(a=>a.movement===id))break;
+      const requestedPost1800=C.targetPost1800(state.stats.slot);
+      const first=requestedPost1800?'post1800':'pre1800';
+      if(!state.pool.some(a=>C.artworkEra(a)===first)){
+        // Museum APIs provide explicit production-year ranges; Commons file
+        // upload dates cannot prove artwork age.
+        const order=requestedPost1800?['cleveland','chicago','met','modern']:
+          ['cleveland','chicago','met','additional'];
+        for(let n=0;n<2;n++){
+          const source=order[n];
+          if(!sourceIsAllowed(source))continue;
+          await fetchSource(source);
+          if(state.pool.some(a=>C.artworkEra(a)===first))break;
         }
       }
-      for(let delta=0;delta<C.MOVEMENTS.length;delta++){
-        const m=C.MOVEMENTS[(firstIdx+delta)%C.MOVEMENTS.length];
-        if(m.id==='modern'||!state.pool.some(a=>a.movement===m.id))continue;
-        let fallback=null;
-        for(let attempt=0;attempt<15;attempt++){
-          const art=await takeCandidate(orientationGoal,m.id);
-          if(!art)break;
-          try{
-            const loaded=await loadImage(art);
-            if(await seenRecently(art,loaded.visualHash)){state.dedupBlocked++;continue;}
-            if(loaded.orient===orientationGoal){state.prepared=loaded;break;}
-            if(!fallback)fallback=loaded;
-            else addCandidates([loaded.art]);
-          }catch(e){state.lastErr=`이미지: ${e.message}`;}
-        }
-        if(!state.prepared&&fallback)state.prepared=fallback;
-        else if(state.prepared&&fallback)addCandidates([fallback.art]);
+      // Target 4/5 post-1800; if the required era has no eligible new image,
+      // fall back without blocking the screen and show the actual achieved share.
+      const order=requestedPost1800?
+        ['post1800','pre1800','unknown']:
+        ['pre1800','unknown','post1800'];
+      for(const era of order){
+        state.prepared=await takeEraCandidate(era);
         if(state.prepared)break;
       }
-      if(state.pool.length<CONFIG.minPool&&!state.filling)fillPool(CONFIG.targetPool).catch(()=>{});
+      if(state.pool.length<CONFIG.minPool&&!state.filling)
+        fillPool(CONFIG.targetPool).catch(()=>{});
       return state.prepared;
     })();
     try{return await state.preparing;}finally{state.preparing=null;}
@@ -548,8 +527,7 @@
     state.lastSwapAt=Date.now();
     ui.title.textContent=C.tidyLabel(show.art.title,'제목 미상');
     ui.meta.textContent=C.tidyLabel(show.art.artist,'작가 미상');
-    const idx=C.MOVEMENTS.findIndex(m=>m.id===show.art.movement);
-    state.stats.movementIndex=(Math.max(0,idx)+1)%C.MOVEMENTS.length;
+    // No mandatory 17-movement rotation: only the evidence-based era quota.
     state.recentLoaded=[show,...state.recentLoaded.filter(x=>x.art.key!==show.art.key)].slice(0,8);
     state.recentDisplayed.add(show.art.key);
     if(emergency)state.emergencySwaps++;
@@ -750,7 +728,12 @@
   }
   function updateInfo(){
     el('seen-count').textContent=state.stats.shown.toLocaleString('ko-KR')+'점';
-    if(el('modern-count'))el('modern-count').textContent=(Number(state.stats.modernShown)||0).toLocaleString('ko-KR')+'점 / '+state.stats.shown.toLocaleString('ko-KR')+'점';
+    if(el('modern-count')){
+      const count=Number(state.stats.post1800Shown)||0;
+      const shown=Number(state.stats.shown)||0;
+      el('modern-count').textContent=count.toLocaleString('ko-KR')+' / '+
+        shown.toLocaleString('ko-KR')+'점 ('+(shown?((100*count/shown).toFixed(1)):'0.0')+'%)';
+    }
     const count=state.stats.portrait+state.stats.other;
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
@@ -760,8 +743,10 @@
     if(backup)backup.textContent=state.offlineReady.length+'점 준비 · 중복 없이 '+state.emergencySwaps+'회 사용';
     el('refresh-count').textContent=state.stats.updatedAt?new Date(state.stats.updatedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',hour12:false}):'–';
     el('source-status').textContent=state.sourceReady.length?state.sourceReady.map(s=>sourceNames[s]).join(' · '):state.lastErr||'연결 대기';
-    const m=C.MOVEMENTS[(Number(state.stats.movementIndex)||0)%C.MOVEMENTS.length];
-    el('movement-status').textContent=state.current ? (C.MOVEMENTS.find(x=>x.id===state.current.art.movement)?.label||'미분류')+' → '+m.label : m.label+'부터 탐색';
+    const nextEra=C.targetPost1800(state.stats.slot)?'1800년 이후':'1800년 이전 우선';
+    const currentEra=state.current?C.artworkEra(state.current.art):'unknown';
+    el('movement-status').textContent=(currentEra==='post1800'?'1800년 이후':
+      currentEra==='pre1800'?'1800년 이전':'제작 연대 미상')+' → '+nextEra;
     el('rotation-status').textContent=state.flipped?'180° 회전 중':'기본 방향';
     renderAudit();
     el('rotate-180').textContent=state.flipped?'기본 방향으로 되돌리기':'화면 180° 회전';
