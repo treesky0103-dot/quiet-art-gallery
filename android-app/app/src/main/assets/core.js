@@ -38,7 +38,7 @@
     return true; // Other sources must pass the decoded-image check.
   }
   const BLOCKLIST = /(?:\bsculpture\b|\bceramic(?:s)?\b|\bpottery\b|\bfurniture\b|\btextile\b|\btapestry\b|\barmor\b|\barmour\b|\bweapon\b|\binstallation\b|\bstatue\b|\bvase\b|\bcoin\b|\bmedal\b|\bjewelry\b|\bjewellery\b|\barchitecture\b|\bdecorative art\b|\bframe(?:d)?\b|\bgallery view\b|\bexhibition view\b|\b3d\b|\bvideo\b|\bfilm\b|\bglass\b|\bcarpet\b|\bcostume\b|\bcarving\b|\brelief\b|\bbook cover\b)/i;
-  const ALLOW_TYPES = /(?:painting|paintings|drawing|drawings|print|prints|watercolo[u]?r|etching|lithograph|woodblock|woodcut|illustration|photograph(?:y|s)?|photo print|animation still|animated film frame|gouache|collage|pastel|ink on paper|oil on canvas|oil on panel|acrylic on|tempera on|aquatint|serigraph|screenprint|engraving)/i;
+  const ALLOW_TYPES = /(?:painting|paintings|drawing|drawings|print|prints|watercolo[u]?r|etching|lithograph|woodblock|woodcut|illustration|photograph(?:y|s)?|photo print|animation still|animated film frame|contemporary art|street art|graffiti|stencil art|mural art|urban art|gouache|collage|pastel|ink on paper|oil on canvas|oil on panel|acrylic on|tempera on|aquatint|serigraph|screenprint|engraving)/i;
   function string(x) { return typeof x === 'string' ? x : ''; }
   function safeURL(url) {
     try {
@@ -170,7 +170,10 @@
     {id:'illus-botanical',category:'Botanical illustrations',kind:'Illustration',label:'식물 삽화'},
     {id:'illus-science',category:'Scientific illustrations',kind:'Illustration',label:'과학 삽화'},
     {id:'illus-books',category:"Children's book illustrations",kind:'Illustration',label:'동화책 삽화'},
-    {id:'animation-still',category:'Animation stills',kind:'Animation Still',label:'애니메이션 스틸'}
+    {id:'animation-still',category:'Animation stills',kind:'Animation Still',label:'애니메이션 스틸'},
+    {id:'contemporary-art',category:'Contemporary art',kind:'Contemporary Art',label:'컨템포러리 아트'},
+    {id:'street-art',category:'Street art',kind:'Street Art',label:'스트리트 아트'},
+    {id:'graffiti',category:'Graffiti',kind:'Graffiti',label:'그래피티'}
   ]);
   function normalizeMixedMediaCommons(data,categoryId){
     const found=MIXED_MEDIA_CATEGORIES.find(x=>x.id===categoryId);
