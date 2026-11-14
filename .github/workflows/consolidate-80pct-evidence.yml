@@ -1,0 +1,57 @@
+name: Consolidate verified 80-percent artwork bytes into persistent ID+hash ledger
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/aggregate_80pct_evidence.py
+      - .github/workflows/consolidate-80pct-evidence.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pillow decoder
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Get original validated 40-file dataset
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43555200749
+          name: verified-1800plus-80pct-paintings-sample
+          path: tmp/baseline
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Get four new independently validated actual file batches
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43557017166
+          pattern: verified-real-paintings-batch-*
+          path: tmp/batches
+          merge-multiple: false
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Get National Gallery of Art open-access sample
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43557443707
+          name: nga-rijks-1800-era-census-and-byte-proof
+          path: tmp/nga
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Verify every copied file and deduplicate across all museums and batches
+        run: |
+          python -m py_compile scripts/aggregate_80pct_evidence.py
+          python -u scripts/aggregate_80pct_evidence.py
+      - name: Commit small CSV and JSON audit only (never upload hundreds of MB of images to git)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/verified_80pct/verified_artwork_manifest.csv data/verified_80pct/cumulative_audit.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record independent cross-batch unique 80pct artwork byte evidence"
+          git push origin HEAD:collect-80pct-scale-batch-20261114
