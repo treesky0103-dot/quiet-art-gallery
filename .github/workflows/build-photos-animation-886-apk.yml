@@ -1,4 +1,4 @@
-name: Build 886 paintings plus verified photos and animation stills APK
+name: Build 886 paintings plus verified photos and animation stills APK v2
 on:
   push:
     paths:
