@@ -58,7 +58,7 @@ public final class MainActivity extends Activity {
         opt.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(image.getAbsolutePath(), opt);
         int w=opt.outWidth,h=opt.outHeight;
-        return w>0&&h>0&&Math.min(w,h)>=MIN_IMAGE_SHORT_SIDE&&Math.max(w,h)>=MIN_IMAGE_LONG_SIDE;
+        return w>=MIN_IMAGE_SHORT_SIDE&&h>=MIN_IMAGE_LONG_SIDE&&w<h&&Math.min(((float)w/h)/.60f,.60f/((float)w/h))>=.75f;
     }
     // Research prototype: disk budget, not an assertion that 8GB of images exists.
     private static final long MAX_IMAGE_CACHE = 8L * 1024 * 1024 * 1024;
@@ -93,7 +93,7 @@ public final class MainActivity extends Activity {
         }
         importFile = new File(getCacheDir(), "gallery-import.csv");
         if (importFile.exists()) importFile.delete();
-        File[] stale = imageDir.listFiles((folder,name)->name.endsWith(".part"));
+        File[] stale = imageDir.listFiles((folder,name)->(name.endsWith(".part") || name.endsWith(".adapt")));
         if (stale != null) for (File f : stale) f.delete();
         web = new WebView(this);
         web.setBackgroundColor(Color.rgb(17, 16, 15));
@@ -125,7 +125,7 @@ public final class MainActivity extends Activity {
                     }catch(IOException e){return response(404,"text/plain",new byte[0]);}
                 }
                 String assetPath = (path == null || path.equals("/")) ? "index.html" : path.substring(1);
-                boolean offlineImage=assetPath.matches("offline/fallback-(?:[0-9]|1[0-5])\\.jpg");
+                boolean offlineImage=assetPath.matches("(?:offline/fallback-(?:[0-9]|1[0-5])|offline/pack-[0-9]{4})\\.jpg");
                 if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json").contains(assetPath))
                     return response(404, "text/plain", new byte[0]);
                 try {
@@ -212,11 +212,20 @@ public final class MainActivity extends Activity {
                     while((read=input.read(buf))>=0){total+=read;if(total>MAX_IMAGE_BYTES)throw new IOException("이미지 용량 제한 초과");out.write(buf,0,read);}
                     out.flush();
                 }catch(Exception err){tmp.delete();throw err;}
-                if(!acceptableResolution(tmp)){tmp.delete();return response(422,"text/plain",new byte[0]);}
-                if(!tmp.renameTo(f)){tmp.delete();throw new IOException("캐시 저장 실패");}
+                File transformed=new File(imageDir,f.getName()+".adapt");
+                if(!PortraitAdapter.convert(tmp,transformed)){
+                    tmp.delete();transformed.delete();
+                    return response(422,"text/plain",new byte[0]);
+                }
+                tmp.delete();
+                if(!acceptableResolution(transformed)){
+                    transformed.delete();
+                    return response(422,"text/plain",new byte[0]);
+                }
+                if(!transformed.renameTo(f)){transformed.delete();throw new IOException("세로 이미지 캐시 저장 실패");}
                 f.setLastModified(System.currentTimeMillis());
                 pruneImageCache();
-                return new WebResourceResponse(mime.split(";")[0],null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));
+                return new WebResourceResponse("image/jpeg",null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));
             } finally {con.disconnect();}
         }catch(Exception e){return response(502,"text/plain",new byte[0]);}
     }
