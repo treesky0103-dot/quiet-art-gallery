@@ -1,0 +1,50 @@
+name: Rijksmuseum open IIIF prints paintings actual portrait proof
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_rijks_oai_actual_2d.py
+      - .github/workflows/probe-rijks-actual.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image decoder
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Live index, OAI dates/licenses and saved Rijks IIIF JPEGs
+        run: |
+          python -m py_compile scripts/probe_rijks_oai_actual_2d.py
+          python -u scripts/probe_rijks_oai_actual_2d.py
+      - name: Independent file hash, decode, ratio, era audit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json,hashlib
+          x=json.loads(Path('audit-rijks-actual-2d/report.json').read_text())
+          assert x['all_259200_verified'] is False
+          assert x['actual_downloaded_count']==len(x['actual_downloaded'])
+          for y in x['actual_downloaded']:
+              p=Path(y['saved_file']); b=p.read_bytes()
+              assert hashlib.sha256(b).hexdigest()==y['sha256']
+              im=Image.open(p);im.load()
+              assert im.width>=1000 and im.height>=1400 and im.width<im.height
+              assert min((im.width/im.height)/.625,.625/(im.width/im.height))>=.75
+          print('Actual Rijksmuseum decoded JPEG files verified:',x['actual_downloaded_count'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rijks-cc0-iiif-actual-portrait-art-proof
+          path: audit-rijks-actual-2d/
+          if-no-files-found: warn
+          retention-days: 3
