@@ -1,0 +1,51 @@
+name: Wellcome second page 1800plus authentic CC licensed portrait artwork JPEGs
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_wellcome_page2_real.py
+      - .github/workflows/probe-wellcome-page2-real.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install JPEG decoder
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Fetch page-two new dated 1800+ flat art and decode originals
+        run: |
+          python -m py_compile scripts/probe_wellcome_page2_real.py
+          python -u scripts/probe_wellcome_page2_real.py
+      - name: Confirm real JPEG bytes and do not count metadata
+        run: |
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from PIL import Image
+          r=json.loads(Path('audit-wellcome-more-art/audit.json').read_text())
+          assert r['false_259200_completion'] is False
+          assert len(r['files'])==r['byte_verified_image_files']
+          for x in r['files']:
+            file=Path(x['file_path'])
+            assert hashlib.sha256(file.read_bytes()).hexdigest()==x['sha256']
+            with Image.open(file) as im:
+              im.load()
+              assert im.width>=1000 and im.height>=1400 and im.width<im.height
+              assert min((im.width/im.height)/.625,.625/(im.width/im.height))>=.75
+          print('WELLCOME_PAGE2_SAVED_FILES_REVERIFIED',len(r['files']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wellcome-page2-1800-verified-artwork-files
+          path: audit-wellcome-more-art/
+          if-no-files-found: warn
+          retention-days: 1
