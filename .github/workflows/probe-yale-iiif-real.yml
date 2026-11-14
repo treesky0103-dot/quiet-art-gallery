@@ -1,0 +1,50 @@
+name: Yale CC0 British flat art IIIF actual JPEG proof
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_yale_iiif_real_paintings.py
+      - .github/workflows/probe-yale-iiif-real.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow for saved image decoding
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Check source, production date and public-domain IIIF artwork bytes
+        run: |
+          python -m py_compile scripts/probe_yale_iiif_real_paintings.py
+          python -u scripts/probe_yale_iiif_real_paintings.py
+      - name: Independently verify saved file bytes, dimensions and year targets
+        run: |
+          python - <<'PY'
+          import hashlib,json,io
+          from pathlib import Path
+          from PIL import Image
+          j=json.loads(Path('audit-yale-actual-2d/report.json').read_text())
+          assert j['real_files_verified']==len(j['actual_downloaded'])
+          assert j['is_259200_acquired'] is False
+          for x in j['actual_downloaded']:
+            b=Path(x['saved_file']).read_bytes()
+            assert hashlib.sha256(b).hexdigest()==x['saved_sha256']
+            im=Image.open(io.BytesIO(b));im.load()
+            assert im.width>=1000 and im.height>=1400 and im.width<im.height
+            assert min((im.width/im.height)/.625,.625/(im.width/im.height))>=.75
+          print('Yale art actual bytes independently verified:',len(j['actual_downloaded']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: yale-cc0-2d-actual-iiif-byte-proof
+          path: audit-yale-actual-2d/
+          if-no-files-found: warn
+          retention-days: 3
