@@ -14,15 +14,15 @@
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
     recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
-    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{}},
+    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{}},
     sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
-    modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),
+    modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,mediaCategoryIndex:0,modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
-    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0},backoff:{},
+    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0,media:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
+  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어',media:'사진·일러스트·애니메이션 스틸(공개 아카이브)'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -162,9 +162,9 @@
       if(!r.ok)throw Error('비상 작품 목록 없음');
       const items=await r.json();
       if(!Array.isArray(items)||items.length<2||items.length>886)throw Error('내장 작품 목록 형식 오류');
-      const all=items.filter(art=>
+      const all=C.shuffledCopy(items.filter(art=>
         /^(?:offline\/fallback-(?:[0-9]|1[0-5])|offline\/pack-[0-9]{4})\.jpg$/.test(art.offlineAsset||'') &&
-        C.eligibleArt(art) && C.metadataResolutionOkay(art));
+        C.eligibleArt(art) && C.metadataResolutionOkay(art)));
       const loaded=[];
       // Preload first 12, then validate others asynchronously, without
       // blocking the original 30-second rotation.
@@ -236,6 +236,17 @@
       const offset=Number(parts[1]);
       if(parts.length!==2||!cat||!Number.isInteger(offset)||offset<0||offset>100000)
         throw Error('공개 미술 소스 검색 조건 오류');
+      const qs=new URLSearchParams({action:'query',generator:'search',
+        gsrsearch:'deepcategory:"'+cat.category+'"',gsrnamespace:'6',
+        gsrlimit:'50',gsroffset:String(offset),prop:'imageinfo',
+        iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',format:'json',formatversion:'2',origin:'*'});
+      url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
+    }else if(kind==='mediaCommons'){
+      const parts=String(param).split(':');
+      const cat=C.MIXED_MEDIA_CATEGORIES.find(x=>x.id===parts[0]);
+      const offset=Number(parts[1]);
+      if(parts.length!==2||!cat||!Number.isInteger(offset)||offset<0||offset>100000)
+        throw Error('복합 매체 검색 조건 오류');
       const qs=new URLSearchParams({action:'query',generator:'search',
         gsrsearch:'deepcategory:"'+cat.category+'"',gsrnamespace:'6',
         gsrlimit:'50',gsroffset:String(offset),prop:'imageinfo',
@@ -324,6 +335,13 @@
         const total=Number(response.query&&response.query.searchinfo&&response.query.searchinfo.totalhits)||0;
         state.cursors.global=state.cursors.global||{};
         state.cursors.global[category.id]=(received===0||received<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
+      }else if(source==='media'){
+        const category=C.MIXED_MEDIA_CATEGORIES[state.mediaCategoryIndex++%C.MIXED_MEDIA_CATEGORIES.length];
+        const offset=Number(state.cursors.media&&state.cursors.media[category.id])||0;
+        const res=await request('mediaCommons',category.id+':'+offset);
+        addCandidates(C.normalizeMixedMediaCommons(res,category.id).filter(C.eligibleArt));
+        const count=Array.isArray(res.query&&res.query.pages)?res.query.pages.length:0;
+        state.cursors.media[category.id]=(count===0||count<50||offset>=100000)?0:offset+50;
       }else if(source==='asian'){
         const museum=C.ASIAN_MUSEUMS[state.asianOrder++%C.ASIAN_MUSEUMS.length];
         const offset=Number(state.cursors.asian[museum.id])||0;
@@ -451,7 +469,7 @@
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<14){
         // Give year-dated museum APIs greater weight than undated Commons filenames.
-        const sources=['cleveland','chicago','met','cleveland','global','chicago','asian','african','additional','global','additional','smithsonian','modern'];
+        const sources=['media','cleveland','chicago','media','met','cleveland','global','chicago','asian','media','african','additional','global','additional','smithsonian','modern'];
         const source=sources[state.sourceOrder++%sources.length];
         attempts++;
         progress+=await fetchSource(source);
@@ -515,12 +533,8 @@
   }
   async function takeEraCandidate(era){
     // Strictly separate known dates from unknown: no guess based on upload date.
-    const eligible=state.pool.filter(a=>C.artworkEra(a)===era);
-    eligible.sort((a,b)=>{
-      const pa=C.orientation(a)==='portrait'?1:0;
-      const pb=C.orientation(b)==='portrait'?1:0;
-      return (pb-pa)*10+C.qualityTier(b)-C.qualityTier(a);
-    });
+    // Random across all media types, no fixed category order.
+    const eligible=C.shuffledCopy(state.pool.filter(a=>C.artworkEra(a)===era));
     for(const a of eligible){
       const idx=state.pool.indexOf(a);
       if(idx<0)continue;
@@ -581,7 +595,7 @@
       ui.a.classList.add('visible');ui.b.classList.remove('visible');
       state.current=last;state.currentNode=ui.a;
       ui.title.textContent=C.tidyLabel(last.art.title,'제목 미상');
-      ui.meta.textContent=C.tidyLabel(last.art.artist,'작가 미상');
+      ui.meta.textContent=C.tidyLabel(last.art.artist,'작가 미상')+' · '+C.artworkYearLabel(last.art);
       ui.placeholder.hidden=true;
       return true;
     }catch(_){return false;}
@@ -610,7 +624,7 @@
     state.currentNode=target;state.current=show;
     state.lastSwapAt=Date.now();
     ui.title.textContent=C.tidyLabel(show.art.title,'제목 미상');
-    ui.meta.textContent=C.tidyLabel(show.art.artist,'작가 미상');
+    ui.meta.textContent=C.tidyLabel(show.art.artist,'작가 미상')+' · '+C.artworkYearLabel(show.art);
     // No mandatory 17-movement rotation: only the evidence-based era quota.
     state.recentLoaded=[show,...state.recentLoaded.filter(x=>x.art.key!==show.art.key)].slice(0,8);
     state.recentDisplayed.add(show.art.key);
@@ -630,16 +644,11 @@
   function emergencyChoice(){
     // Previously v1.6.2 repeatedly cycled four bundled paintings.
     // The 90-day embargo now includes every bundled painting.
-    const all=state.offlineReady;
-    for(let offset=0;offset<all.length;offset++){
-      const item=all[(state.emergencyIndex+offset)%all.length];
-      if(item&&!seenInMemory(item.art,item.visualHash) &&
-         (!state.current || state.current.art.key!==item.art.key)){
-        state.emergencyIndex=(state.emergencyIndex+offset+1)%all.length;
-        return item;
-      }
-    }
-    return null; // HOLD current image when candidates run out.
+    const all=state.offlineReady.filter(item=>item &&
+      !seenInMemory(item.art,item.visualHash) &&
+      (!state.current || state.current.art.key!==item.art.key));
+    if(!all.length)return null; // HOLD current image; no 90-day repeat.
+    return all[Math.floor(Math.random()*all.length)];
   }
   function advanceSlide(){
     if(!state.playing)return;
@@ -822,7 +831,7 @@
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
     if(el('collector-status'))el('collector-status').textContent=
-      (document.hidden?'화면 비활성':'화면 활성 · 10분 주기')+
+      (document.hidden?'화면 비활성':'화면 활성 · 30분 주기')+
       ' · 사전 검증 '+state.collectorSuccess+'점 · 재시도 '+state.collectorErrors+'회';
     if(el('dedup-count'))el('dedup-count').textContent=
       '중복 차단 '+state.dedupBlocked+'건 · 후보 부족 '+state.exhaustedTicks+'회';
@@ -1008,6 +1017,7 @@
       state.cursors.smithsonian=state.cursors.smithsonian||{};
       state.cursors.modern=state.cursors.modern||{};
       state.cursors.openverseModern=state.cursors.openverseModern||{};
+      state.cursors.media=state.cursors.media||{};
       state.cursors.global=state.cursors.global||{};
       const gIndex=await dbGet('settings','globalCategoryIndex');
       state.globalCategoryIndex=Number.isInteger(gIndex&&gIndex.value)?Math.max(0,gIndex.value):0;
