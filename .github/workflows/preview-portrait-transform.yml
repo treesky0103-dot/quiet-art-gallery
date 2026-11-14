@@ -1,0 +1,58 @@
+name: Compare released 886 APK portrait conversions with actual originals
+on:
+  push:
+    paths:
+      - '.github/workflows/preview-portrait-transform.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  actual-apk-before-after:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout research branch without changing prior released APK
+        uses: actions/checkout@v4
+        with:
+          ref: feat-continuous-global-openart-collector-20261114
+      - name: Set up Python and Pillow
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow
+        run: python -m pip install Pillow==11.3.0
+      - name: Download exact completed 886-artwork APK (not regenerate crops)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-portrait-30m-expanded-20261114 \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --pattern "QuietArtGallery-Portrait30min-Expanded-debug.apk" \
+            --clobber
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          p=Path("QuietArtGallery-Portrait30min-Expanded-debug.apk")
+          assert p.stat().st_size==227594947
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=="b826eb8afefb936eda7bfd1316f045d480e42152e9c4111fa9e2e96b767349e4"
+          print("EXACT_RELEASED_APK_SHA256_VERIFIED")
+          PY
+      - name: Verify original SHA, crop boxes, built-in JPEG and make visual comparisons
+        run: |
+          python -m py_compile scripts/audit_released_portrait_before_after.py
+          python -u scripts/audit_released_portrait_before_after.py
+      - name: Publish only 2 compact proof JPEGs and independent report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test -s portrait-comparison/before-after-landscape.jpg
+          test -s portrait-comparison/before-after-upscale.jpg
+          test -s portrait-comparison/before-after-audit-report.json
+          gh release upload quiet-art-portrait-30m-expanded-20261114 \
+            portrait-comparison/before-after-landscape.jpg \
+            portrait-comparison/before-after-upscale.jpg \
+            portrait-comparison/before-after-audit-report.json \
+            --clobber
+          gh release view quiet-art-portrait-30m-expanded-20261114 --json url,assets \
+            --jq '{url:.url,assets:[.assets[].name]}'
