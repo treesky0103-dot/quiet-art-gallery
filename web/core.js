@@ -126,12 +126,12 @@
     const pages=data&&data.query&&data.query.pages;
     return (Array.isArray(pages)?pages:[]).filter(page=>
        !COMMONS_SCENE_BLOCK.test(string(page&&page.title))&&
-       !/\\b(?:detail(?:ed)?|verso|back side|framed|gallery wall|photograph of|museum interior)\\b/i.test(string(page&&page.title))
+       !/\b(?:detail(?:ed)?|verso|back side|framed|gallery wall|photograph of|museum interior)\b/i.test(string(page&&page.title))
     ).map(page=>{
       const info=page&&Array.isArray(page.imageinfo)?page.imageinfo[0]:null;
       const meta=info&&info.extmetadata||{};
       const mime=string(info&&info.mime).toLowerCase();
-      const title=string(page&&page.title).replace(/^File:/i,'').replace(/\\.(?:jpg|jpeg|png|webp)$/i,'').replace(/_/g,' ');
+      const title=string(page&&page.title).replace(/^File:/i,'').replace(/\.(?:jpg|jpeg|png|webp)$/i,'').replace(/_/g,' ');
       return {
         key:'commons:'+String(page&&page.pageid),source:'세계 공개 컬렉션 · '+found.label,
         title:wikimediaText(title)||'제목 미상',
@@ -140,7 +140,7 @@
         width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
         type:found.type||'Painting',classification:found.type||'Painting',medium:'',
         description:'',license:wikimediaText(meta.LicenseShortName&&meta.LicenseShortName.value),
-        rightsOK:commonsPublicDomain(meta)&&/^(?:image\\/(?:jpeg|png|webp))$/.test(mime),
+        rightsOK:commonsPublicDomain(meta)&&/^(?:image\/(?:jpeg|png|webp))$/.test(mime),
         museumRegion:'additional',verifiedCollectionCategory:false,style:'',styles:[],
         // A century-named category is NOT per-artwork reliable production-year evidence.
         date:'',yearStart:null,yearEnd:null,page:string(info&&info.descriptionurl)
