@@ -92,7 +92,7 @@ def candidates(provider,page):
         response=get(url)
         for rec in response.get("data") or []:
             img=rec.get("images") or {}
-            photo=(img.get("web") or {}).get("url") or (img.get("print") or {}).get("url") or ""
+            photo=(img.get("print") or {}).get("url") or (img.get("web") or {}).get("url") or ""
             licence=str(rec.get("share_license_status") or "")
             if licence!="CC0" or not photo.startswith("https://"):continue
             ty=str(rec.get("type") or "")
@@ -195,8 +195,9 @@ def main():
                     if len(saved)%20==0:
                         print("VERIFIED",len(saved),"bytes",bytes_stored,flush=True)
                 except Exception as e:
-                    if len(errors)<100:
+                    if sum(1 for z in errors if z.get("provider")==provider)<20:
                         errors.append({"provider":provider,"id":rec["id"],"error":str(e)[:200]})
+                        if len(errors)<8:print("IMAGE_REJECTED",provider,rec["id"],str(e)[:130],flush=True)
             time.sleep(.18)
         if len(saved)>=MAX_IMAGES or bytes_stored>=TOTAL_MAX_BYTES:break
     total=259200
