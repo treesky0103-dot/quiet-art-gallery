@@ -1,23 +1,96 @@
 {
-  "run_utc": "2026-11-14T08:54:47.700529+00:00",
-  "github_run_id": "43578018705",
+  "run_utc": "2026-11-14T09:17:10.475156+00:00",
+  "github_run_id": "43579737660",
   "baseline_requested": 736,
   "baseline_with_independent_hash_records": 675,
-  "new_verified_this_run": 3,
-  "increment_verified_unique": 3,
-  "user_baseline_plus_new": 739,
-  "metadata_source_ok": 1,
-  "download_attempts": 3,
-  "proof_files": 3,
+  "new_verified_this_run": 67,
+  "increment_verified_unique": 70,
+  "user_baseline_plus_new": 806,
+  "metadata_source_ok": 12,
+  "download_attempts": 76,
+  "proof_files": 67,
   "details": [
     {
       "source": "cma_modern",
-      "cursor": 2700,
+      "cursor": 2800,
+      "candidates": 22,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 2900,
+      "candidates": 11,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3000,
+      "candidates": 21,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3100,
+      "candidates": 29,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3200,
+      "candidates": 25,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3300,
+      "candidates": 25,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3400,
+      "candidates": 25,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3500,
       "candidates": 32,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3600,
+      "candidates": 28,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3700,
+      "candidates": 20,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3800,
+      "candidates": 14,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 3900,
+      "candidates": 15,
       "ok": true
     }
   ],
-  "rejection_summary": {},
+  "rejection_summary": {
+    "proof_byte_budget": 9
+  },
+  "scan_pages": 12,
+  "elapsed_sec": 52.7,
+  "proof_bytes": 20858578,
+  "target_cap": 80,
+  "max_output_bytes": 20971520,
   "limitations": [
     "736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
     "Original JPEG/PNG/WebP proof files live in expiring GitHub Actions artifacts, not tablet",
