@@ -5,6 +5,7 @@ on:
       - feat-tablet8gib-unlimited-progress-orbit-v184-20261115
     paths:
       - '.github/workflows/build-fast8g-orbit-progress-2692-v184.yml'
+      - 'tests/*.test.cjs'
   workflow_dispatch:
 permissions:
   contents: write
