@@ -37,8 +37,8 @@
     if(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.museumRegion==='modern'||a.source==='클리블랜드')return acceptableResolution(a.width,a.height);
     return true; // Other sources must pass the decoded-image check.
   }
-  const BLOCKLIST = /(?:\bsculpture\b|\bceramic(?:s)?\b|\bpottery\b|\bfurniture\b|\btextile\b|\btapestry\b|\barmor\b|\barmour\b|\bweapon\b|\bphotograph(?:y)?\b|\binstallation\b|\bstatue\b|\bvase\b|\bcoin\b|\bmedal\b|\bjewelry\b|\bjewellery\b|\barchitecture\b|\bdecorative art\b|\bframe(?:d)?\b|\bgallery view\b|\bexhibition view\b|\b3d\b|\bvideo\b|\bfilm\b|\bglass\b|\bcarpet\b|\bcostume\b|\bcarving\b|\brelief\b|\bbook cover\b)/i;
-  const ALLOW_TYPES = /(?:painting|paintings|drawing|drawings|print|prints|watercolo[u]?r|etching|lithograph|woodblock|woodcut|illustration|gouache|collage|pastel|ink on paper|oil on canvas|oil on panel|acrylic on|tempera on|aquatint|serigraph|screenprint|engraving)/i;
+  const BLOCKLIST = /(?:\bsculpture\b|\bceramic(?:s)?\b|\bpottery\b|\bfurniture\b|\btextile\b|\btapestry\b|\barmor\b|\barmour\b|\bweapon\b|\binstallation\b|\bstatue\b|\bvase\b|\bcoin\b|\bmedal\b|\bjewelry\b|\bjewellery\b|\barchitecture\b|\bdecorative art\b|\bframe(?:d)?\b|\bgallery view\b|\bexhibition view\b|\b3d\b|\bvideo\b|\bfilm\b|\bglass\b|\bcarpet\b|\bcostume\b|\bcarving\b|\brelief\b|\bbook cover\b)/i;
+  const ALLOW_TYPES = /(?:painting|paintings|drawing|drawings|print|prints|watercolo[u]?r|etching|lithograph|woodblock|woodcut|illustration|photograph(?:y|s)?|photo print|animation still|animated film frame|gouache|collage|pastel|ink on paper|oil on canvas|oil on panel|acrylic on|tempera on|aquatint|serigraph|screenprint|engraving)/i;
   function string(x) { return typeof x === 'string' ? x : ''; }
   function safeURL(url) {
     try {
@@ -156,6 +156,76 @@
       };
     });
   }
+
+  // Mixed media category labels denote only the kind of work. Each image still
+  // must pass rights, source, static MIME and pixel checks before exhibition.
+  const MIXED_MEDIA_CATEGORIES=Object.freeze([
+    {id:'photo-nature',category:'Nature photography',kind:'Photograph',label:'자연 사진'},
+    {id:'photo-landscape',category:'Landscape photographs',kind:'Photograph',label:'풍경 사진'},
+    {id:'photo-wildlife',category:'Wildlife photographs',kind:'Photograph',label:'야생동물 사진'},
+    {id:'photo-street',category:'Street photography',kind:'Photograph',label:'거리 사진'},
+    {id:'photo-portrait',category:'Portrait photographs',kind:'Photograph',label:'인물 사진'},
+    {id:'photo-architecture',category:'Architectural photography',kind:'Photograph',label:'건축 사진'},
+    {id:'photo-history',category:'Historical photographs',kind:'Photograph',label:'역사 사진'},
+    {id:'illus-botanical',category:'Botanical illustrations',kind:'Illustration',label:'식물 삽화'},
+    {id:'illus-science',category:'Scientific illustrations',kind:'Illustration',label:'과학 삽화'},
+    {id:'illus-books',category:"Children's book illustrations",kind:'Illustration',label:'동화책 삽화'},
+    {id:'animation-still',category:'Animation stills',kind:'Animation Still',label:'애니메이션 스틸'}
+  ]);
+  function normalizeMixedMediaCommons(data,categoryId){
+    const found=MIXED_MEDIA_CATEGORIES.find(x=>x.id===categoryId);
+    if(!found)return [];
+    const pages=(data&&data.query&&data.query.pages)||[];
+    if(!Array.isArray(pages))return [];
+    return pages.filter(page=>
+      !COMMONS_SCENE_BLOCK.test(string(page&&page.title)) &&
+      !/\b(?:framed|exhibition view|museum interior|photo of gallery)\b/i.test(string(page&&page.title))
+    ).map(page=>{
+      const info=page&&Array.isArray(page.imageinfo)?page.imageinfo[0]:null;
+      const meta=(info&&info.extmetadata)||{};
+      const mime=string(info&&info.mime).toLowerCase();
+      const filename=string(page&&page.title).replace(/^File:/i,'').replace(/\.(?:jpg|jpeg|png|webp)$/i,'').replace(/_/g,' ');
+      return {
+        key:'commons:'+String(page&&page.pageid),
+        source:'공개 이미지 아카이브 · '+found.label,
+        title:wikimediaText(filename)||'제목 미상',
+        artist:wikimediaText(meta.Artist&&meta.Artist.value)||'작가 미상',
+        image:string(info&&(info.thumburl||info.url)),
+        width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
+        type:found.kind,classification:found.kind,medium:'',
+        description:'',license:wikimediaText(meta.LicenseShortName&&meta.LicenseShortName.value),
+        rightsOK:commonsPublicDomain(meta)&&/^image\/(?:jpeg|png|webp)$/.test(mime),
+        museumRegion:'mixedMedia',mediaKind:found.kind,
+        style:'',styles:[],date:'',yearStart:null,yearEnd:null,
+        page:string(info&&info.descriptionurl)
+      };
+    });
+  }
+  function shuffledCopy(items,rng=Math.random){
+    const result=Array.isArray(items)?items.slice():[];
+    for(let i=result.length-1;i>0;i--){
+      const v=Number(rng());
+      const r=Number.isFinite(v)?Math.min(Math.max(v,0),.999999999):.5;
+      const j=Math.floor(r*(i+1));
+      [result[i],result[j]]=[result[j],result[i]];
+    }
+    return result;
+  }
+  function artworkYearLabel(art){
+    if(!art)return '연도 미상';
+    const valid=x=>x!==undefined&&x!==null&&x!==''&&Number.isInteger(Number(x))&&
+      Number(x)>=0&&Number(x)<=RECENT_YEAR_MAX;
+    const a=art.yearStart,b=art.yearEnd;
+    if(valid(a)&&valid(b)){
+      if(Number(a)>Number(b))return '연도 미상';
+      return Number(a)===Number(b)?String(Number(a)):String(Number(a))+'–'+String(Number(b));
+    }
+    if(valid(a))return String(Number(a));
+    if(valid(b))return String(Number(b));
+    const date=string(art.date).trim();
+    return /^(?:c(?:irca)?\.?\s*)?(?:1\d{3}|20[0-2]\d)$/.test(date)?date:'연도 미상';
+  }
+
   // "Modern" is a verified category with explicit year evidence or original
   // digital-art title, NOT a broad keyword search of historic reproductions.
   const MODERN_CATEGORIES = Object.freeze([
@@ -446,7 +516,7 @@
     if (BLOCKLIST.test(visualClass)) return false;
     // Reject obvious photo-of-gallery or framed-object metadata; titles can refer to a painted frame,
     // so do not reject artwork titles for merely mentioning a frame.
-    if (BLOCKLIST.test(string(a.description).slice(0, 160))) return false;
+    if (BLOCKLIST.test(string(a.description).slice(0, 160)) || /\b(?:photograph of (?:painting|sculpture|gallery)|photo of gallery)\b/i.test(string(a.description).slice(0,160))) return false;
     if (/\b(?:unknown|unverified|copyrighted|restricted)\b/i.test(string(a.license))) return false;
     return true;
   }
@@ -617,6 +687,6 @@
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
     artworkEra,targetPost1800,eraQuota90Days,MODERN_THRESHOLD_YEAR,
-    GLOBAL_OPEN_ART_CATEGORIES,normalizeGlobalCommons,
+    GLOBAL_OPEN_ART_CATEGORIES,normalizeGlobalCommons,MIXED_MEDIA_CATEGORIES,normalizeMixedMediaCommons,shuffledCopy,artworkYearLabel,
     portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance };
 });
