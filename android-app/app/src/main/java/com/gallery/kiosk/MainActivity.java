@@ -389,7 +389,7 @@ public final class MainActivity extends Activity {
             String[] cats={"19th-century paintings","20th-century paintings","21st-century paintings",
                 "19th-century drawings","20th-century drawings","21st-century drawings",
                 "19th-century prints","20th-century prints","21st-century prints",
-                "Illustrations from the British Library","Japanese woodblock prints",
+                "19th-century illustrations","Japanese woodblock prints",
                 "Paintings by Wikipedians"};
             String category=null;
             for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))category=cats[i];
