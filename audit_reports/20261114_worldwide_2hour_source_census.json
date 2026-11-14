@@ -1,0 +1,33 @@
+{
+  "utc_logged_at": "2026-11-14T06:49:01Z",
+  "elapsed_seconds": 6900.71,
+  "intended_seconds": 6900,
+  "source": "Wikimedia Commons public Action API; category member image metadata",
+  "target_90day_total": 259200,
+  "target_post_1800": 207360,
+  "target_earlier": 51840,
+  "category_requests": 3378,
+  "subcat_requests": 1838,
+  "file_pages_parsed": 3378,
+  "file_metadata_records_examined": 53801,
+  "verified_image_downloads_this_census": 0,
+  "year_verified_image_files_this_census": 0,
+  "unique_provisional_metadata_candidates_seen": 7280,
+  "provisional_rows_saved": 7280,
+  "pending_queue_size": 11006,
+  "error_count": 0,
+  "filter_failures": {
+    "size": 37284,
+    "license_not_confirmed": 5247,
+    "screenfill": 2003,
+    "format": 1900,
+    "cross_category_page_duplicate": 76,
+    "nonart_filename": 11
+  },
+  "acquisition_259200_complete": false,
+  "disclaimer": "Metadata image-size/licence field checks only; image files NOT downloaded or decoded, year from category is an unverified category hint.",
+  "seed_categories": 2884,
+  "unique_scanned_categories": 2884,
+  "duration_reached": true,
+  "all_seed_categories_exhausted": false
+}
