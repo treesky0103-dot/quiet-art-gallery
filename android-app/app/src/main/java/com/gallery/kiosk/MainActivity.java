@@ -46,6 +46,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public final class MainActivity extends Activity {
     private static final String ORIGIN = "appassets.gallery";
@@ -97,6 +99,11 @@ public final class MainActivity extends Activity {
         HOST_WAIT_UNTIL.put(hostname,System.currentTimeMillis()+delay);
     }
     private final ExecutorService io = Executors.newSingleThreadExecutor();
+    // Up to three distinct image downloads may overlap. Image-cache eviction
+    // remains synchronized independently; same-URL requests share a stripe.
+    private static final Semaphore IMAGE_FETCH_SLOTS = new Semaphore(3,true);
+    private final Object[] imageFileLocks=new Object[64];
+
     private WebView web;
     private File imageDir;
     private ShownImageLedger shownLedger;
@@ -119,6 +126,7 @@ public final class MainActivity extends Activity {
         // OS cache files may be evicted at any time. Keep art in app-private
         // persistent files instead; previously cached images are migrated by
         // atomic rename when possible, never deleted to make room for migration.
+        for(int i=0;i<imageFileLocks.length;i++)imageFileLocks[i]=new Object();
         imageDir = new File(getFilesDir(), "gallery-images");
         shownLedger = new ShownImageLedger(this);
         if (!imageDir.exists()) imageDir.mkdirs();
@@ -224,14 +232,26 @@ public final class MainActivity extends Activity {
         byte[] digest=MessageDigest.getInstance("SHA-256").digest(src.getBytes(StandardCharsets.UTF_8));
         StringBuilder b=new StringBuilder();for(byte v:digest)b.append(String.format(java.util.Locale.ROOT,"%02x",v&255));return b.toString();
     }
-    private synchronized WebResourceResponse artworkResponse(String src) {
+    private WebResourceResponse artworkResponse(String src) {
         if(src==null||!safeImageUrl(src))return response(403,"text/plain",new byte[0]);
         try {
-            File f=new File(imageDir,hashUrl(src)+".img");
+            String hash=hashUrl(src);
+            synchronized(imageFileLocks[(hash.hashCode()&0x7fffffff)%imageFileLocks.length]){
+                return artworkResponseLocked(src,hash);
+            }
+        }catch(Exception e){return response(502,"text/plain",new byte[0]);}
+    }
+    private WebResourceResponse artworkResponseLocked(String src,String hash) {
+        try {
+            File f=new File(imageDir,hash+".img");
             if(f.isFile()&&f.length()>0){
                 if(acceptableResolution(f)){f.setLastModified(System.currentTimeMillis());return new WebResourceResponse(sniffMime(f),null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));}
                 f.delete(); // Purge low-resolution cached files.
             }
+            // Image timeouts remain bounded; never create unlimited native threads.
+            if(!IMAGE_FETCH_SLOTS.tryAcquire(8,TimeUnit.SECONDS))
+                return response(503,"text/plain",new byte[0]);
+            try {
             checkHostCooldown(new URL(src).getHost().toLowerCase(java.util.Locale.ROOT));
             HttpURLConnection con=(HttpURLConnection)new URL(src).openConnection();
             con.setConnectTimeout(10000);con.setReadTimeout(18000);con.setInstanceFollowRedirects(false);
@@ -271,6 +291,7 @@ public final class MainActivity extends Activity {
                 }
                 return new WebResourceResponse("image/jpeg",null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));
             } finally {con.disconnect();}
+            } finally {IMAGE_FETCH_SLOTS.release();}
         }catch(Exception e){return response(502,"text/plain",new byte[0]);}
     }
     private String sniffMime(File file) {
@@ -661,14 +682,40 @@ public final class MainActivity extends Activity {
             });
         }
         @JavascriptInterface public String cacheStats(){
-            try{return new JSONObject()
+            try{
+                int total=countCachedImageFiles();
+                int shown=shownLedger.displayedFiles(imageDir).size();
+                return new JSONObject()
                 .put("bytes",cacheBytes()).put("limitBytes",MAX_IMAGE_CACHE)
                 .put("cleanupBytes",CLEAN_TO).put("freeBytes",imageDir.getUsableSpace())
                 .put("reservedBytes",FREE_RESERVE).put("purgedBytes",evictionDeletedBytes)
                 .put("purgedFiles",evictionDeletedFiles)
                 .put("displayedCacheEntries",shownLedger.count())
-                .put("imageFiles",countCachedImageFiles()).toString();
+                .put("shownCachedFiles",shown)
+                .put("unshownImageFiles",Math.max(0,total-shown))
+                .put("imageFiles",total)
+                .put("parallelImageFetchLimit",3).toString();
             }catch(Exception e){return "{}";}
+        }
+        // Check the real app-private file before returning an old IndexedDB
+        // candidate after cache cleanup or interrupted downloads.
+        @JavascriptInterface public boolean cachedArtworkExists(String url){
+            if(!safeImageUrl(url))return false;
+            try {
+                File f=new File(imageDir,hashUrl(url)+".img");
+                return f.isFile()&&f.length()>0;
+            }catch(Exception e){return false;}
+        }
+        @JavascriptInterface public boolean discardUnshownDuplicate(String url){
+            if(!safeImageUrl(url))return false;
+            try {
+                String hash=hashUrl(url);
+                synchronized(imageFileLocks[(hash.hashCode()&0x7fffffff)%imageFileLocks.length]){
+                    if(hash.equals(currentDisplayedHash)||shownLedger.contains(hash))return false;
+                    File f=new File(imageDir,hash+".img");
+                    return !f.exists()||f.delete();
+                }
+            }catch(Exception e){return false;}
         }
         @JavascriptInterface public void markArtworkDisplayed(String url){
             markArtworkDisplayedNative(url);
