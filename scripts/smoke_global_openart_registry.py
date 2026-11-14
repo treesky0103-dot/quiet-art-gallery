@@ -14,7 +14,7 @@ CATS=[
  ("d20","20th-century drawings"),("d21","21st-century drawings"),
  ("r19","19th-century prints"),("r20","20th-century prints"),
  ("r21","21st-century prints"),
- ("british-library","Illustrations from the British Library"),
+ ("illustrations19","19th-century illustrations"),
  ("japanese-print","Japanese woodblock prints"),
  ("independent","Paintings by Wikipedians")]
 REPORT=Path("audit-global-openart-registry")
