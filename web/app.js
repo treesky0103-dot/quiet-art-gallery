@@ -161,7 +161,7 @@
       const r=await fetch('https://appassets.gallery/offline-deck.json',{cache:'no-store'});
       if(!r.ok)throw Error('비상 작품 목록 없음');
       const items=await r.json();
-      if(!Array.isArray(items)||items.length<2||items.length>886)throw Error('내장 작품 목록 형식 오류');
+      if(!Array.isArray(items)||items.length<2||items.length>1800)throw Error('내장 작품 목록 형식 오류');
       const all=C.shuffledCopy(items.filter(art=>
         /^(?:offline\/fallback-(?:[0-9]|1[0-5])|offline\/pack-[0-9]{4})\.jpg$/.test(art.offlineAsset||'') &&
         C.eligibleArt(art) && C.metadataResolutionOkay(art)));
