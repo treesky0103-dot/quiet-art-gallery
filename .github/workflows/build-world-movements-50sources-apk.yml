@@ -66,8 +66,8 @@ jobs:
         run: |
           gh release download quiet-art-contemporary-street-graffiti-20261114 \
             --repo treesky0103-dot/quiet-art-gallery \
-            --pattern "QuietArtGallery-397Movements-50Sources-v180.apk" --clobber
-          test -s QuietArtGallery-397Movements-50Sources-v180.apk
+            --pattern "QuietArtGallery-Contemporary-Street-Graffiti-v176.apk" --clobber
+          test -s QuietArtGallery-Contemporary-Street-Graffiti-v176.apk
       - name: Restore exact 1511 and independently collect world paintings, drawings, prints and photos
         timeout-minutes: 29
         run: python -u scripts/append_global_movement_deck.py
@@ -80,7 +80,7 @@ jobs:
           root=Path('android-app/app/src/main/assets')
           rows=json.loads((root/'offline-deck.json').read_text(encoding='utf-8'))
           rep=json.loads(Path('build-global-movement-report.json').read_text(encoding='utf-8'))
-          prevfile=Path('QuietArtGallery-397Movements-50Sources-v180.apk')
+          prevfile=Path('QuietArtGallery-Contemporary-Street-Graffiti-v176.apk')
           assert len(rows)==rep['total_verified_jpegs']==1511+rep['actual_new_jpegs']
           assert len(rows)>1530 and len(rows)<=2700
           assert rep['unchanged_previous_works']==1511
