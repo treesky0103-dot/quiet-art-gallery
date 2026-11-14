@@ -103,6 +103,50 @@
         'Paintings from India in the Freer Gallery of Art']}
   ]);
 
+  // World-wide flat-art publication/category sources beyond museums.
+  // All Wikimedia category names are discovery hints, not individual creation dates.
+  // Sources include books, university libraries, prints and independent artists.
+  const GLOBAL_OPEN_ART_CATEGORIES=Object.freeze([
+    {id:'p19',label:'19세기 세계 회화',category:'19th-century paintings'},
+    {id:'p20',label:'20세기 세계 회화',category:'20th-century paintings'},
+    {id:'p21',label:'21세기 세계 회화',category:'21st-century paintings'},
+    {id:'d19',label:'19세기 드로잉',category:'19th-century drawings'},
+    {id:'d20',label:'20세기 드로잉',category:'20th-century drawings'},
+    {id:'d21',label:'21세기 드로잉',category:'21st-century drawings'},
+    {id:'r19',label:'19세기 판화',category:'19th-century prints',type:'Print'},
+    {id:'r20',label:'20세기 판화',category:'20th-century prints',type:'Print'},
+    {id:'r21',label:'21세기 판화',category:'21st-century prints',type:'Print'},
+    {id:'british-library',label:'영국도서관 삽화',category:'Illustrations from the British Library',type:'Illustration'},
+    {id:'japanese-print',label:'일본 목판화',category:'Japanese woodblock prints',type:'Print'},
+    {id:'independent',label:'공개 창작자 작품',category:'Paintings by Wikipedians'}
+  ]);
+  function normalizeGlobalCommons(data,categoryId){
+    const found=GLOBAL_OPEN_ART_CATEGORIES.find(x=>x.id===categoryId);
+    if(!found)return [];
+    const pages=data&&data.query&&data.query.pages;
+    return (Array.isArray(pages)?pages:[]).filter(page=>
+       !COMMONS_SCENE_BLOCK.test(string(page&&page.title))&&
+       !/\\b(?:detail(?:ed)?|verso|back side|framed|gallery wall|photograph of|museum interior)\\b/i.test(string(page&&page.title))
+    ).map(page=>{
+      const info=page&&Array.isArray(page.imageinfo)?page.imageinfo[0]:null;
+      const meta=info&&info.extmetadata||{};
+      const mime=string(info&&info.mime).toLowerCase();
+      const title=string(page&&page.title).replace(/^File:/i,'').replace(/\\.(?:jpg|jpeg|png|webp)$/i,'').replace(/_/g,' ');
+      return {
+        key:'commons:'+String(page&&page.pageid),source:'세계 공개 컬렉션 · '+found.label,
+        title:wikimediaText(title)||'제목 미상',
+        artist:wikimediaText(meta.Artist&&meta.Artist.value)||'작가 미상',
+        image:string(info&&(info.thumburl||info.url)),
+        width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
+        type:found.type||'Painting',classification:found.type||'Painting',medium:'',
+        description:'',license:wikimediaText(meta.LicenseShortName&&meta.LicenseShortName.value),
+        rightsOK:commonsPublicDomain(meta)&&/^(?:image\\/(?:jpeg|png|webp))$/.test(mime),
+        museumRegion:'additional',verifiedCollectionCategory:false,style:'',styles:[],
+        // A century-named category is NOT per-artwork reliable production-year evidence.
+        date:'',yearStart:null,yearEnd:null,page:string(info&&info.descriptionurl)
+      };
+    });
+  }
   // "Modern" is a verified category with explicit year evidence or original
   // digital-art title, NOT a broad keyword search of historic reproductions.
   const MODERN_CATEGORIES = Object.freeze([
@@ -564,5 +608,6 @@
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
     artworkEra,targetPost1800,eraQuota90Days,MODERN_THRESHOLD_YEAR,
+    GLOBAL_OPEN_ART_CATEGORIES,normalizeGlobalCommons,
     portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance };
 });
