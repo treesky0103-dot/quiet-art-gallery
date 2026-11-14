@@ -33,7 +33,7 @@ test('8GiB storage is reserved and saved-file count is measured, not guessed',()
   assert.match(java,/MAX_IMAGE_CACHE = 8L \* 1024 \* 1024 \* 1024/);
   assert.match(java,/CLEAN_TO = 7L \* 1024 \* 1024 \* 1024/);
   assert.match(java,/FREE_RESERVE = 1536L \* 1024 \* 1024/);
-  assert.match(java,/\.put\("imageFiles",countCachedImageFiles\(\)\)/);
+  assert.match(java,/\.put\("imageFiles",total\)/);
   assert.match(app,/Number\(s\.imageFiles\|\|0\)/);
   assert.match(app,/!state\.prefetchedKeys\.has\(a\.key\)/);
   assert.match(java,/shownLedger\.displayedFiles\(imageDir\)/);
