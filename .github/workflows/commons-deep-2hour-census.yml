@@ -1,0 +1,66 @@
+name: Two-hour worldwide Commons art archive census (metadata only, not acquired)
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/commons_deep_2hour_census.py
+      - .github/workflows/commons-deep-2hour-census.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  long-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 130
+    env:
+      CENSUS_SECONDS: '6900'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch researched worldwide museum categories
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43555115592
+          name: worldwide-museum-archive-discovery-directory
+          path: research-input/global
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Validate source code
+        run: python -m py_compile scripts/commons_deep_2hour_census.py
+      - name: Search artwork categories and public source-image metadata for 115 minutes
+        run: python -u scripts/commons_deep_2hour_census.py
+      - name: Validate census is NOT misrepresented as acquired images
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('audit-commons-two-hour/final.json').read_text())
+          assert d["target_90day_total"]==259200
+          assert d["target_post_1800"]==207360
+          assert d["verified_image_downloads_this_census"]==0
+          assert d["acquisition_259200_complete"] is False
+          print("Census result scope verified. Catalog metadata is NOT actual downloaded art.")
+          PY
+      - name: Commit compact durable progress report only
+        if: success()
+        run: |
+          mkdir -p audit_reports
+          cp audit-commons-two-hour/final.json audit_reports/20261114_worldwide_2hour_source_census.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add audit_reports/20261114_worldwide_2hour_source_census.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record 115-minute global open artwork metadata census; images not acquired"
+          git pull --rebase origin collect-80pct-scale-batch-20261114
+          git push origin HEAD:collect-80pct-scale-batch-20261114
+      - name: Upload compact source metadata and stage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: two-hour-global-art-census-metadata-only
+          path: audit-commons-two-hour/
+          if-no-files-found: warn
+          retention-days: 3
