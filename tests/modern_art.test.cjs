@@ -32,7 +32,7 @@ test('modern category discovery is bounded and does not scrape Behance',()=>{
  assert(app.includes("kind==='modernCommons'"));
  assert(app.includes("kind==='openverseModern'"));
  assert(app.includes("source==='modern'"));
- assert(app.includes("m.id==='modern'"));
+ assert(app.includes("state.modernOrder++%3"));
 });
 test('1800+ 80-percent target is exactly four of each five display slots',()=>{
  for(let base=0;base<500;base+=5){
