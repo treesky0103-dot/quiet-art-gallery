@@ -1,3 +1,4 @@
 run_utc,github_run_id,new_verified_this_run,increment_verified_unique,user_baseline_plus_new,download_attempts,scan_pages,proof_bytes,elapsed_sec,proof_files,verified_only_in_hash_ledger
 2026-11-14T09:17:10.475156+00:00,43579737660,67,70,806,76,12,20858578,52.7,,
 2026-11-14T09:22:13.512727+00:00,43580129803,80,150,886,80,6,1031142,66.4,4,76
+2026-11-14T15:37:56.401079+00:00,43611132440,80,230,966,80,6,1018095,51.8,4,76

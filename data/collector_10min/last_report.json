@@ -1,49 +1,49 @@
 {
-  "run_utc": "2026-11-14T09:22:13.512727+00:00",
-  "github_run_id": "43580129803",
+  "run_utc": "2026-11-14T15:37:56.401079+00:00",
+  "github_run_id": "43611132440",
   "baseline_requested": 736,
   "baseline_with_independent_hash_records": 675,
   "new_verified_this_run": 80,
-  "increment_verified_unique": 150,
-  "user_baseline_plus_new": 886,
+  "increment_verified_unique": 230,
+  "user_baseline_plus_new": 966,
   "metadata_source_ok": 6,
   "download_attempts": 80,
   "proof_files": 4,
   "details": [
     {
-      "source": "cma_older",
-      "cursor": 2500,
-      "candidates": 8,
+      "source": "cma_modern",
+      "cursor": 4000,
+      "candidates": 9,
       "ok": true
     },
     {
-      "source": "cma_older",
-      "cursor": 2600,
-      "candidates": 11,
-      "ok": true
-    },
-    {
-      "source": "cma_older",
-      "cursor": 2700,
-      "candidates": 11,
-      "ok": true
-    },
-    {
-      "source": "cma_older",
-      "cursor": 2800,
+      "source": "cma_modern",
+      "cursor": 4100,
       "candidates": 17,
       "ok": true
     },
     {
-      "source": "cma_older",
-      "cursor": 2900,
-      "candidates": 24,
+      "source": "cma_modern",
+      "cursor": 4200,
+      "candidates": 15,
       "ok": true
     },
     {
-      "source": "cma_older",
-      "cursor": 3000,
-      "candidates": 16,
+      "source": "cma_modern",
+      "cursor": 4300,
+      "candidates": 15,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 4400,
+      "candidates": 17,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 4500,
+      "candidates": 26,
       "ok": true
     }
   ],
@@ -51,8 +51,8 @@
     "validated_but_not_archived": 76
   },
   "scan_pages": 6,
-  "elapsed_sec": 66.4,
-  "proof_bytes": 1031142,
+  "elapsed_sec": 51.8,
+  "proof_bytes": 1018095,
   "target_cap": 80,
   "max_output_bytes": 1048576,
   "verified_only_in_hash_ledger": 76,
