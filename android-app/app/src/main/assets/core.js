@@ -38,7 +38,8 @@
       const u = new URL(url);
       if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return false;
       const h = u.hostname.toLowerCase();
-      return h === 'upload.wikimedia.org' || h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
+      return h === 'upload.wikimedia.org' || h === 'live.staticflickr.com' ||
+        /^farm[1-9]\.staticflickr\.com$/.test(h) || h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
     } catch (_) { return false; }
   }
   // Wikimedia Commons collection categories; not direct museum-operated APIs.
