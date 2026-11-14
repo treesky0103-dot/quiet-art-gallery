@@ -35,7 +35,7 @@ TARGET = 80  # aspirational cap; actual batch is bounded by time, source/rights,
 MAX_ATTEMPTS = 200
 MAX_PAGES = 12
 TIME_BUDGET_SECONDS = 345
-MAX_PROOF_BYTES = 20 * 1024 * 1024
+MAX_PROOF_BYTES = 1 * 1024 * 1024  # GitHub Free storage safety: only a small temporary proof sample
 YEAR = 2026
 ASPECT = 0.625
 HEADERS = {"User-Agent": "QuietArtGalleryResearch/1.0 (+https://github.com/treesky0103-dot/quiet-art-gallery)", "Accept": "*/*"}
@@ -217,7 +217,6 @@ def run():
                 break
             for art in candidates:
                 if (len(found)>=TARGET or attempts>=MAX_ATTEMPTS or
-                    proof_bytes>=MAX_PROOF_BYTES or
                     time.monotonic()-started>=TIME_BUDGET_SECONDS):break
                 identifier=(art["source"],art["artwork_id"])
                 if not identifier[1] or identifier in ids:continue
@@ -256,9 +255,6 @@ def run():
                     if not retained:
                         rejects["optimized_file_over_600kb"]=rejects.get("optimized_file_over_600kb",0)+1
                         continue
-                    if proof_bytes+len(retained)>MAX_PROOF_BYTES:
-                        rejects["proof_byte_budget"]=rejects.get("proof_byte_budget",0)+1
-                        break
                     file_hash=hashlib.sha256(retained).hexdigest()
                     if file_hash in hashes:
                         rejects["optimized_duplicate_sha"]=rejects.get("optimized_duplicate_sha",0)+1
@@ -275,15 +271,22 @@ def run():
                       "artifact_run":os.getenv("GITHUB_RUN_ID","local"),
                       "verified_utc":datetime.now(timezone.utc).isoformat()}
                     rows.append(recorded);found.append(recorded)
-                    proof_bytes+=len(retained)
+                    # Every accepted file was actually written, decoded, measured and
+                    # hashed. The Actions artifact contains a small quota-safe sample;
+                    # unsampled files are deleted after independent disk verification.
+                    if proof_bytes+len(retained)<=MAX_PROOF_BYTES:
+                        proof_bytes+=len(retained)
+                    else:
+                        fn.unlink()
+                        rejects["validated_but_not_archived"]=rejects.get("validated_but_not_archived",0)+1
                     ids.add(identifier);hashes.update((source_hash,file_hash));visual.append(n)
                     print("VERIFIED "+art["source"]+" "+art["artwork_id"]+" "+source_hash,flush=True)
                 except Exception as ex:
                     rejects["download_decode_error"]=rejects.get("download_decode_error",0)+1
                     if len(probes)<30:
                         probes.append({"source":key,"artwork_id":art["artwork_id"],"error":str(ex)[:170]})
-            if not candidates or proof_bytes>=MAX_PROOF_BYTES:break
-        if len(found)>=TARGET or proof_bytes>=MAX_PROOF_BYTES:break
+            if not candidates:break
+        if len(found)>=TARGET:break
     now=datetime.now(timezone.utc).isoformat()
     report={"run_utc":now,"github_run_id":os.getenv("GITHUB_RUN_ID","local"),
             "baseline_requested":736,"baseline_with_independent_hash_records":675,
@@ -293,8 +296,9 @@ def run():
             "proof_files":len(list(IMAGES.glob("*.jpg"))),"details":probes,"rejection_summary":rejects,
             "scan_pages":pages,"elapsed_sec":round(time.monotonic()-started,1),
             "proof_bytes":proof_bytes,"target_cap":TARGET,"max_output_bytes":MAX_PROOF_BYTES,
+            "verified_only_in_hash_ledger":len(found)-len(list(IMAGES.glob("*.jpg"))),
             "limitations":["736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
-            "Original JPEG/PNG/WebP proof files live in expiring GitHub Actions artifacts, not tablet",
+            "Only a small sample of proof JPEGs is uploaded for one day; other accepted images were downloaded and verified on the runner then discarded, preserving SHA/URL metadata only",
             "Server-side scheduled run does not update the existing v1.7.2 APK"]}
     save_json(OUT/"report.json",report)
     save_json(ROOT/"last_report.json",report)
@@ -308,7 +312,8 @@ def run():
     save_csv(NEW_CSV,rows)
     save_json(STATE,state)
     history_fields=["run_utc","github_run_id","new_verified_this_run","increment_verified_unique",
-                    "user_baseline_plus_new","download_attempts","scan_pages","proof_bytes","elapsed_sec"]
+                    "user_baseline_plus_new","download_attempts","scan_pages","proof_bytes","elapsed_sec",
+                    "proof_files","verified_only_in_hash_ledger"]
     previous=read_csv(HISTORY)
     previous.append({k:report.get(k,"") for k in history_fields})
     # Preserve history across scheduled runs; history is a manifest, not proof of permanent image bytes.
