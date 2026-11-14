@@ -47,3 +47,38 @@ body.upside-down:not(.native-rotation) #caption{
   top:0;bottom:auto;background:#11100f;border-top:0;border-bottom:1px solid rgba(233,222,199,.17);
   transform:rotate(180deg)!important;
 }
+
+
+/* v1.8.2: fully labeled source registry, never pretend external browsing
+   links are verified automatic collectors. */
+#source-channels{
+  max-height:45vh;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  border:1px solid rgba(210,200,180,.2);
+  border-radius:10px;
+  padding:10px 12px;
+  margin:8px 0;
+}
+#source-channels p{font-size:12px;line-height:1.6;margin:0 0 9px;color:#c9c1b7}
+.source-line{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  border-top:1px solid rgba(210,200,180,.12);
+  padding:7px 0;
+}
+.source-link{
+  font:inherit;
+  color:#eddfc3;
+  font-size:13px;
+  text-align:left;
+  border:0;
+  background:transparent;
+  text-decoration:underline;
+  cursor:pointer;
+  max-width:66%;
+}
+.source-link:disabled{color:#817a73;cursor:not-allowed;text-decoration:none}
+.source-mode{font-size:11px;color:#9e9a92;white-space:nowrap;text-align:right}
