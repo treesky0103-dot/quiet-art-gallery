@@ -28,7 +28,7 @@ test('native request bridge exposes only the three known art categories',()=>{
  assert.match(java,/PortraitAdapter\.convert/);
  assert.match(java,/ART_INTERVAL_MS = 60000L/);
  const gradle=file('android-app/app/build.gradle');
- assert.match(gradle,/versionName '1\.8\.2-sources85'/);
+ assert.match(gradle,/versionName '1\.8\.3-tablet60'/);
  assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.sources85'/);
 });
 
