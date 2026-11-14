@@ -53,6 +53,6 @@ test('75 percent applies only to unlocked portrait and does not weaken 90 day ru
  assert(html.includes('스마트 크롭') && html.includes('저해상도'));
  assert(html.includes('고화질 우선'));
  const gradle=read('android-app/app/build.gradle');
- assert(gradle.includes("applicationId 'com.gallery.kiosk.fast8g'"));
- assert(gradle.includes("versionName '1.8.4-fast8g'"));
+ assert(gradle.includes("applicationId 'com.gallery.kiosk.v185'"));
+ assert(gradle.includes("versionName '1.8.5-safe3'"));
 });
