@@ -41,6 +41,22 @@ GitHub Actions 실물 검증: <https://github.com/treesky0103-dot/quiet-art-gall
 - 실제 갤럭시 탭 A7 설치, 24시간 무중단 회전, 이미지 8GB 축적, 제작연도 80% 90일 유지 실증 **0건**.
 - 기존 운영 APK 버전 및 사용자 태블릿은 변경하지 않았다.
 
+
+
+## 최종 증분: 서버 속도 제한 준수 재실행
+
+- 재실행: <https://github.com/treesky0103-dot/quiet-art-gallery/actions/runs/43570622654>
+- 미술관 외 Wikimedia Commons 삽화/드로잉/판화 58개 JPG 실물 다운로드·디코딩·SHA256/세로 화면 검증.
+- 새 58개와 이전 17개 파일을 동일 Commons page ID 및 이미지 SHA256으로 전수 대조: 기존 17개 중 14개와 겹침, **새 고유 이미지 44개**.
+- 따라서 신규 공개 이미지 합계 **61개**, 제작 연도 독립 참값은 모두 미확정(era=unknown). 과거 제작연도 분류 수량 675개와 파일 SHA256 중복 0개.
+- 현재 **파일 SHA256 기준 서로 다른 총 736개** = 제작시기 분류 완료 675개(1800년 이후 522 / 그 이전 153) + 제작시기 미상 61개.
+- 259,200개의 파일 SHA256 기준 수량까지 **258,464개 부족**. 이 736개는 90일 고정 전시 큐 완성·이미지 장기 저장을 의미하지 않음.
+- 교차 검증: <https://github.com/treesky0103-dot/quiet-art-gallery/actions/runs/43570968757>
+- 증거 대장: `data/verified_80pct/additional_global_art_audit.json` 및 `additional_global_art_unknown_year.csv`. 다른 미술관에서 재촬영한 동일 미술작품의 시각적 동일성은 여전히 독립 인간 검수가 필요.
+- 기존 연구용 APK 재빌드: <https://github.com/treesky0103-dot/quiet-art-gallery/actions/runs/43570250186>, Node **78/78 통과** 및 Android Debug APK 빌드 성공, 실기기 24시간 품질 검증은 미실시.
+- 연구 자동 점검: 매일 KST 오전 10시, 최초 예정 2026-11-15, 자동화 확인 ID `Automation_bb7412fe92788191adcaf2e969c254d4`. 이는 미래 결과를 보장하는 자동 다운로드 서비스가 아니다.
+- 실제 61개 JPG는 GitHub Actions 제한 기간 보관되는 파일이며 프로젝트 소스 저장소의 CSV는 JPG 바이트를 보관하지 않음.
+
 ## 현재 파일 저장 한계와 종료 기준
 
 새로운 17개 JPEG의 실물 증빙은 GitHub Actions에 보관되며 **2026-11-16T07:06:12Z 만료 예정**, GitHub 저장소에는 파일명·출처·SHA/사이즈 및 제작연도 상태만 영구 기록되어 있다. 따라서 "692점이 태블릿에 영구 저장되어 있다"는 주장은 허위다. 대규모 장기 저장·다운로드·삭제/회전 정책은 실기기와 운영 수집기의 검증이 필요하다.
