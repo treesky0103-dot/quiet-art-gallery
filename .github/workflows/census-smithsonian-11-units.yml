@@ -1,0 +1,45 @@
+name: Smithsonian eleven art museums 176 shard CC0 2D strata audit
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/census_smithsonian_11_units_stratified.py
+      - .github/workflows/census-smithsonian-11-units.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit eleven Smithsonian units and one sixteenth of each S3 archive
+        run: |
+          python -m py_compile scripts/census_smithsonian_11_units_stratified.py
+          python -u scripts/census_smithsonian_11_units_stratified.py
+      - name: Validate report and distinguish metadata from downloaded art
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('audit-smithsonian-regional-2d/smithsonian_11_units_16_shards_cc0_2d.json').read_text())
+          assert j['sampled_shards_per_unit']==16
+          assert j['source_unit_count']==11
+          assert j['sampled_shards_total']==176
+          assert len(j['shard_details'])==176
+          assert j['actual_artwork_images_downloaded']==0
+          assert j['target_259200_reached'] is False
+          print('Smithsonian bounded museum strata metadata verified',len(j['shard_details']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smithsonian-11-art-museums-176-shard-metadata
+          path: audit-smithsonian-regional-2d/
+          if-no-files-found: warn
+          retention-days: 7
