@@ -5,6 +5,9 @@ on:
       - feat-tablet-one-minute-8gib-20261115
     paths:
       - '.github/workflows/build-tablet60-8gib-2692-v183.yml'
+      - 'tests/*.test.cjs'
+      - 'web/*.js'
+      - 'android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java'
   workflow_dispatch:
 permissions:
   contents: write
