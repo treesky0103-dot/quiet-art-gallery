@@ -18,7 +18,13 @@ from urllib.parse import urlencode, quote
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-OUT=Path("audit-80pct-batch")
+BATCH_ID=os.environ.get("QAG_BATCH_ID","001")
+assert re.fullmatch(r"[0-9]{3}",BATCH_ID), "Invalid batch identifier"
+CMA_SKIP=int(os.environ.get("QAG_CMA_SKIP","700"))
+AIC_PAGE=int(os.environ.get("QAG_AIC_PAGE","7"))
+MET_SKIP=int(os.environ.get("QAG_MET_SKIP","700"))
+assert 500<=CMA_SKIP<=40000 and 1<=AIC_PAGE<=500 and 0<=MET_SKIP<=20000
+OUT=Path("audit-80pct-batch-"+BATCH_ID)
 IMAGES=OUT/"samples"
 IMAGES.mkdir(parents=True, exist_ok=True)
 CURRENT=2026
@@ -91,7 +97,7 @@ def normalize(record):
 
 def cleveland(era):
     # Official CMA docs: 'created_after', 'created_before', 'cc0', 'has_image', 'limit', 'skip'.
-    args={"has_image":1,"limit":500,"skip":700,"created_before":1800 if era=="pre-1800" else CURRENT+1}
+    args={"has_image":1,"limit":500,"skip":CMA_SKIP,"created_before":1800 if era=="pre-1800" else CURRENT+1}
     if era=="1800-2026":args["created_after"]=1799
     url="https://openaccess-api.clevelandart.org/api/artworks/?"+urlencode(args)+"&cc0"
     data=request(url)
@@ -135,7 +141,7 @@ def artic(era):
          {"range":{"date_end":{"gte":minimum,"lte":maximum}}},
          {"exists":{"field":"image_id"}}
        ]}},
-      "limit":100,"page":7
+      "limit":100,"page":AIC_PAGE
     }
     url="https://api.artic.edu/api/v1/artworks/search?"+urlencode({"params":json.dumps(req,separators=(",",":"))})
     data=request(url)
@@ -163,7 +169,7 @@ def met(era):
     params={"q":"painting","medium":"Paintings","hasImages":"true",
             "dateBegin":1800 if era=="1800-2026" else 1,
             "dateEnd":CURRENT if era=="1800-2026" else 1799,
-            "offset":700,"limit":80}
+            "offset":MET_SKIP,"limit":80}
     url="https://collectionapi.metmuseum.org/public/collection/v1.1/search?"+urlencode(params)
     data=request(url)
     objects=data.get("objectIDs") or []
@@ -310,7 +316,7 @@ def main():
                    "earlier_before_1800":EARLIER_GOAL,
                    "modern_percent":80},
          "actual_downloaded_decoded":{"all":len(verified),"modern":moderna,"earlier":earlya},
-         "actual_90day_ready":False,
+         "actual_90day_ready":False,"batch_id":BATCH_ID,
          "modern_shortfall":MODERN_GOAL-moderna,
          "earlier_shortfall":EARLIER_GOAL-earlya,
          "sources":steps,
