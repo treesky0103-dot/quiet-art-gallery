@@ -230,9 +230,13 @@
   ],
   "counts": {
     "last_dated_verified": 675,
-    "new_commons_byteverified_era_unknown": 17,
-    "unique_file_sha256_across_all": 692,
+    "new_commons_byteverified_era_unknown": 61,
+    "unique_file_sha256_across_all": 736,
     "total_target": 259200,
-    "files_safely_preserved_on_tablet": 0
+    "files_safely_preserved_on_tablet": 0,
+    "current_90day_gap": 258464,
+    "verified_source_creation_date_modern": 522,
+    "verified_source_creation_date_older": 153,
+    "note": "Second polite rate-limited download reverified 58 images: 44 new source-page IDs after removing 14 overlapping with earlier 17."
   }
 }
