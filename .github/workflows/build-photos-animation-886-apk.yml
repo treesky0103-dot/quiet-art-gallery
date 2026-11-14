@@ -1,0 +1,193 @@
+name: Build 886 paintings plus verified photos and animation stills APK
+on:
+  push:
+    paths:
+      - '.github/workflows/build-photos-animation-886-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: full-media-886-paintings-plus-photo-animation-release
+  cancel-in-progress: false
+jobs:
+  build-portrait30-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout isolated research source (do not mutate existing production APK)
+        uses: actions/checkout@v4
+        with:
+          ref: feat-bundle-photo-animation-20261114
+          persist-credentials: true
+      - name: Install Python 3.12 and image decoder
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Pillow for real images
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Check syntax and portrait30 program invariants
+        run: |
+          python -m py_compile scripts/build_886_adapted_deck.py scripts/append_photo_animation_deck.py
+          node --check web/app.js
+          node --check web/core.js
+          cmp web/app.js android-app/app/src/main/assets/app.js
+          cmp web/core.js android-app/app/src/main/assets/core.js
+          cmp web/index.html android-app/app/src/main/assets/index.html
+          cmp web/style.css android-app/app/src/main/assets/style.css
+          grep -q 'const eligible=C.shuffledCopy' web/app.js
+          grep -q 'artworkYearLabel' web/core.js
+          grep -q "collectorEveryMs:1800000" web/app.js
+          grep -q "PortraitAdapter.convert" android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "versionName '1.7.5-mediafull'" android-app/app/build.gradle
+          node --test tests/*.test.cjs
+      - name: Install Java 17, SDK 35 and Gradle 8.9
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Use preinstalled runner Android SDK without obsolete tools package
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager=""
+          if test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; then
+            sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          else
+            sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          fi
+          test -n "$sdkmanager"
+          printf 'yes\n' | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Download and independently decode eligible original art, smart-crop, upscale and embed
+        timeout-minutes: 32
+        run: python -u scripts/build_886_adapted_deck.py
+      - name: Verify exact image manifest and written image hashes
+        run: |
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from PIL import Image
+          root=Path('android-app/app/src/main/assets')
+          rows=json.loads((root/'offline-deck.json').read_text())
+          rep=json.loads(Path('build-art-report.json').read_text())
+          files=sorted((root/'offline').glob('pack-*.jpg'))
+          assert len(rows)==len(files)==rep['embedded_verified_jpegs']
+          assert 754<len(files)<=886
+          assert rep['new_adapted_originals_embedded']>0
+          assert rep['landscape_to_portrait_count']>0
+          assert rep['actually_upscaled_count']>=0
+          assert len(set(x['key'] for x in rows))==len(rows)
+          assert len(set(x['sourceSHA256'] for x in rows))==len(rows)
+          assert len(set(x['derivedSHA256'] for x in rows))==len(rows)
+          for index,x in enumerate(rows):
+              expected='offline/pack-%04d.jpg'%index
+              assert x['offlineAsset']==expected
+              assert x['image']=='https://appassets.gallery/'+expected
+              path=root/expected
+              blob=path.read_bytes()
+              assert hashlib.sha256(blob).hexdigest()==x['derivedSHA256']
+              with Image.open(path) as im:
+                  im.load();assert im.size==(1000,1667) and im.format=='JPEG'
+          print('REAL_EMBEDDED_REOPENED_HASH_VERIFIED',len(rows),'bytes',sum(x.stat().st_size for x in files))
+          PY
+      - name: Add real public-domain photos and animation stills to the original painting deck
+        timeout-minutes: 23
+        run: |
+          python -u scripts/append_photo_animation_deck.py
+      - name: Verify all 886 paintings retained and every additional media file reopens and hashes match
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json,collections,zipfile
+          from PIL import Image
+          root=Path("android-app/app/src/main/assets")
+          rows=json.loads((root/"offline-deck.json").read_text(encoding="utf-8"))
+          rep=json.loads(Path("build-mixed-media-report.json").read_text(encoding="utf-8"))
+          assert len(rows)==rep["actual_distinct_embedded"]==886+rep["photographs"]+rep["animation_stills"]
+          assert 886<len(rows)<=1800
+          assert rep["base_paintings"]==886
+          assert rep["photographs"]>=10,rep
+          # Public-domain animation candidates are scarcer. If none are
+          # available, do not silently claim their inclusion or publish this
+          # release as one containing them.
+          assert rep["animation_stills"]>=1,rep
+          assert all(x["type"]=="Painting" for x in rows[:886])
+          assert len(set(x["key"] for x in rows))==len(rows)
+          assert len(set(x["sourceSHA256"] for x in rows))==len(rows)
+          assert len(set(x["derivedSHA256"] for x in rows))==len(rows)
+          count=collections.Counter()
+          for i,a in enumerate(rows):
+              expected="offline/pack-%04d.jpg"%i
+              assert a["offlineAsset"]==expected
+              assert a["image"]=="https://appassets.gallery/"+expected
+              payload=(root/expected).read_bytes()
+              assert hashlib.sha256(payload).hexdigest()==a["derivedSHA256"]
+              with Image.open(root/expected) as img:
+                  img.load()
+                  assert img.size==(1000,1667) and img.format=="JPEG"
+              count[a["type"]]+=1
+          assert count["Painting"]==886
+          assert count["Photograph"]==rep["photographs"]
+          assert count["Animation Still"]==rep["animation_stills"]
+          print("MIXED_MEDIA_DECK_FULL_SHA256_VERIFIED",len(rows),dict(count),
+                "bytes",sum((root/x["offlineAsset"]).stat().st_size for x in rows))
+          PY
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build actual installable debug APK
+        working-directory: android-app
+        timeout-minutes: 15
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Open APK ZIP and inspect all embedded JPEGs, activity and web assets
+        run: |
+          python - <<'PY'
+          import zipfile,hashlib,json
+          from pathlib import Path
+          src=Path('android-app/app/build/outputs/apk/debug/app-debug.apk')
+          rows=json.loads(Path('android-app/app/src/main/assets/offline-deck.json').read_text())
+          assert src.is_file() and src.stat().st_size>30000
+          with zipfile.ZipFile(src) as z:
+              assert z.testzip() is None
+              names=set(z.namelist())
+              assert 'assets/offline-deck.json' in names
+              assert 'assets/app.js' in names and 'assets/core.js' in names
+              packaged=json.loads(z.read('assets/offline-deck.json'))
+              assert len(packaged)==len(rows)
+              assert len(rows)>886
+              for art in rows:
+                  assert 'assets/'+art['offlineAsset'] in names
+              print('APK_REAL_ART_BYTES_PRESENT',len(rows),'TOTAL_APK_BYTES',src.stat().st_size)
+          dest=Path('QuietArtGallery-886Paintings-Photos-Animation-v175.apk')
+          dest.write_bytes(src.read_bytes())
+          sha=hashlib.sha256(dest.read_bytes()).hexdigest()
+          Path('apk-sha256.txt').write_text(sha+'  '+dest.name+'\n')
+          result=json.loads(Path('build-art-report.json').read_text())
+          result.update({'apk_name':dest.name,'apk_sha256':sha,'apk_bytes':dest.stat().st_size})
+          Path('release-art-report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+          PY
+      - name: Release APK without metered Actions artifact uploads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="quiet-art-multimedia-886-20261114"
+          cat > /tmp/release-notes.md <<'NOTE'
+          《고요한 미술관》 연구용 Android APK — 30분 수집, 가로 원작 CPU 스마트 크롭·저해상도 업스케일, 30초 전시·90일 재전시 제한.
+          원래 회화 886점을 그대로 보존하고, 클리블랜드 미술관 CC0 실제 사진과 Wikimedia Commons 공개 라이선스 애니메이션 스틸을 다시 다운로드해 정지 화면 세로 스마트 크롭·업스케일했습니다. 각각의 JPEG가 디코딩되고 SHA256이 일치하는 것만 포함합니다. 사진 및 애니메이션 스틸 추가 수량과 실제 가로 크롭·확대 수는 첨부 build-mixed-media-report.json에 있습니다. 애니메이션은 동영상이 아니라 스틸 이미지입니다. 전시 순서는 무작위, 공통 작품명·작가명·연도 하단 표기입니다. 저작권 불명 작품의 무단 복제·배포나 접근 제한 우회는 구현하지 않았습니다.
+          Android 앱이 포그라운드일 때의 주기적 수집이며 화면 꺼짐/재부팅 후 무중단 실행을 보장하지 않습니다.
+          앱 ID는 이전판을 덮어쓰지 않는 별도 com.gallery.kiosk.mediafull 입니다.
+          APK는 GitHub Actions의 자동 생성 debug 서명으로 빌드되었습니다.
+          NOTE
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" QuietArtGallery-886Paintings-Photos-Animation-v175.apk release-art-report.json build-mixed-media-report.json apk-sha256.txt --clobber
+          else
+            gh release create "$TAG" QuietArtGallery-886Paintings-Photos-Animation-v175.apk release-art-report.json build-mixed-media-report.json apk-sha256.txt \
+              --target feat-bundle-photo-animation-20261114 \
+              --title "고요한 미술관 · 회화 886점 + 사진·애니메이션 스틸 추가" \
+              --notes-file /tmp/release-notes.md
+          fi
+          gh release view "$TAG" --json url,assets --jq '{url:.url,assets:[.assets[].name]}'
