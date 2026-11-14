@@ -42,8 +42,8 @@ jobs:
         run: |
           node <<'NODE'
           const fs=require('fs'),assert=require('node:assert/strict');
-          global.window={};require('./web/core.js');
-          const C=window.GalleryCore;
+          const C=require('./web/core.js');
+          
           const all=JSON.parse(fs.readFileSync('android-app/app/src/main/assets/offline-deck.json','utf8'));
           const rep=JSON.parse(fs.readFileSync('benchmark-10min-result.json','utf8'));
           assert.equal(all.length,2061+rep.new_display_ready_files);
