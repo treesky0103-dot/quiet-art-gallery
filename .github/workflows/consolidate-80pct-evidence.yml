@@ -43,6 +43,27 @@ jobs:
           name: nga-rijks-1800-era-census-and-byte-proof
           path: tmp/nga
           github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Get actual Wellcome art image proof
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43558532875
+          name: wellcome-1800plus-flat-art-audit
+          path: tmp/wellcome
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Get actual SMK Denmark images
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43559855032
+          name: smk-1800-and-early-iiif-real-image-proof
+          path: tmp/smk
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Get actual Smithsonian 2D image proof
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43560141359
+          name: smithsonian-1800plus-and-older-actual-2d-art
+          path: tmp/smithsonian
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Verify every copied file and deduplicate across all museums and batches
         run: |
           python -m py_compile scripts/aggregate_80pct_evidence.py
