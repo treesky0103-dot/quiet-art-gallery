@@ -1,61 +1,37 @@
 {
-  "run_utc": "2026-11-14T15:37:56.401079+00:00",
-  "github_run_id": "43611132440",
+  "run_utc": "2026-11-14T20:06:07.504391+00:00",
+  "github_run_id": "43635551400",
   "baseline_requested": 736,
   "baseline_with_independent_hash_records": 675,
   "new_verified_this_run": 80,
-  "increment_verified_unique": 230,
-  "user_baseline_plus_new": 966,
-  "metadata_source_ok": 6,
+  "increment_verified_unique": 310,
+  "user_baseline_plus_new": 1046,
+  "metadata_source_ok": 2,
   "download_attempts": 80,
-  "proof_files": 4,
+  "proof_files": 5,
   "details": [
     {
       "source": "cma_modern",
-      "cursor": 4000,
-      "candidates": 9,
+      "cursor": 4600,
+      "candidates": 36,
       "ok": true
     },
     {
       "source": "cma_modern",
-      "cursor": 4100,
-      "candidates": 17,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 4200,
-      "candidates": 15,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 4300,
-      "candidates": 15,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 4400,
-      "candidates": 17,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 4500,
-      "candidates": 26,
+      "cursor": 4700,
+      "candidates": 45,
       "ok": true
     }
   ],
   "rejection_summary": {
-    "validated_but_not_archived": 76
+    "validated_but_not_archived": 75
   },
-  "scan_pages": 6,
-  "elapsed_sec": 51.8,
-  "proof_bytes": 1018095,
+  "scan_pages": 2,
+  "elapsed_sec": 63.6,
+  "proof_bytes": 1018461,
   "target_cap": 80,
   "max_output_bytes": 1048576,
-  "verified_only_in_hash_ledger": 76,
+  "verified_only_in_hash_ledger": 75,
   "limitations": [
     "736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
     "Only a small sample of proof JPEGs is uploaded for one day; other accepted images were downloaded and verified on the runner then discarded, preserving SHA/URL metadata only",
