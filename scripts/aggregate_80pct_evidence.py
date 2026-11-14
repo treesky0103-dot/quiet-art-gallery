@@ -62,6 +62,50 @@ def read_nga(path,records,inputs):
           row.get("title",""),row.get("begin_year",""),row.get("end_year",""),fp,
           row["saved_sha256"],row.get("source_sha256",""),None,
           row.get("license",""),"NGA IIIF openaccess=1", "nga-rijks-1800-era-census-and-byte-proof")
+def read_new_work(path,kind,records,inputs):
+    filenames={
+      "wellcome":("audit.json","files","work_id","saved_file","Wellcome Collection","wellcome-1800plus-flat-art-audit"),
+      "smk":("report.json","actual_downloaded","id","saved_file","SMK Denmark","smk-1800-and-early-iiif-real-image-proof"),
+      "smithsonian":("report.json","actual_downloaded","source_id","saved_file","Smithsonian","smithsonian-1800plus-and-older-actual-2d-art")
+    }
+    fn,list_key,id_key,file_key,source,artifact=filenames[kind]
+    report=json.loads((path/fn).read_text(encoding="utf-8"))
+    rows=report[list_key]
+    if kind=="wellcome":
+        assert len(rows)==report["byte_verified_image_files"]
+    elif kind=="smk":
+        assert len(rows)==report["actual_verified_files"]
+    else:
+        assert len(rows)==report["verified_byte_count"]
+    for item in rows:
+        if kind=="wellcome":
+            era=item["era"]
+            title=item.get("title","") or ""
+            y1=item.get("year_start");y2=item.get("year_end")
+            sha=item["sha256"]
+            rights=item.get("license") or ""
+            surl=item.get("source_url") or ""
+            source_sha=""
+        elif kind=="smk":
+            era=item["era"]
+            title=item.get("title") or ""
+            y1=item.get("year_start");y2=item.get("year_end")
+            sha=item["sha256"]
+            rights=item.get("license") or ""
+            surl=item.get("source_page") or ""
+            source_sha=item.get("source_image_sha256") or ""
+        else:
+            era=item["era"]
+            title=item.get("title") or ""
+            y1=item.get("year_start");y2=item.get("year_end")
+            sha=item["sha256"]
+            rights=item.get("license") or ""
+            surl=item.get("source_url") or ""
+            source_sha=item.get("source_sha256") or ""
+        fp=path/"samples"/Path(item[file_key if kind!="wellcome" else "file_path"]).name
+        if not fp.exists():raise FileNotFoundError(fp)
+        add_to(records,inputs,kind,source,str(item[id_key]),era,title,
+           y1,y2,fp,sha,source_sha,None,rights,surl,artifact)
 def main():
     records=[];inputlog=[]
     read_batch(BASE/"baseline","baseline40","verified-1800plus-80pct-paintings-sample",records,inputlog)
@@ -69,6 +113,8 @@ def main():
         read_batch(BASE/"batches"/f"verified-real-paintings-batch-{n}",
                   f"batch{n}",f"verified-real-paintings-batch-{n}",records,inputlog)
     read_nga(BASE/"nga",records,inputlog)
+    for source in ("wellcome","smk","smithsonian"):
+        read_new_work(BASE/source,source,records,inputlog)
     unique=[];duplicate_id=[];duplicate_sha=[];near_pairs=[]
     source_ids={};file_hashes={};previous_dhash=[]
     for r in records:
@@ -115,7 +161,10 @@ def main():
         "all_259200_acquired":False,
         "evidence":{"baseline":"GitHub Actions 43555200749",
                     "four_batches":"GitHub Actions 43557017166",
-                    "national_gallery_of_art":"GitHub Actions 43557443707"},
+                    "national_gallery_of_art":"GitHub Actions 43557443707",
+                    "wellcome":"GitHub Actions 43558532875",
+                    "smk":"GitHub Actions 43559855032",
+                    "smithsonian":"GitHub Actions 43560141359"},
         "limitations":[
             "Actual JPEG bytes remain in expiring GitHub Actions artifacts, not in this repository manifest.",
             "NGA museum creation-year ranges can use artist lifespans; independent per-artwork era audit incomplete.",
