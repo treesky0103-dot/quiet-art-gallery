@@ -1,0 +1,42 @@
+name: Global public art museum API probing (no image-count claims)
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_global_museum_apis.py
+      - .github/workflows/probe-global-art-apis.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check syntax and live public sources
+        run: |
+          python -m py_compile scripts/probe_global_museum_apis.py
+          python -u scripts/probe_global_museum_apis.py
+      - name: Validate provenance, not image acquisition
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('audit-global-direct-apis/source_probes.json').read_text())
+          assert len(x['results'])==x['intended']
+          assert x['images_downloaded']==0
+          assert x['actual_259200_acquired'] is False
+          print('Public endpoint probe evidence verified, none counted as actual images.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: global-direct-art-apis-sample-only
+          path: audit-global-direct-apis/source_probes.json
+          if-no-files-found: warn
+          retention-days: 5
