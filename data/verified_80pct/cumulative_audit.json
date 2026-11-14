@@ -1,20 +1,20 @@
 {
-  "as_of_utc": "2026-11-14T05:13:28.631825+00:00",
+  "as_of_utc": "2026-11-14T05:32:32.414222+00:00",
   "target": {
     "modern": 207360,
     "older": 51840,
     "all": 259200
   },
-  "reported_input_files": 488,
+  "reported_input_files": 499,
   "exact_duplicate_source_ids_removed": 1,
   "exact_duplicate_image_hashes_removed": 0,
-  "unique_verified_file_and_source_id_count": 487,
-  "verified_1800plus": 377,
-  "verified_older": 110,
-  "actual_modern_share_percent": 77.4127,
-  "missing_1800plus": 206983,
-  "missing_older": 51730,
-  "missing_total": 258713,
+  "unique_verified_file_and_source_id_count": 498,
+  "verified_1800plus": 385,
+  "verified_older": 113,
+  "actual_modern_share_percent": 77.3092,
+  "missing_1800plus": 206975,
+  "missing_older": 51727,
+  "missing_total": 258702,
   "suspected_visual_duplicate_pairs_requiring_review": 0,
   "visual_pairs_first_30": [],
   "duplicate_ids_sample": [
@@ -33,7 +33,9 @@
     "national_gallery_of_art": "GitHub Actions 43557443707",
     "wellcome": "GitHub Actions 43558532875",
     "smk": "GitHub Actions 43559855032",
-    "smithsonian": "GitHub Actions 43560141359"
+    "smithsonian": "GitHub Actions 43560141359",
+    "yale": "GitHub Actions 43561581690",
+    "rijks": "GitHub Actions 43561741983"
   },
   "limitations": [
     "Actual JPEG bytes remain in expiring GitHub Actions artifacts, not in this repository manifest.",
