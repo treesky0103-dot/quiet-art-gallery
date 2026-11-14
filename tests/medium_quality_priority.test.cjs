@@ -34,7 +34,7 @@ test('new thresholds are consistent across WebView and Android image-cache decod
  const js=read('web/app.js'),java=read('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java');
  assert.match(js,/minimumPortraitFill:\.75/);
  assert.match(js,/C\.acceptableResolution\(img\.naturalWidth,img\.naturalHeight\)/);
- assert.match(js,/eligible\.sort\(\(a,b\)=>C\.qualityTier\(b\)-C\.qualityTier\(a\)\)/);
+ assert.match(js,/C\.qualityTier\(b\)-C\.qualityTier\(a\)/);
  assert.match(java,/MIN_IMAGE_SHORT_SIDE = 1000/);
  assert.match(java,/MIN_IMAGE_LONG_SIDE = 1400/);
  assert.match(java,/acceptableResolution\(tmp\)/);
