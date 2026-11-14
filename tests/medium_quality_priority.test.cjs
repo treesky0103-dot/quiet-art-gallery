@@ -34,10 +34,10 @@ test('new thresholds are consistent across WebView and Android image-cache decod
  const js=read('web/app.js'),java=read('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java');
  assert.match(js,/minimumPortraitFill:\.75/);
  assert.match(js,/C\.acceptableResolution\(img\.naturalWidth,img\.naturalHeight\)/);
- assert.match(js,/C\.qualityTier\(b\)-C\.qualityTier\(a\)/);
+ assert.match(js,/const eligible=C\.shuffledCopy\(state\.pool/);
  assert.match(java,/MIN_IMAGE_SHORT_SIDE = 1000/);
  assert.match(java,/MIN_IMAGE_LONG_SIDE = 1400/);
- assert.match(java,/acceptableResolution\(tmp\)/);
+ assert.match(java,/PortraitAdapter\.convert\(tmp,transformed\)/);
  assert.match(java,/acceptableResolution\(f\)/);
  assert.match(java,/ART_INTERVAL_MS = 30000L/);
 });
@@ -50,9 +50,9 @@ test('75 percent applies only to unlocked portrait and does not weaken 90 day ru
  assert.equal(C.canReshow(now-90*86400000,now),true);
  const html=read('web/index.html');
  assert(html.includes('75% 이상'));
- assert(html.includes('1000px') && html.includes('1400px'));
+ assert(html.includes('스마트 크롭') && html.includes('저해상도'));
  assert(html.includes('고화질 우선'));
  const gradle=read('android-app/app/build.gradle');
- assert(gradle.includes("applicationId 'com.gallery.kiosk.v166'"));
- assert(gradle.includes("versionName '1.6.6'"));
+ assert(gradle.includes("applicationId 'com.gallery.kiosk.mixedmedia'"));
+ assert(gradle.includes("versionName '1.7.4-mixed'"));
 });
