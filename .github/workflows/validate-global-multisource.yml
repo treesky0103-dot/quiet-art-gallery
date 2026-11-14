@@ -1,0 +1,54 @@
+name: Test multi-origin public art app and Android research APK
+on:
+  push:
+    branches:
+      - feat-multisource-world-openart-20261114
+    paths:
+      - web/**
+      - android-app/app/src/main/assets/**
+      - android-app/app/src/main/java/**
+      - tests/**
+      - .github/workflows/validate-global-multisource.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript source compilation and full regression
+        run: |
+          node --check web/app.js
+          node --check web/core.js
+          node --test tests/*.test.cjs
+      - name: Assert Android/native Web assets are exactly synchronized
+        run: |
+          cmp web/app.js android-app/app/src/main/assets/app.js
+          cmp web/core.js android-app/app/src/main/assets/core.js
+      - name: Emergency deck prior dependency
+        run: python3 scripts/build_emergency_deck.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - name: SDK platform
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Actual APK compile (research only)
+        working-directory: android-app
+        run: gradle :app:assembleDebug --no-daemon
+      - name: Verify compiled artifact
+        run: |
+          test -s android-app/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum android-app/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: global-multisource-research-apk-not-production
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 2
+          if-no-files-found: error
