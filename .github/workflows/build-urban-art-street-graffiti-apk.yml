@@ -1,0 +1,162 @@
+name: Build 1510 preserved artworks plus Contemporary Street Graffiti APK
+on:
+  push:
+    paths:
+      - '.github/workflows/build-urban-art-street-graffiti-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: urban-art-20261114-release
+  cancel-in-progress: false
+jobs:
+  build-portrait30-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout isolated research source (do not mutate existing production APK)
+        uses: actions/checkout@v4
+        with:
+          ref: feat-contemporary-street-graffiti-bundle-20261114
+          persist-credentials: true
+      - name: Install Python 3.12 and image decoder
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Pillow for real images
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Check syntax and portrait30 program invariants
+        run: |
+          python -m py_compile scripts/build_886_adapted_deck.py scripts/append_photo_animation_deck.py scripts/append_contemporary_street_graffiti.py
+          node --check web/app.js
+          node --check web/core.js
+          cmp web/app.js android-app/app/src/main/assets/app.js
+          cmp web/core.js android-app/app/src/main/assets/core.js
+          cmp web/index.html android-app/app/src/main/assets/index.html
+          cmp web/style.css android-app/app/src/main/assets/style.css
+          grep -q 'const eligible=C.shuffledCopy' web/app.js
+          grep -q 'artworkYearLabel' web/core.js
+          grep -q "collectorEveryMs:1800000" web/app.js
+          grep -q "PortraitAdapter.convert" android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "versionName '1.7.6-urbanart'" android-app/app/build.gradle
+          node --test tests/*.test.cjs
+      - name: Install Java 17, SDK 35 and Gradle 8.9
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Use preinstalled runner Android SDK without obsolete tools package
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager=""
+          if test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; then
+            sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          else
+            sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          fi
+          test -n "$sdkmanager"
+          printf 'yes\n' | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Download exact published v1.7.5 verified APK to preserve all 1510 pieces
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-multimedia-886-20261114 \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --pattern "QuietArtGallery-886Paintings-Photos-Animation-v175.apk" --clobber
+          test -s QuietArtGallery-886Paintings-Photos-Animation-v175.apk
+      - name: Reuse old 1510 original images, collect & portrait-convert actual new categories
+        timeout-minutes: 19
+        run: python -u scripts/append_contemporary_street_graffiti.py
+      - name: Audit every original and derived image, SHA256 and exact 1510 preservation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json,hashlib,collections,zipfile
+          root=Path('android-app/app/src/main/assets')
+          arr=json.loads((root/'offline-deck.json').read_text(encoding='utf-8'))
+          rep=json.loads(Path('build-contemporary-street-graffiti-report.json').read_text(encoding='utf-8'))
+          assert len(arr)==rep['total_verified_jpegs']==1510+rep['total_added']
+          assert 1510<len(arr)<=2110
+          assert rep['base_images_preserved_exactly']==1510
+          assert len({x['key'] for x in arr})==len(arr)
+          assert len({x['sourceSHA256'] for x in arr})==len(arr)
+          assert len({x['derivedSHA256'] for x in arr})==len(arr)
+          ctr=collections.Counter(x['type'] for x in arr)
+          assert ctr['Painting']==886 and ctr['Photograph']==600 and ctr['Animation Still']==24
+          assert sum(ctr[x] for x in ('Contemporary Art','Street Art','Graffiti'))>0
+          with zipfile.ZipFile('QuietArtGallery-886Paintings-Photos-Animation-v175.apk') as old:
+            prev=json.loads(old.read('assets/offline-deck.json'))
+            assert arr[:1510]==prev
+          for i,a in enumerate(arr):
+            rel='offline/pack-%04d.jpg'%i
+            assert a['offlineAsset']==rel
+            assert a['image']=='https://appassets.gallery/'+rel
+            p=root/rel
+            assert hashlib.sha256(p.read_bytes()).hexdigest()==a['derivedSHA256']
+            with Image.open(p) as im:
+              im.load()
+              assert im.format=='JPEG' and im.size==(1000,1667)
+          print('ALL_1510_UNCHANGED_AND_NEW_ART_SHA256_VERIFIED',len(arr),dict(ctr),flush=True)
+          PY
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build actual installable debug APK
+        working-directory: android-app
+        timeout-minutes: 15
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Open APK ZIP and inspect all embedded JPEGs, activity and web assets
+        run: |
+          python - <<'PY'
+          import zipfile,hashlib,json
+          from pathlib import Path
+          src=Path('android-app/app/build/outputs/apk/debug/app-debug.apk')
+          rows=json.loads(Path('android-app/app/src/main/assets/offline-deck.json').read_text())
+          assert src.is_file() and src.stat().st_size>30000
+          with zipfile.ZipFile(src) as z:
+              assert z.testzip() is None
+              names=set(z.namelist())
+              assert 'assets/offline-deck.json' in names
+              assert 'assets/app.js' in names and 'assets/core.js' in names
+              packaged=json.loads(z.read('assets/offline-deck.json'))
+              assert len(packaged)==len(rows)
+              assert len(rows)>1510
+              for art in rows:
+                  assert 'assets/'+art['offlineAsset'] in names
+              print('APK_REAL_ART_BYTES_PRESENT',len(rows),'TOTAL_APK_BYTES',src.stat().st_size)
+          dest=Path('QuietArtGallery-Contemporary-Street-Graffiti-v176.apk')
+          dest.write_bytes(src.read_bytes())
+          sha=hashlib.sha256(dest.read_bytes()).hexdigest()
+          Path('apk-sha256.txt').write_text(sha+'  '+dest.name+'\n')
+          result=json.loads(Path('build-contemporary-street-graffiti-report.json').read_text())
+          result.update({'apk_name':dest.name,'apk_sha256':sha,'apk_bytes':dest.stat().st_size})
+          Path('verified-release-report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+          PY
+      - name: Release APK without metered Actions artifact uploads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="quiet-art-contemporary-street-graffiti-20261114"
+          cat > /tmp/release-notes.md <<'NOTE'
+          고요한 미술관 v1.7.6. 기존 회화 886점·사진 600점·애니메이션 스틸 24점의 1510개 이미지 파일을 이전 검증 APK에서 변경 없이 보존했습니다.
+          컨템포러리 아트·스트리트 아트·그래피티의 신규 사진/작품 이미지는 실제 다운로드·디코딩·세로 스마트 크롭과 확대·파일 해시 검증을 통과한 것만 내장했습니다. 정확한 수량, 품질 및 원본 출처는 verified-release-report.json에서 확인하세요.
+          30초 화면 교체, 30분 앱 전면 실행 중 추가 수집 시도, 90일 작품 재사용 제한, 장르 무관 무작위 전시, 공통 작품명/작가명/연도 표시를 유지합니다.
+          공개 이미지 사진의 라이선스는 제3자가 창작한 벽화 자체의 저작권까지 자동으로 해결한다는 의미는 아닙니다. 24시간 실기기 테스트와 미술적 품질 검수는 미완료입니다.
+          앱 ID com.gallery.kiosk.urbanart, 이전 버전과 별도 설치됩니다.
+          NOTE
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" QuietArtGallery-Contemporary-Street-Graffiti-v176.apk verified-release-report.json apk-sha256.txt --clobber
+          else
+            gh release create "$TAG" QuietArtGallery-Contemporary-Street-Graffiti-v176.apk verified-release-report.json apk-sha256.txt \
+              --target feat-contemporary-street-graffiti-bundle-20261114 \
+              --title "고요한 미술관 1.7.6 · 기존 1510점 유지 + 컨템포러리·스트리트·그래피티" \
+              --notes-file /tmp/release-notes.md
+          fi
+          gh release view "$TAG" --json url,assets --jq '{url:.url,assets:[.assets[].name]}'
