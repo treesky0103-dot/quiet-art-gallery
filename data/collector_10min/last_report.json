@@ -1,99 +1,64 @@
 {
-  "run_utc": "2026-11-14T09:17:10.475156+00:00",
-  "github_run_id": "43579737660",
+  "run_utc": "2026-11-14T09:22:13.512727+00:00",
+  "github_run_id": "43580129803",
   "baseline_requested": 736,
   "baseline_with_independent_hash_records": 675,
-  "new_verified_this_run": 67,
-  "increment_verified_unique": 70,
-  "user_baseline_plus_new": 806,
-  "metadata_source_ok": 12,
-  "download_attempts": 76,
-  "proof_files": 67,
+  "new_verified_this_run": 80,
+  "increment_verified_unique": 150,
+  "user_baseline_plus_new": 886,
+  "metadata_source_ok": 6,
+  "download_attempts": 80,
+  "proof_files": 4,
   "details": [
     {
-      "source": "cma_modern",
-      "cursor": 2800,
-      "candidates": 22,
+      "source": "cma_older",
+      "cursor": 2500,
+      "candidates": 8,
       "ok": true
     },
     {
-      "source": "cma_modern",
-      "cursor": 2900,
+      "source": "cma_older",
+      "cursor": 2600,
       "candidates": 11,
       "ok": true
     },
     {
-      "source": "cma_modern",
+      "source": "cma_older",
+      "cursor": 2700,
+      "candidates": 11,
+      "ok": true
+    },
+    {
+      "source": "cma_older",
+      "cursor": 2800,
+      "candidates": 17,
+      "ok": true
+    },
+    {
+      "source": "cma_older",
+      "cursor": 2900,
+      "candidates": 24,
+      "ok": true
+    },
+    {
+      "source": "cma_older",
       "cursor": 3000,
-      "candidates": 21,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 3100,
-      "candidates": 29,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 3200,
-      "candidates": 25,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 3300,
-      "candidates": 25,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 3400,
-      "candidates": 25,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 3500,
-      "candidates": 32,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 3600,
-      "candidates": 28,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 3700,
-      "candidates": 20,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 3800,
-      "candidates": 14,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 3900,
-      "candidates": 15,
+      "candidates": 16,
       "ok": true
     }
   ],
   "rejection_summary": {
-    "proof_byte_budget": 9
+    "validated_but_not_archived": 76
   },
-  "scan_pages": 12,
-  "elapsed_sec": 52.7,
-  "proof_bytes": 20858578,
+  "scan_pages": 6,
+  "elapsed_sec": 66.4,
+  "proof_bytes": 1031142,
   "target_cap": 80,
-  "max_output_bytes": 20971520,
+  "max_output_bytes": 1048576,
+  "verified_only_in_hash_ledger": 76,
   "limitations": [
     "736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
-    "Original JPEG/PNG/WebP proof files live in expiring GitHub Actions artifacts, not tablet",
+    "Only a small sample of proof JPEGs is uploaded for one day; other accepted images were downloaded and verified on the runner then discarded, preserving SHA/URL metadata only",
     "Server-side scheduled run does not update the existing v1.7.2 APK"
   ]
 }
