@@ -292,11 +292,13 @@ public final class MainActivity extends Activity {
             if(parts.length!=2)throw new IOException("복합 매체 검색 인자 오류");
             String[] ids={"photo-nature","photo-landscape","photo-wildlife","photo-street",
                 "photo-portrait","photo-architecture","photo-history",
-                "illus-botanical","illus-science","illus-books","animation-still"};
+                "illus-botanical","illus-science","illus-books","animation-still",
+                "contemporary-art","street-art","graffiti"};
             String[] cats={"Nature photography","Landscape photographs","Wildlife photographs",
                 "Street photography","Portrait photographs","Architectural photography",
                 "Historical photographs","Botanical illustrations","Scientific illustrations",
-                "Children's book illustrations","Animation stills"};
+                "Children's book illustrations","Animation stills",
+                "Contemporary art","Street art","Graffiti"};
             String category=null;
             for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))category=cats[i];
             if(category==null)throw new IOException("허용되지 않은 복합 매체 분류");
