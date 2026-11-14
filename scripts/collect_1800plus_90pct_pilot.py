@@ -27,13 +27,13 @@ MODERN_GOAL=233280
 EARLIER_GOAL=25920
 assert MODERN_GOAL+EARLIER_GOAL==GOAL
 AGENT="QuietArtGalleryGlobalArtAudit/1.1 (https://github.com/treesky0103-dot/quiet-art-gallery; research)"
-MAX_DOWNLOAD=12
-MAX_IMAGE_ATTEMPTS=25
+MAX_DOWNLOAD=30
+MAX_IMAGE_ATTEMPTS=75
 MAX_FILE_BYTES=24*1024*1024
 MIN_SHORT=1000
 MIN_LONG=1400
 ASPECT=1000/1600
-MAXIMUM_CANDIDATE_RECORDS=450
+MAXIMUM_CANDIDATE_RECORDS=1800
 FIELDS=["source","id","title","artist","year_start","year_end","era","kind","rights","image_url","source_url","image_width","image_height","metadata_pass"]
 
 def request(url, binary=False, timeout=28):
@@ -90,7 +90,7 @@ def normalize(record):
 
 def cleveland(era):
     # Official CMA docs: 'created_after', 'created_before', 'cc0', 'has_image', 'limit', 'skip'.
-    args={"has_image":1,"limit":120,"skip":0,"created_before":1800 if era=="pre-1800" else CURRENT+1}
+    args={"has_image":1,"limit":500,"skip":0,"created_before":1800 if era=="pre-1800" else CURRENT+1}
     if era=="1800-2026":args["created_after"]=1799
     url="https://openaccess-api.clevelandart.org/api/artworks/?"+urlencode(args)+"&cc0"
     data=request(url)
@@ -208,7 +208,7 @@ def download_verified(candidates):
     attempted=0
     for item in candidates:
         src=item["source"]
-        if by_source.get(src,0)>=4 or len(results)>=MAX_DOWNLOAD:continue
+        if by_source.get(src,0)>=30 or len(results)>=MAX_DOWNLOAD:continue
         if item["era"] not in ("1800-2026","pre-1800"):continue
         if len(results)>=MAX_DOWNLOAD or attempted>=MAX_IMAGE_ATTEMPTS:break
         attempted+=1
