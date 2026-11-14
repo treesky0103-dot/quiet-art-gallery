@@ -1,0 +1,71 @@
+name: Audit exact 2692 APK artwork creation years
+on:
+  push:
+    branches: [test-10min-displayready-2061-20261115]
+    paths: ['.github/workflows/audit-2692-apk-era.yml']
+permissions:
+  contents: write
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout verified APK source
+        uses: actions/checkout@v4
+        with:
+          ref: test-10min-displayready-2061-20261115
+      - name: Download exact published 2692 image APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-2061-plus-10m-display-test-20261115 \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --pattern 'QuietArtGallery-2061-plus-10min-Test.apk' --clobber
+          test -s QuietArtGallery-2061-plus-10min-Test.apk
+      - name: Verify APK hash and extract its actual embedded manifest
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,zipfile
+          from pathlib import Path
+          p=Path('QuietArtGallery-2061-plus-10min-Test.apk')
+          expected='0a3830217bebf9590e11ed3f2f4fa7258e6fcf5ca347826531244b4ebb69c12b'
+          h=hashlib.file_digest(p.open('rb'),'sha256').hexdigest()
+          assert h==expected, (h,expected)
+          with zipfile.ZipFile(p) as z:
+              rows=json.loads(z.read('assets/offline-deck.json'))
+              assert len(rows)==2692, len(rows)
+              assert len(set(r['key'] for r in rows))==2692
+              assert len([n for n in z.namelist() if n.startswith('assets/offline/pack-') and n.endswith('.jpg')])==2692
+          Path('actual-2692-offline-manifest.json').write_text(json.dumps(rows,ensure_ascii=False),encoding='utf-8')
+          print('APK_SHA256_PASS',h,'EMBEDDED_ARTWORKS',len(rows),flush=True)
+          PY
+      - name: Calculate exact artwork-era shares using deployed gallery rules
+        run: |
+          node <<'NODE'
+          const fs=require('fs'), C=require('./web/core.js');
+          const rows=JSON.parse(fs.readFileSync('actual-2692-offline-manifest.json','utf8'));
+          if(rows.length!==2692)throw Error('Manifest count not 2692');
+          const split=(items)=>{
+            const c={post1800:0,pre1800:0,unknown:0}, invalid=[], ranges=[];
+            for(const a of items){
+              const e=C.artworkEra(a);
+              if(!(e in c))throw Error('Unexpected era: '+e);
+              c[e]++;
+              if(e==='unknown' && invalid.length<12)invalid.push({key:a.key,title:a.title,yearStart:a.yearStart??null,yearEnd:a.yearEnd??null});
+              if(a.yearStart!=null && a.yearEnd!=null && Number(a.yearStart)<1800 && Number(a.yearEnd)>=1800 && ranges.length<12)ranges.push({key:a.key,yearStart:a.yearStart,yearEnd:a.yearEnd});
+            }
+            return {...c,total:items.length,post1800_percent_of_total:+(100*c.post1800/items.length).toFixed(4),pre1800_percent_of_total:+(100*c.pre1800/items.length).toFixed(4),unknown_percent_of_total:+(100*c.unknown/items.length).toFixed(4),post1800_percent_of_known:+(100*c.post1800/(c.post1800+c.pre1800)||0).toFixed(4),unknown_examples:invalid,cross_1800_examples:ranges};
+          };
+          const total=split(rows),old=split(rows.slice(0,2061)),added=split(rows.slice(2061));
+          const report={apk:'QuietArtGallery-2061-plus-10min-Test.apk',apk_sha256:'0a3830217bebf9590e11ed3f2f4fa7258e6fcf5ca347826531244b4ebb69c12b',classification:'Exact GalleryCore.artworkEra() rules applied to per-artwork yearStart and yearEnd inside the published APK',total,original_2061:old,new_631:added,required_post1800_for_80_percent:Math.ceil(rows.length*.8),actual_post1800:total.post1800,needed_additional_post1800_for_80_percent:Math.max(0,Math.ceil(rows.length*.8)-total.post1800),meets_80_percent_of_total:total.post1800/rows.length>=.8,physical_tablet_tested:false};
+          fs.mkdirSync('data',{recursive:true});
+          fs.writeFileSync('data/audit_2692_apk_1800_era_20261115.json',JSON.stringify(report,null,2)+'\n');
+          console.log('EXACT_APK_2692_ERA_AUDIT',JSON.stringify(report));
+          NODE
+      - name: Save auditable result to isolated test branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/audit_2692_apk_1800_era_20261115.json
+          git commit -m 'Audit actual embedded 2692 artwork creation-era split' || true
+          git push origin HEAD:refs/heads/test-10min-displayready-2061-20261115
