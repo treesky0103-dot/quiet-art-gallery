@@ -1,0 +1,31 @@
+{
+  "run_utc": "2026-11-14T08:53:17.374479+00:00",
+  "github_run_id": "43577896606",
+  "baseline_requested": 736,
+  "baseline_with_independent_hash_records": 675,
+  "new_verified_this_run": 0,
+  "increment_verified_unique": 0,
+  "user_baseline_plus_new": 736,
+  "metadata_source_ok": 1,
+  "download_attempts": 12,
+  "proof_files": 0,
+  "details": [
+    {
+      "source": "aic_modern",
+      "cursor": 16,
+      "ok": false,
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 2600,
+      "candidates": 58,
+      "ok": true
+    }
+  ],
+  "limitations": [
+    "736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
+    "Original JPEG/PNG/WebP proof files live in expiring GitHub Actions artifacts, not tablet",
+    "Server-side scheduled run does not update the existing v1.7.2 APK"
+  ]
+}
