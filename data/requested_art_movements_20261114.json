@@ -4,7 +4,7 @@
   "group_count": 20,
   "entry_count": 397,
   "distinct_korean_terms": 395,
-  "english_query_terms": 391,
+  "english_query_terms": 396,
   "groups": [
     {
       "id": "group-01",
@@ -1318,26 +1318,26 @@
         {
           "id": "m9-10",
           "name_ko": "모던아트협회",
-          "search_en": null,
-          "search_status": "korean_term_only_unverified"
+          "search_en": "Modern Art Association Korea",
+          "search_status": "english_search_hint_not_attribution"
         },
         {
           "id": "m9-11",
           "name_ko": "현대미술가협회",
-          "search_en": null,
-          "search_status": "korean_term_only_unverified"
+          "search_en": "Korean Contemporary Artists Association",
+          "search_status": "english_search_hint_not_attribution"
         },
         {
           "id": "m9-12",
           "name_ko": "창작미술협회",
-          "search_en": null,
-          "search_status": "korean_term_only_unverified"
+          "search_en": "Korean Creative Art Association",
+          "search_status": "english_search_hint_not_attribution"
         },
         {
           "id": "m9-13",
           "name_ko": "묵림회",
-          "search_en": null,
-          "search_status": "korean_term_only_unverified"
+          "search_en": "Mukrimhoe Korean ink painting group",
+          "search_status": "english_search_hint_not_attribution"
         },
         {
           "id": "m9-14",
@@ -1408,8 +1408,8 @@
         {
           "id": "m9-25",
           "name_ko": "두렁",
-          "search_en": null,
-          "search_status": "korean_term_only_unverified"
+          "search_en": "Dureong Korean Minjung art collective",
+          "search_status": "english_search_hint_not_attribution"
         },
         {
           "id": "m9-26",
