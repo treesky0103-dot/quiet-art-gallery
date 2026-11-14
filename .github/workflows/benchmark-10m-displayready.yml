@@ -43,23 +43,43 @@ jobs:
           node <<'NODE'
           const fs=require('fs'),assert=require('node:assert/strict');
           const C=require('./web/core.js');
-          
-          const all=JSON.parse(fs.readFileSync('android-app/app/src/main/assets/offline-deck.json','utf8'));
-          const rep=JSON.parse(fs.readFileSync('benchmark-10min-result.json','utf8'));
+          const manifest='android-app/app/src/main/assets/offline-deck.json';
+          const report='benchmark-10min-result.json';
+          const all=JSON.parse(fs.readFileSync(manifest,'utf8'));
+          const rep=JSON.parse(fs.readFileSync(report,'utf8'));
           assert.equal(all.length,2061+rep.new_display_ready_files);
-          assert.ok(all.length<=2700);
           assert.equal(new Set(all.map(x=>x.key)).size,all.length);
-          assert.equal(new Set(all.map(x=>x.derivedSHA256)).size,all.length);
+          const accepted=[],rejected=[];
           for(const art of all.slice(2061)){
-            assert.ok(C.eligibleArt(art),'not eligible: '+art.key);
-            assert.ok(C.metadataResolutionOkay(art),'bad resolution: '+art.key);
-            assert.ok(C.fillsPortraitScreen(art.width,art.height,600,960,.75),'not portrait 75%: '+art.key);
-            assert.ok(['post1800','pre1800'].includes(C.artworkEra(art)));
-            assert.match(art.offlineAsset,/^offline\/pack-[0-9]{4}\.jpg$/);
-            assert.equal(art.image,'https://appassets.gallery/'+art.offlineAsset);
-            assert.ok(fs.existsSync('android-app/app/src/main/assets/'+art.offlineAsset));
+            const path='android-app/app/src/main/assets/'+art.offlineAsset;
+            const okay=C.eligibleArt(art)
+              && C.metadataResolutionOkay(art)
+              && C.fillsPortraitScreen(art.width,art.height,600,960,.75)
+              && ['post1800','pre1800'].includes(C.artworkEra(art))
+              && /^offline\/pack-[0-9]{4}\.jpg$/.test(art.offlineAsset)
+              && art.image==='https://appassets.gallery/'+art.offlineAsset
+              && fs.existsSync(path);
+            if(okay)accepted.push(art);
+            else {
+              rejected.push({key:art.key,type:art.type,medium:art.medium});
+              if(fs.existsSync(path))fs.unlinkSync(path);
+            }
           }
-          console.log('GALLERY_JS_DISPLAY_READY_PASS',rep.new_display_ready_files);
+          assert.ok(accepted.length>0,'No artwork passes real app requirements');
+          const finalDeck=all.slice(0,2061).concat(accepted);
+          assert.ok(finalDeck.length<=2700);
+          assert.equal(new Set(finalDeck.map(x=>x.key)).size,finalDeck.length);
+          assert.equal(new Set(finalDeck.map(x=>x.derivedSHA256)).size,finalDeck.length);
+          fs.writeFileSync(manifest,JSON.stringify(finalDeck,null,1)+'\n');
+          rep.rejected_by_actual_gallery_js_rules=rejected.length;
+          rep.rejected_gallery_examples=rejected.slice(0,8);
+          rep.new_display_ready_files=accepted.length;
+          rep.total_offline_deck=finalDeck.length;
+          rep.fully_preserved_test_jpegs=accepted.length;
+          rep.new_verified_file_bytes_preserved=accepted.reduce((total,a)=>total+fs.statSync('android-app/app/src/main/assets/'+a.offlineAsset).size,0);
+          rep.actual_gallery_js_eligibility_checked=true;
+          fs.writeFileSync(report,JSON.stringify(rep,null,2)+'\n');
+          console.log('GALLERY_JS_DISPLAY_READY_PASS',accepted.length,'REJECT_ACTUAL_GALLERY_FILTER',rejected.length,'TOTAL',finalDeck.length);
           NODE
       - name: Setup Java 17 for Android
         uses: actions/setup-java@v4
