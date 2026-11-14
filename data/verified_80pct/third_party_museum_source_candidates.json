@@ -1,0 +1,457 @@
+{
+  "source_repo": "https://github.com/georgeblck/art-datasets",
+  "source_date": "2026-11-14",
+  "note": "Independent public research directory, not image acquisition; names, claims and rights must be verified against each source.",
+  "institution_count": 35,
+  "institutions": [
+    {
+      "name": "Smithsonian Open Access",
+      "claimed_size": "11M+ records, 2.8M+ images",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[github](https://github.com/Smithsonian/OpenAccess), [website](https://www.si.edu/openaccess), [AWS](https://registry.opendata.aws/smithsonian-open-access/)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Victoria and Albert Museum",
+      "claimed_size": "1M+ records, 500,000+ images",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[API](http://developers.vam.ac.uk/)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Te Papa (New Zealand)",
+      "claimed_size": "1M+ objects, 200,000+ downloadable",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[website](https://collections.tepapa.govt.nz/)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Rijksmuseum",
+      "claimed_size": "800,000+ objects",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[data portal](https://data.rijksmuseum.nl/)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Louvre",
+      "claimed_size": "500,000+ works",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[website](https://collections.louvre.fr/en/), [JSON docs](https://collections.louvre.fr/en/page/documentationJSON)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "The Metropolitan Museum of Art",
+      "claimed_size": "470,000+ artworks",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[github](https://github.com/metmuseum/openaccess)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "iMet Collection",
+      "claimed_size": "375,000 images",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[paper](https://arxiv.org/pdf/1906.00901.pdf), [kaggle](https://www.kaggle.com/c/imet-2019-fgvc6/overview)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Cooper Hewitt",
+      "claimed_size": "215,000+ objects",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[github](https://github.com/cooperhewitt/collection), [API](https://collection.cooperhewitt.org/api/)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Paris Musees",
+      "claimed_size": "150,000+ images",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[website](http://parismuseescollections.paris.fr/en), [API](https://apicollections.parismusees.paris.fr/)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "National Gallery of Art (DC)",
+      "claimed_size": "130,000+ artworks",
+      "availability_hint": "✅",
+      "subgroup": "Large Collections (100,000+ objects)",
+      "links": [],
+      "remarks": "[github](https://github.com/NationalGalleryOfArt/opendata)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "SMK (National Gallery of Denmark)",
+      "claimed_size": "88,000+ works",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[API](https://api.smk.dk/api/v1/docs), [website](https://open.smk.dk/)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "National Palace Museum (Taiwan)",
+      "claimed_size": "70,000+ digitized images",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[data](https://theme.npm.edu.tw/opendata/?lang=2)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Yale Center for British Art",
+      "claimed_size": "~70,000 IIIF images",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[website](https://britishart.yale.edu/collections-data-sharing)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Cleveland Museum of Art",
+      "claimed_size": "61,000+ artworks",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[github](https://github.com/ClevelandMuseumArt/openaccess), [API](https://www.clevelandart.org/open-access-api)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Museo del Prado",
+      "claimed_size": "~40,000 artworks",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[knowledge graph](https://www.museodelprado.es/en/grafo-de-conocimiento/el-prado-en-la-web)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Finnish National Gallery",
+      "claimed_size": "36,000+ artworks",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[github](https://github.com/hugovk/finnishnationalgallery)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Getty Museum",
+      "claimed_size": "30,000+ high-res images",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[website](https://www.getty.edu/projects/open-data-apis/)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Whitney Museum",
+      "claimed_size": "17,000+ works",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[github](https://github.com/whitneymuseum/open-access), [API](https://whitney.org/about/website/api)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Williams College Museum of Art",
+      "claimed_size": "~15,600 records",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[github](https://github.com/wcmaart/collection)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Walters Art Museum",
+      "claimed_size": "10,000+ records",
+      "availability_hint": "✅",
+      "subgroup": "Medium Collections (10,000-100,000 objects)",
+      "links": [],
+      "remarks": "[github](https://github.com/WaltersArtMuseum/api-thewalters-org)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Art Institute of Chicago",
+      "claimed_size": "✅",
+      "availability_hint": "CC0",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "github",
+          "url": "https://github.com/art-institute-of-chicago/api-data"
+        },
+        {
+          "name": "API",
+          "url": "http://api.artic.edu/docs/"
+        },
+        {
+          "name": "website",
+          "url": "https://www.artic.edu/open-access"
+        }
+      ],
+      "remarks": "REST API + bulk JSON dumps on AWS S3",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Harvard Art Museums",
+      "claimed_size": "✅",
+      "availability_hint": "varies",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "API docs",
+          "url": "https://github.com/harvardartmuseums/api-docs"
+        },
+        {
+          "name": "website",
+          "url": "https://harvardartmuseums.org/collections/api"
+        }
+      ],
+      "remarks": "REST API refreshed daily, IIIF-compatible",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Minneapolis Institute of Art",
+      "claimed_size": "✅",
+      "availability_hint": "CC0",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "github",
+          "url": "https://github.com/artsmia/collection"
+        }
+      ],
+      "remarks": "JSON metadata, updated approximately daily",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Brooklyn Museum",
+      "claimed_size": "📩",
+      "availability_hint": "varies",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "API",
+          "url": "https://www.brooklynmuseum.org/opencollection/api"
+        },
+        {
+          "name": "examples",
+          "url": "https://github.com/brooklynmuseum/brooklynmuseum-api-examples"
+        }
+      ],
+      "remarks": "REST API, registration required",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "British Museum",
+      "claimed_size": "✅",
+      "availability_hint": "non-commercial",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "website",
+          "url": "https://www.britishmuseum.org/collection/collection-online/guide"
+        },
+        {
+          "name": "github",
+          "url": "https://github.com/britishmuseum"
+        }
+      ],
+      "remarks": "SPARQL/Linked Data. Export up to 10K records per search",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "National Gallery (London)",
+      "claimed_size": "✅",
+      "availability_hint": "CC BY-NC-ND 4.0",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "API",
+          "url": "https://data.ng-london.org.uk/"
+        }
+      ],
+      "remarks": "~2,300 paintings. Elasticsearch-based API",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "ColBase (National Museums of Japan)",
+      "claimed_size": "✅",
+      "availability_hint": "varies",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "website",
+          "url": "https://colbase.nich.go.jp/?locale=en"
+        }
+      ],
+      "remarks": "Tokyo, Kyoto, Nara, Kyushu national museums",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Science Museum Group (UK)",
+      "claimed_size": "✅",
+      "availability_hint": "CC varies",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "API",
+          "url": "https://www.sciencemuseumgroup.org.uk/our-work/our-collection/using-our-collection-api"
+        },
+        {
+          "name": "github",
+          "url": "https://github.com/TheScienceMuseum/collectionsonline"
+        }
+      ],
+      "remarks": "JSON/CSV exports, 37 GitHub repos",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Auckland War Memorial Museum",
+      "claimed_size": "✅",
+      "availability_hint": "CC varies",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "API",
+          "url": "https://api.aucklandmuseum.com/"
+        }
+      ],
+      "remarks": "API plus Linked Open Data",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "QAGOMA (Queensland, Australia)",
+      "claimed_size": "✅",
+      "availability_hint": "CC varies",
+      "subgroup": "API / Full Collection Access (size unspecified)",
+      "links": [
+        {
+          "name": "data",
+          "url": "https://collection.qagoma.qld.gov.au/page/open-data"
+        }
+      ],
+      "remarks": "CSV, refreshed monthly. Australian and Asia-Pacific art",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "MoMA Collection",
+      "claimed_size": "✅",
+      "availability_hint": "varies",
+      "subgroup": "Metadata Only / Limited Access",
+      "links": [
+        {
+          "name": "github",
+          "url": "https://github.com/MuseumofModernArt/collection"
+        }
+      ],
+      "remarks": "Artist, artwork, exhibition data. Artworks.csv (via LFS) includes ImageURL column with direct JPEG links for ~64K works",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Carnegie Museum of Art",
+      "claimed_size": "✅",
+      "availability_hint": "CC0",
+      "subgroup": "Metadata Only / Limited Access",
+      "links": [
+        {
+          "name": "github",
+          "url": "https://github.com/cmoa/collection"
+        }
+      ],
+      "remarks": "Pittsburgh collection metadata",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "The Tate Collection",
+      "claimed_size": "✅",
+      "availability_hint": "CC-BY-NC-ND 3.0",
+      "subgroup": "Metadata Only / Limited Access",
+      "links": [
+        {
+          "name": "github",
+          "url": "https://github.com/tategallery/collection"
+        }
+      ],
+      "remarks": "Metadata CSV includes thumbnail URLs. Images downloadable via CDN (swap _8.jpg for _10.jpg for 1536px). ~38K paintings/drawings with dates",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "Nationalmuseum Sweden",
+      "claimed_size": "✅",
+      "availability_hint": "CC0",
+      "subgroup": "Metadata Only / Limited Access",
+      "links": [
+        {
+          "name": "github",
+          "url": "https://github.com/NationalmuseumSWE/WikidataCollection"
+        }
+      ],
+      "remarks": "Wikidata-linked metadata",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    },
+    {
+      "name": "ArtUK",
+      "claimed_size": "🔒",
+      "availability_hint": "restricted",
+      "subgroup": "Metadata Only / Limited Access",
+      "links": [
+        {
+          "name": "website",
+          "url": "https://artuk.org/"
+        }
+      ],
+      "remarks": "UK public art, browsable only. MDS extract API exists but aggressive bot protection (403 on all programmatic access, including Selenium, as of 2026-04)",
+      "verification": "third_party_candidate_not_a_verified_connected_source",
+      "acquired_image_files": 0
+    }
+  ]
+}
