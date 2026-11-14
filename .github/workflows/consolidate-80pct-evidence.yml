@@ -64,6 +64,20 @@ jobs:
           name: smithsonian-1800plus-and-older-actual-2d-art
           path: tmp/smithsonian
           github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Get Yale Center for British Art decoded IIIF proof
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43561581690
+          name: yale-cc0-2d-actual-iiif-byte-proof
+          path: tmp/yale
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Get Rijksmuseum decoded IIIF proof
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43561741983
+          name: rijks-cc0-iiif-actual-portrait-art-proof
+          path: tmp/rijks
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Verify every copied file and deduplicate across all museums and batches
         run: |
           python -m py_compile scripts/aggregate_80pct_evidence.py
