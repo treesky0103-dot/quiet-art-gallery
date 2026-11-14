@@ -14,7 +14,7 @@ from urllib.request import Request, urlopen
 REPO="treesky0103-dot/quiet-art-gallery"
 ISSUE=2
 
-def status_message(run_id, job_status, report, state):
+def status_message(run_id, job_status, report, state, proof_upload='unknown'):
     now=datetime.now(timezone.utc).astimezone(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M KST")
     valid=(isinstance(report,dict) and str(report.get("github_run_id"))==str(run_id))
     successful=job_status=="success" and valid and state is not None
@@ -31,8 +31,10 @@ def status_message(run_id, job_status, report, state):
            f"- Github 실행: https://github.com/{REPO}/actions/runs/{run_id}"]
     if successful:
         lines.extend([f"- 이번 다운로드 시도: {report.get('download_attempts',0)}회, 자료조회 페이지: {report.get('scan_pages',0)}",
-              f"- 임시 파일 증빙: {report.get('proof_files',0)}개, {report.get('proof_bytes',0)} bytes (1일 후 만료)",
-              "- **주의:** 검증 목록 및 해시는 저장되지만 ZIP 파일은 임시 보관이며 태블릿으로 자동 다운로드되지 않습니다."])
+              f"- 전체 검증 파일 중 단기 증빙용 샘플: {report.get('proof_files',0)}개, {report.get('proof_bytes',0)} bytes",
+              f"- 해시·원본 URL만 장기 보관한 파일: {report.get('verified_only_in_hash_ledger',0)}개",
+              "- 샘플 ZIP 업로드: "+("성공(1일 후 만료)" if proof_upload=="success" else "미실행·실패(저장 용량 상한 등 확인 필요)"),
+              "- **주의:** 각 파일의 실제 다운로드·디코딩 검사는 수행하되, 샘플을 제외한 이미지 파일은 해당 실행이 끝나면 삭제됩니다. 태블릿에는 자동 저장되지 않습니다."])
     else:
         lines.append("- 수집 엔진·원본 제공처·업로드 또는 GitHub 인증에 문제가 생겼을 수 있습니다. 이전 누적 실적은 유지됩니다.")
     return "\n".join(lines)+"\n"
@@ -44,7 +46,7 @@ def main():
     sp=Path("data/collector_10min/state.json")
     report=json.loads(p.read_text(encoding="utf-8")) if p.is_file() else None
     state=json.loads(sp.read_text(encoding="utf-8")) if sp.is_file() else None
-    msg=status_message(run_id,job_status,report,state)
+    msg=status_message(run_id,job_status,report,state,os.environ.get("PROOF_UPLOAD_OUTCOME","unknown"))
     summary=os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary,"a",encoding="utf-8") as f:
