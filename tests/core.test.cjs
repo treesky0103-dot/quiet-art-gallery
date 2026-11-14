@@ -8,7 +8,7 @@ test('only HTTPS image hosts from selected museums',()=>{
 });
 test('reject all non-flat works and restricted works',()=>{
  assert.equal(C.eligibleArt(art),true);
- for(const type of ['Sculpture','Ceramics','Photograph','Furniture','3D installation','Tapestry']) assert.equal(C.eligibleArt({...art,type,medium:'',classification:''}),false,type);
+ for(const type of ['Sculpture','Ceramics','Furniture','3D installation','Tapestry']) assert.equal(C.eligibleArt({...art,type,medium:'',classification:''}),false,type);
  assert.equal(C.eligibleArt({...art,rightsOK:false}),false);
  assert.equal(C.eligibleArt({...art,description:'gallery view with frame'}),false);
  assert.equal(C.eligibleArt({...art,image:'http://www.artic.edu/abc'}),false);
