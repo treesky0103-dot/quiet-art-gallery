@@ -180,7 +180,10 @@ public final class MainActivity extends Activity {
             URL u = new URL(src);
             if (!"https".equals(u.getProtocol()) || u.getPort() != -1 || u.getUserInfo() != null) return false;
             String host=u.getHost().toLowerCase(java.util.Locale.ROOT);
-            return host.equals("upload.wikimedia.org") || host.equals("images.metmuseum.org") || host.equals("www.artic.edu") || host.equals("artic.edu") || host.equals("openaccess-cdn.clevelandart.org") || host.endsWith(".clevelandart.org");
+            return host.equals("upload.wikimedia.org") ||
+               host.equals("live.staticflickr.com") ||
+               host.matches("farm[1-9]\\.staticflickr\\.com") ||
+               host.equals("images.metmuseum.org") || host.equals("www.artic.edu") || host.equals("artic.edu") || host.equals("openaccess-cdn.clevelandart.org") || host.endsWith(".clevelandart.org");
         } catch(Exception e){return false;}
     }
     private static String hashUrl(String src) throws Exception {
@@ -292,6 +295,23 @@ public final class MainActivity extends Activity {
             return "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=50&gsrsearch="+
                     URLEncoder.encode(query,"UTF-8")+"&gsroffset="+off+
                     "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=2000&format=json&formatversion=2";
+        }
+        if(type.equals("worldOpenverse")){
+            String[] parts=p.split(":",-1);
+            if(parts.length!=2)throw new IOException("세계 오픈 이미지 검색 인자 오류");
+            String[] terms={
+                "original watercolor painting","original digital painting",
+                "original digital illustration","watercolor painting artwork",
+                "19th century illustration","Japanese woodblock print",
+                "art nouveau illustration","woodcut print artwork",
+                "abstract original painting","gouache painting artwork",
+                "ink drawing art","contemporary independent artist painting"
+            };
+            int idx=bounded(parts[0],0,terms.length-1),page=bounded(parts[1],1,4);
+            return "https://api.openverse.org/v1/images/?q="+
+                URLEncoder.encode(terms[idx],"UTF-8")+
+                "&license=cc0%2Cpdm%2Cby%2Cby-sa&page="+page+
+                "&page_size=40&filter_dead=true";
         }
         if(type.equals("openverseModern")){
             String[] parts=p.split(":",-1);
