@@ -1,20 +1,20 @@
 {
-  "as_of_utc": "2026-11-14T05:48:36.006387+00:00",
+  "as_of_utc": "2026-11-14T05:55:29.955523+00:00",
   "target": {
     "modern": 207360,
     "older": 51840,
     "all": 259200
   },
-  "reported_input_files": 658,
-  "exact_duplicate_source_ids_removed": 1,
+  "reported_input_files": 678,
+  "exact_duplicate_source_ids_removed": 3,
   "exact_duplicate_image_hashes_removed": 0,
-  "unique_verified_file_and_source_id_count": 657,
-  "verified_1800plus": 504,
+  "unique_verified_file_and_source_id_count": 675,
+  "verified_1800plus": 522,
   "verified_older": 153,
-  "actual_modern_share_percent": 76.7123,
-  "missing_1800plus": 206856,
+  "actual_modern_share_percent": 77.3333,
+  "missing_1800plus": 206838,
   "missing_older": 51687,
-  "missing_total": 258543,
+  "missing_total": 258525,
   "suspected_visual_duplicate_pairs_requiring_review": 0,
   "visual_pairs_first_30": [],
   "duplicate_ids_sample": [
@@ -59,5 +59,12 @@
     "NGA_second": "43562704467",
     "AIC_new": "43562852917"
   },
-  "new_image_crosscheck_note": "New source files were actually opened, decoded, size verified and SHA-256 checked. Old previously verified files have only durable SHA/provenance in Git."
+  "new_image_crosscheck_note": "New source files were actually opened, decoded, size verified and SHA-256 checked. Old previously verified files have only durable SHA/provenance in Git.",
+  "wellcome_page2_crosscheck": {
+    "github_run": 43563547762,
+    "raw_verified_image_files": 20,
+    "new_unique_work_id_and_sha": 18,
+    "repeat_work_ids_removed": 2,
+    "duplicate_image_hashes_removed": 0
+  }
 }
