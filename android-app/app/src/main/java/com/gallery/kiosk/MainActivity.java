@@ -99,6 +99,10 @@ public final class MainActivity extends Activity {
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private WebView web;
     private File imageDir;
+    private ShownImageLedger shownLedger;
+    private volatile String currentDisplayedHash="";
+    private long evictionDeletedBytes=0L;
+    private int evictionDeletedFiles=0;
     private File exportFile;
     private File importFile;
     private long lastApiMs = 0L;
@@ -116,6 +120,7 @@ public final class MainActivity extends Activity {
         // persistent files instead; previously cached images are migrated by
         // atomic rename when possible, never deleted to make room for migration.
         imageDir = new File(getFilesDir(), "gallery-images");
+        shownLedger = new ShownImageLedger(this);
         if (!imageDir.exists()) imageDir.mkdirs();
         File oldImageDir = new File(getCacheDir(), "gallery-images");
         File[] oldImages=oldImageDir.listFiles((folder,name)->name.endsWith(".img"));
@@ -237,7 +242,7 @@ public final class MainActivity extends Activity {
                 String mime=con.getContentType();
                 if(mime==null||!(mime.toLowerCase().startsWith("image/jpeg")||mime.toLowerCase().startsWith("image/png")||mime.toLowerCase().startsWith("image/webp")))return response(415,"text/plain",new byte[0]);
                 if(con.getContentLengthLong()>MAX_IMAGE_BYTES)return response(413,"text/plain",new byte[0]);
-                pruneImageCache();
+                if(!makeRoomForIncoming(MAX_IMAGE_BYTES))return response(507,"text/plain",new byte[0]);
                 if(imageDir.getUsableSpace()<FREE_RESERVE+MAX_IMAGE_BYTES)
                     return response(507,"text/plain",new byte[0]);
                 File tmp=new File(imageDir,f.getName()+".part");int total=0;
@@ -258,7 +263,12 @@ public final class MainActivity extends Activity {
                 }
                 if(!transformed.renameTo(f)){transformed.delete();throw new IOException("세로 이미지 캐시 저장 실패");}
                 f.setLastModified(System.currentTimeMillis());
-                pruneImageCache();
+                if(!makeRoomForIncoming(0)){
+                    // The new image has not been displayed. Reject it instead
+                    // of silently deleting any older *unseen* cached image.
+                    f.delete();
+                    return response(507,"text/plain",new byte[0]);
+                }
                 return new WebResourceResponse("image/jpeg",null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));
             } finally {con.disconnect();}
         }catch(Exception e){return response(502,"text/plain",new byte[0]);}
@@ -271,24 +281,58 @@ public final class MainActivity extends Activity {
         }catch(Exception ignored){}
         return "image/jpeg";
     }
-    private synchronized long cacheBytes(){long size=0;File[] files=imageDir.listFiles();if(files!=null)for(File f:files)if(f.isFile())size+=f.length();return size;}
-    private synchronized void pruneImageCache() {
+    private synchronized long cacheBytes(){
+        long size=0;File[] files=imageDir.listFiles();
+        if(files!=null)for(File f:files)if(f.isFile())size+=f.length();
+        return size;
+    }
+    // 8GiB full -> try to remove a full 1GiB batch in oldest-displayed
+    // order. Images downloaded but never displayed are strictly protected.
+    // When displayed images cannot release enough space, fail with HTTP 507
+    // instead of destroying unseen artwork.
+    private synchronized boolean makeRoomForIncoming(long incomingBytes){
         long sum=cacheBytes();
         long free=imageDir.getUsableSpace();
-        // Keep 1.5GB unallocated for Android, databases and other apps.
-        if(sum<=MAX_IMAGE_CACHE && free>=FREE_RESERVE)return;
-        long freeRoom=Math.max(0L,sum+free-FREE_RESERVE);
-        long target=Math.min(CLEAN_TO,freeRoom);
-        File[] list=imageDir.listFiles((f,name)->name.endsWith(".img"));
-        if(list==null)return;
-        Arrays.sort(list,Comparator.comparingLong(File::lastModified));
-        for(File f:list){
-            if(sum<=target)break;
-            long n=f.length();
-            if(f.delete())sum-=n;
+        if(sum+incomingBytes<=MAX_IMAGE_CACHE&&free>=FREE_RESERVE+incomingBytes)return true;
+        final java.util.Set<String> pinned=currentDisplayedHash.isEmpty()
+             ?java.util.Collections.emptySet()
+             :java.util.Collections.singleton(currentDisplayedHash);
+        final java.util.List<ShownFirstEviction.Entry> displayed;
+        try{displayed=shownLedger.displayedFiles(imageDir);}
+        catch(Exception e){return false;} // no ledger => no destructive cleanup
+        java.util.List<String> victims=ShownFirstEviction.select(
+            sum,incomingBytes,MAX_IMAGE_CACHE,MAX_IMAGE_CACHE-CLEAN_TO,
+            free,FREE_RESERVE,displayed,pinned);
+        for(String hash:victims){
+            File artFile=new File(imageDir,hash+".img");
+            long bytes=artFile.isFile()?artFile.length():0L;
+            if(bytes>0&&artFile.delete()){
+                sum-=bytes;evictionDeletedBytes+=bytes;evictionDeletedFiles++;
+                try{shownLedger.remove(hash);}catch(Exception ignored){}
+            }
         }
+        return sum+incomingBytes<=MAX_IMAGE_CACHE &&
+               imageDir.getUsableSpace()>=FREE_RESERVE+incomingBytes;
     }
-    private synchronized boolean clearImages(){File[] files=imageDir.listFiles();if(files==null)return true;boolean ok=true;for(File f:files)if(f.isFile()&&!f.delete())ok=false;return ok;}
+    private synchronized void markArtworkDisplayedNative(String src){
+        if(src==null||src.isEmpty()){
+            currentDisplayedHash="";return;
+        }
+        if(!safeImageUrl(src))return;
+        try{
+            String hash=hashUrl(src);
+            File image=new File(imageDir,hash+".img");
+            currentDisplayedHash=image.isFile()&&image.length()>0?hash:"";
+            if(!currentDisplayedHash.isEmpty())shownLedger.recordDisplayed(hash);
+        }catch(Exception ignored){}
+    }
+    private synchronized boolean clearImages(){
+        File[] files=imageDir.listFiles();if(files==null)return true;
+        boolean ok=true;
+        for(File f:files)if(f.isFile()&&!f.delete())ok=false;
+        if(ok){currentDisplayedHash="";try{shownLedger.clear();}catch(Exception e){return false;}}
+        return ok;
+    }
 
     private String apiUrl(String type,String p) throws Exception {
         if (type.equals("cleveland")) {
@@ -580,7 +624,18 @@ public final class MainActivity extends Activity {
                 runOnUiThread(()->{if(web!=null){String js="window.__galleryResolve("+JSONObject.quote(rid)+","+success+","+JSONObject.quote(payload)+");";web.evaluateJavascript(js,null);}});
             });
         }
-        @JavascriptInterface public String cacheStats(){try{return new JSONObject().put("bytes",cacheBytes()).put("limitBytes",MAX_IMAGE_CACHE).put("cleanupBytes",CLEAN_TO).put("freeBytes",imageDir.getUsableSpace()).put("reservedBytes",FREE_RESERVE).toString();}catch(Exception e){return "{}";}}
+        @JavascriptInterface public String cacheStats(){
+            try{return new JSONObject()
+                .put("bytes",cacheBytes()).put("limitBytes",MAX_IMAGE_CACHE)
+                .put("cleanupBytes",CLEAN_TO).put("freeBytes",imageDir.getUsableSpace())
+                .put("reservedBytes",FREE_RESERVE).put("purgedBytes",evictionDeletedBytes)
+                .put("purgedFiles",evictionDeletedFiles)
+                .put("displayedCacheEntries",shownLedger.count()).toString();
+            }catch(Exception e){return "{}";}
+        }
+        @JavascriptInterface public void markArtworkDisplayed(String url){
+            markArtworkDisplayedNative(url);
+        }
         @JavascriptInterface public boolean clearImageCache(){return clearImages();}
         @JavascriptInterface public void beginHistoryExport(){
             try{exportFile=new File(getCacheDir(),"gallery-export.csv");try(FileOutputStream out=new FileOutputStream(exportFile,false)){out.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});}}
