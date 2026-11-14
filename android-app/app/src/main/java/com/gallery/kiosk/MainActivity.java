@@ -60,8 +60,10 @@ public final class MainActivity extends Activity {
         int w=opt.outWidth,h=opt.outHeight;
         return w>0&&h>0&&Math.min(w,h)>=MIN_IMAGE_SHORT_SIDE&&Math.max(w,h)>=MIN_IMAGE_LONG_SIDE;
     }
-    private static final long MAX_IMAGE_CACHE = 100L * 1024 * 1024;
-    private static final long CLEAN_TO = 80L * 1024 * 1024;
+    // Research prototype: disk budget, not an assertion that 8GB of images exists.
+    private static final long MAX_IMAGE_CACHE = 8L * 1024 * 1024 * 1024;
+    private static final long CLEAN_TO = 7L * 1024 * 1024 * 1024;
+    private static final long FREE_RESERVE = 1536L * 1024 * 1024;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private WebView web;
     private File imageDir;
@@ -78,8 +80,17 @@ public final class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setStatusBarColor(Color.BLACK);
         getWindow().setNavigationBarColor(Color.BLACK);
-        imageDir = new File(getCacheDir(), "gallery-images");
+        // OS cache files may be evicted at any time. Keep art in app-private
+        // persistent files instead; previously cached images are migrated by
+        // atomic rename when possible, never deleted to make room for migration.
+        imageDir = new File(getFilesDir(), "gallery-images");
         if (!imageDir.exists()) imageDir.mkdirs();
+        File oldImageDir = new File(getCacheDir(), "gallery-images");
+        File[] oldImages=oldImageDir.listFiles((folder,name)->name.endsWith(".img"));
+        if (oldImages != null) for (File old:oldImages) {
+            File dest=new File(imageDir,old.getName());
+            if (!dest.exists()) old.renameTo(dest);
+        }
         importFile = new File(getCacheDir(), "gallery-import.csv");
         if (importFile.exists()) importFile.delete();
         File[] stale = imageDir.listFiles((folder,name)->name.endsWith(".part"));
@@ -192,6 +203,9 @@ public final class MainActivity extends Activity {
                 String mime=con.getContentType();
                 if(mime==null||!(mime.toLowerCase().startsWith("image/jpeg")||mime.toLowerCase().startsWith("image/png")||mime.toLowerCase().startsWith("image/webp")))return response(415,"text/plain",new byte[0]);
                 if(con.getContentLengthLong()>MAX_IMAGE_BYTES)return response(413,"text/plain",new byte[0]);
+                pruneImageCache();
+                if(imageDir.getUsableSpace()<FREE_RESERVE+MAX_IMAGE_BYTES)
+                    return response(507,"text/plain",new byte[0]);
                 File tmp=new File(imageDir,f.getName()+".part");int total=0;
                 try(InputStream input=con.getInputStream(); FileOutputStream out=new FileOutputStream(tmp)) {
                     byte[] buf=new byte[16384];int read;
@@ -216,12 +230,20 @@ public final class MainActivity extends Activity {
     }
     private synchronized long cacheBytes(){long size=0;File[] files=imageDir.listFiles();if(files!=null)for(File f:files)if(f.isFile())size+=f.length();return size;}
     private synchronized void pruneImageCache() {
-        if(cacheBytes()<=MAX_IMAGE_CACHE)return;
+        long sum=cacheBytes();
+        long free=imageDir.getUsableSpace();
+        // Keep 1.5GB unallocated for Android, databases and other apps.
+        if(sum<=MAX_IMAGE_CACHE && free>=FREE_RESERVE)return;
+        long freeRoom=Math.max(0L,sum+free-FREE_RESERVE);
+        long target=Math.min(CLEAN_TO,freeRoom);
         File[] list=imageDir.listFiles((f,name)->name.endsWith(".img"));
         if(list==null)return;
         Arrays.sort(list,Comparator.comparingLong(File::lastModified));
-        long sum=cacheBytes();
-        for(File f:list){if(sum<=CLEAN_TO)break;long n=f.length();if(f.delete())sum-=n;}
+        for(File f:list){
+            if(sum<=target)break;
+            long n=f.length();
+            if(f.delete())sum-=n;
+        }
     }
     private synchronized boolean clearImages(){File[] files=imageDir.listFiles();if(files==null)return true;boolean ok=true;for(File f:files)if(f.isFile()&&!f.delete())ok=false;return ok;}
 
@@ -356,6 +378,24 @@ public final class MainActivity extends Activity {
             if(category==null)throw new IOException("등록되지 않은 아프리카 미술관");
             int off=bounded(parts[1],0,100000);
             String query="deepcategory:\""+category+"\"";
+            return "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=50&gsrsearch="+
+                URLEncoder.encode(query,"UTF-8")+"&gsroffset="+off+
+                "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=2000&format=json&formatversion=2";
+        }
+        if(type.equals("globalCommons")){
+            String[] parts=p.split(":",-1);
+            if(parts.length!=2)throw new IOException("공개 미술 검색 인자 오류");
+            String[] ids={"p19","p20","p21","d19","d20","d21","r19","r20","r21","british-library","japanese-print","independent"};
+            String[] cats={"19th-century paintings","20th-century paintings","21st-century paintings",
+                "19th-century drawings","20th-century drawings","21st-century drawings",
+                "19th-century prints","20th-century prints","21st-century prints",
+                "Illustrations from the British Library","Japanese woodblock prints",
+                "Paintings by Wikipedians"};
+            String category=null;
+            for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))category=cats[i];
+            if(category==null)throw new IOException("등록되지 않은 공용 미술 분류");
+            int off=bounded(parts[1],0,100000);
+            String query="deepcategory:\\""+category+"\\"";
             return "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=50&gsrsearch="+
                 URLEncoder.encode(query,"UTF-8")+"&gsroffset="+off+
                 "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=2000&format=json&formatversion=2";
