@@ -33,7 +33,7 @@
 <footer id="caption" class="caption" aria-live="polite"><div id="art-title"></div><div id="art-meta"></div></footer>
 <div id="settings-backdrop" class="backdrop" hidden></div>
 <section id="settings" class="settings" aria-label="전시 설정" aria-modal="true" role="dialog" hidden>
-  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.8.4</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
+  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.8.5</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
   <section class="cache-dashboard" aria-label="태블릿 이미지 저장 현황">
     <div class="cache-dashboard-header">
       <div class="cache-dashboard-eyebrow">LIVE STORAGE</div>
@@ -48,6 +48,13 @@
       <div id="cache-progress-fill" class="cache-progress-fill"></div>
     </div>
     <div class="cache-progress-ends"><span>0 GiB</span><span>8 GiB</span></div>
+    <div class="cache-availability" aria-label="실제 전시 가능 재고와 예상 재생 여유">
+      <div><small>저장된 미전시 파일</small><strong id="cache-unshown-count">확인 중</strong></div>
+      <div><small>전시 후 보관 중</small><strong id="cache-shown-count">확인 중</strong></div>
+      <div><small>90일 기록 대조된 미전시 후보</small><strong id="cache-eligible-count">확인 중</strong></div>
+      <div><small>신규 수집 없이 전시할 수 있는 최대 예상 기간</small><strong id="cache-available-days">계산 중</strong></div>
+    </div>
+    <p id="cache-estimate-note" class="cache-detail">전시 가능 기간은 실제 이미지 검사와 중복 판정에 따라 더 짧아질 수 있습니다.</p>
     <p id="cache-detail" class="cache-detail">기기의 실제 파일 저장 현황을 확인합니다.</p>
     <div class="cache-embedded">APK 내장 작품 <strong id="cache-apk-count">확인 중</strong> <span>· 위 막대와 별도로 보관</span></div>
   </section>
@@ -85,7 +92,7 @@
   <p id="audit-summary" class="small-note" style="white-space:pre-wrap;max-height:36vh;overflow:auto">조사 전 · 전체 수 미확인</p>
   <pre id="catalog-result" hidden style="white-space:pre-wrap;overflow:auto;max-height:42vh;border:1px solid #554c43;border-radius:8px;padding:12px;font-size:12px;text-align:left"></pre>
   <div id="source-catalog-links" hidden style="max-height:42vh;overflow-y:auto;border:1px solid #554c43;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;text-align:left"></div>
-  <p id="setting-message" class="small-note">태블릿에서 앱 화면이 활성 상태일 때 15초 간격으로 8GiB 우선 수집을 시도합니다. 수집이 오래 걸리면 다음 실행은 중첩하지 않습니다. 1분 전시와 별개로 수집량에 하루 상한을 설정하지 않았으며, 실제 확보량은 수집 상태와 상단 저장 막대에 표시됩니다. 429 요청 제한을 받으면 공급원별 대기 시간을 준수하며, 실패 이미지의 재시도 시각과 검증 성공 작품 ID를 저장합니다. 절전·앱 종료·네트워크 장애 중에는 수집이 중단될 수 있으며, 자동 복귀와 저장 용량은 실기기 검증이 필요합니다.</p>
+  <p id="setting-message" class="small-note">태블릿에서 앱 화면이 활성 상태일 때 15초 간격으로 최대 세 작품의 병렬 수집을 시도합니다. 수집이 오래 걸리면 다음 실행은 중첩하지 않습니다. 1분 전시와 별개로 수집량에 하루 상한을 설정하지 않았으며, 실제 확보량은 수집 상태와 상단 저장 막대에 표시됩니다. 429 요청 제한을 받으면 공급원별 대기 시간을 준수하며, 실패 이미지의 재시도 시각과 검증 성공 작품 ID를 저장합니다. 절전·앱 종료·네트워크 장애 중에는 수집이 중단될 수 있으며, 자동 복귀와 저장 용량은 실기기 검증이 필요합니다.</p>
   <p class="small-note">추가된 5곳은 공식 미술관 API가 아니라 Wikimedia Commons의 작품 분류에서 조회합니다. 대영박물관은 판화를, 나머지 4곳은 회화를 수집합니다. 퍼블릭 도메인 또는 CC0 작품만 후보로 삼습니다.</p>
    <p class="small-note">스미스소니언 작품은 미술관 자체 API가 아닌 Wikimedia Commons의 소장품별 분류를 통해 검색합니다. 작품마다 퍼블릭 도메인 또는 CC0 표기를 확인하며, 개별 이미지가 부족하거나 권리가 제한된 경우 전시하지 않습니다. 국립아시아미술관(NMAA)의 프리어 미술관은 중국·일본·인도 회화 세 분류를 번갈아 검색합니다.</p>
   <p class="small-note">1800년 이후 비중 80%는 작품 제작 연도가 확인되는 경우를 기준으로 합니다. 메타데이터 검색과 실제 다운로드·디코딩·작품 연대 확인은 구분합니다. 원본 디지털 회화는 별도 근거가 있어야 합니다. 후보가 부족해도 임의 제작 연도를 부여하지 않으며 실제 달성률을 표시합니다.</p>
