@@ -1,0 +1,156 @@
+name: Build tablet-only one-minute 8GiB collector with 2692 verified offline artworks
+on:
+  push:
+    branches:
+      - feat-tablet-one-minute-8gib-20261115
+    paths:
+      - '.github/workflows/build-tablet60-8gib-2692-v183.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: quiet-art-tablet60-2692-v183
+  cancel-in-progress: false
+jobs:
+  build-tablet60-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout isolated one-minute tablet source branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat-tablet-one-minute-8gib-20261115
+      - name: Install Python and JPEG decoder
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Pillow
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Download immutable 2692-artwork source APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-2061-plus-10m-display-test-20261115 --repo treesky0103-dot/quiet-art-gallery --pattern 'QuietArtGallery-2061-plus-10min-Test.apk' --clobber
+          test -s QuietArtGallery-2061-plus-10min-Test.apk
+      - name: Restore all 2692 original verified JPEG bytes without replacing updated program code
+        run: |
+          python - <<'PY'
+          import json,hashlib,zipfile,re
+          from pathlib import Path
+          from PIL import Image
+          original=Path('QuietArtGallery-2061-plus-10min-Test.apk')
+          assets=Path('android-app/app/src/main/assets')
+          assets.mkdir(parents=True,exist_ok=True)
+          with zipfile.ZipFile(original) as z:
+              rows=json.loads(z.read('assets/offline-deck.json'))
+              assert len(rows)==2692
+              assert len({a['key'] for a in rows})==2692
+              assert len({a['derivedSHA256'] for a in rows})==2692
+              (assets/'offline-deck.json').write_text(json.dumps(rows,ensure_ascii=False,indent=1)+'\n',encoding='utf-8')
+              for i,art in enumerate(rows):
+                  asset=art['offlineAsset']
+                  assert re.fullmatch(r'offline/(?:pack-\d{4}|fallback-(?:\d|1[0-5]))\.jpg',asset),asset
+                  raw=z.read('assets/'+asset)
+                  assert hashlib.sha256(raw).hexdigest()==art['derivedSHA256'],(i,asset)
+                  dest=assets/asset
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  dest.write_bytes(raw)
+                  with Image.open(dest) as img:
+                      img.load()
+                      assert img.format=='JPEG'
+                      assert img.width>=1000 and img.height>=1400
+          print('2692_ORIGINAL_JPEGS_INTACT_AND_REOPENED',len(rows),flush=True)
+          PY
+      - name: Check web/native duplicate assets, one-minute display and 90-day archive regressions
+        run: |
+          set -euo pipefail
+          cmp web/app.js android-app/app/src/main/assets/app.js
+          cmp web/core.js android-app/app/src/main/assets/core.js
+          cmp web/index.html android-app/app/src/main/assets/index.html
+          node --check web/app.js
+          node --check web/core.js
+          node --test tests/*.test.cjs
+          grep -q 'ART_INTERVAL_MS = 60000L' android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "versionName '1.8.3-tablet60'" android-app/app/build.gradle
+          grep -q "indexedDB.open('quiet-art-gallery-v1',2)" web/app.js
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify 8GiB cache eviction planner with native Java simulation
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cache-policy
+          javac -d /tmp/cache-policy android-app/app/src/main/java/com/gallery/kiosk/ShownFirstEviction.java tests/java/com/gallery/kiosk/ShownFirstEvictionTest.java
+          java -cp /tmp/cache-policy com.gallery.kiosk.ShownFirstEvictionTest
+      - name: Use GitHub runner Android 35 SDK
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          test -n "$sdkmanager"
+          printf 'yes\n' | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build installable standalone APK without touching old Android application ID
+        working-directory: android-app
+        timeout-minutes: 15
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Inspect APK JPEG SHA, code bytes, cache limit and install package
+        run: |
+          python - <<'PY'
+          import json,zipfile,hashlib
+          from pathlib import Path
+          root=Path('android-app/app/src/main/assets')
+          src=Path('android-app/app/build/outputs/apk/debug/app-debug.apk')
+          assert src.is_file() and src.stat().st_size>500_000_000
+          with zipfile.ZipFile(src) as z:
+              assert z.testzip() is None
+              manifest=json.loads(z.read('assets/offline-deck.json'))
+              assert len(manifest)==2692
+              assert len({x['key'] for x in manifest})==2692
+              for art in manifest:
+                  assert hashlib.sha256(z.read('assets/'+art['offlineAsset'])).hexdigest()==art['derivedSHA256']
+              for f in ('app.js','core.js','index.html'):
+                  assert z.read('assets/'+f)==Path('web/'+f).read_bytes()
+              for f in ('art-movements.json','art-sources-85.json','art-providers.json'):
+                  assert z.read('assets/'+f)==(root/f).read_bytes()
+              assert b'intervalMs: 60000' in z.read('assets/app.js')
+              assert b'129,600' in z.read('assets/index.html')
+          out=Path('QuietArtGallery-Tablet60-8GiB-2692-v183.apk')
+          out.write_bytes(src.read_bytes())
+          sha=hashlib.sha256(out.read_bytes()).hexdigest()
+          report={'bundle_jpeg_count':2692,'bundle_jpeg_sha256_verified':2692,
+                  'display_interval_seconds':60,'90_day_unique_target':129600,
+                  'cache_limit_bytes':8*1024**3,'preload_target_bytes':8*1024**3,
+                  'initial_extra_downloaded_bytes':0,'android_offline_2692_images_verified':True,
+                  'new_candidates_downloaded_to_tablet':0,
+                  'tablet_8gib_prefill_physically_verified':False,
+                  'tablet_90_day_nonrepeat_physically_verified':False,
+                  'autocollection_results_depend_on_sources_and_free_device_space':True,
+                  'old_app_data_migrated':False,'source_branch':'feat-tablet-one-minute-8gib-20261115',
+                  'apk_name':out.name,'apk_bytes':out.stat().st_size,'apk_sha256':sha}
+          Path('verified-v183-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          Path('apk-sha256.txt').write_text(sha+'  '+out.name+'\n')
+          print('VERIFIED_INSTALLABLE_APK',out.stat().st_size,sha)
+          PY
+      - name: Publish verified 2692-piece separate tablet APK for direct tablet installation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="quiet-art-tablet60-2692-v183-20261115"
+          cat > /tmp/notes.md <<'NOTE'
+          고요한 미술관 v1.8.3 태블릿 단독 실행용 시험판.
+          60초 작품 교체, 90일 중복 방지, 최대 8GiB 원격 이미지 캐시, 이미 전시한 캐시부터 최대 1GiB 단위 정리, 미전시 다운로드 목록 IndexedDB 보존, 실제 저장 파일 수 표시.
+          사전 검증 완료된 APK 내장 이미지 2,692점은 기존 시험판의 원본 바이트와 SHA256이 같습니다. 8GiB 원격 이미지를 미리 채운 APK는 아닙니다.
+          앱이 화면에 켜져 있는 동안 Wi-Fi로 계속 수집을 시도합니다. 하루 1,440점 실제 확보와 90일 연속 무중복 전시는 태블릿 실기기에서 아직 검증되지 않았습니다.
+          이전 설치본을 보존하기 위해 패키지 ID를 com.gallery.kiosk.tablet60로 분리했습니다. 기존 감상 기록은 CSV 백업·복원으로 가져올 수 있습니다.
+          NOTE
+          gh release create "$tag" QuietArtGallery-Tablet60-8GiB-2692-v183.apk verified-v183-report.json apk-sha256.txt --repo treesky0103-dot/quiet-art-gallery --target feat-tablet-one-minute-8gib-20261115 --title "고요한 미술관 v1.8.3 · 1분 전시 · 8GiB 자동 수집 · 2692점" --notes-file /tmp/notes.md
