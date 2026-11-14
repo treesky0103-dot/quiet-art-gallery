@@ -46,8 +46,8 @@ test('global category request is bounded in web and Android; not arbitrary URLs'
 test('collector makes progress only while visible, rate-limits attempts and saves pool',()=>{
   const app=read('web/app.js');
   assert.match(app,/collectorEveryMs:120000/);
-  assert.match(app,/maxPrefetchPerPump:3/);
-  assert.match(app,/attempted>=5/);
+  assert.match(app,/maxPrefetchPerPump:6/);
+  assert.match(app,/attempted>=12/);
   assert.match(app,/document\.hidden/);
   assert.match(app,/prefetchedKeys\.delete\(art\.key\)/);
   assert.match(app,/key:'candidatePool'/);
