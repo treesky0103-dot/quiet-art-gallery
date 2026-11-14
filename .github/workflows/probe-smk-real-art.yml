@@ -1,0 +1,52 @@
+name: Probe SMK Denmark public-domain painting IIIF byte validation
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_smk_real_art.py
+      - .github/workflows/probe-smk-real-art.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Validate date/public-domain/image and decode raw images
+        run: |
+          python -m py_compile scripts/probe_smk_real_art.py
+          python -u scripts/probe_smk_real_art.py
+      - name: Independent byte-level proof
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json,hashlib
+          j=json.loads(Path('audit-smk-flat-art/report.json').read_text())
+          assert not j['verified_259200']
+          assert j['actual_verified_files']==len(j['actual_downloaded'])
+          assert j['actual_verified_modern']+j['actual_verified_old']==j['actual_verified_files']
+          for row in j['actual_downloaded']:
+              p=Path(row['saved_file'])
+              b=p.read_bytes()
+              assert hashlib.sha256(b).hexdigest()==row['sha256']
+              im=Image.open(p);im.load()
+              assert im.width>=1000 and im.height>=1400 and im.width<im.height
+              assert min((im.width/im.height)/.625,.625/(im.width/im.height))>=.75
+          print('SMK byte proof:',j['actual_verified_files'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smk-1800-and-early-iiif-real-image-proof
+          path: audit-smk-flat-art/
+          if-no-files-found: warn
+          retention-days: 3
