@@ -377,7 +377,7 @@
     return Number.isFinite(n) && (Math.max(0,Math.floor(n))%5)<4;
   }
   function eraQuota90Days(){
-    return Object.freeze({total:259200,post1800:207360,remainder:51840});
+    return Object.freeze({total:129600,post1800:103680,remainder:25920});
   }
 
   // 14 verified Oceania/South America Commons categories appended to the original seven.
