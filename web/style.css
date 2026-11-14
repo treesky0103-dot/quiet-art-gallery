@@ -24,3 +24,26 @@ body.upside-down:not(.native-rotation) #settings{
 }
 /* Control labels must use broadly supported system fonts, avoiding symbol tofu. */
 button{font-family:system-ui,'Noto Sans KR',sans-serif}
+
+
+/* v1.7.4: always show the same calm two-line wall label BELOW any still image.
+   The label is a separate part of the viewport, never a genre-specific overlay. */
+:root{--gallery-caption-h:clamp(90px,12dvh,132px)}
+#viewer{bottom:var(--gallery-caption-h)}
+.caption,.caption.active{
+  position:fixed;bottom:0;left:0;right:0;
+  height:var(--gallery-caption-h);z-index:2;
+  opacity:1;transform:none;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;gap:6px;
+  padding:10px 18px calc(10px + env(safe-area-inset-bottom));
+  background:#11100f;border-top:1px solid rgba(233,222,199,.17);
+  pointer-events:none;
+}
+#art-title{font-family:Georgia,"Noto Serif KR",serif;font-size:clamp(14px,2.5vw,18px);line-height:1.35;max-width:95vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#art-meta{font-size:clamp(11px,1.9vw,13px);line-height:1.35;color:#c7c1b8;padding-top:0;max-width:95vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.upside-down:not(.native-rotation) #viewer{top:var(--gallery-caption-h);bottom:0}
+body.upside-down:not(.native-rotation) #caption{
+  top:0;bottom:auto;background:#11100f;border-top:0;border-bottom:1px solid rgba(233,222,199,.17);
+  transform:rotate(180deg)!important;
+}
