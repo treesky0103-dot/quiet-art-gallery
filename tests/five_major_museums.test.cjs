@@ -38,7 +38,7 @@ test('native Android and browser ship identical allowed Commons collection names
   }
   assert.match(java, /type\.equals\("additionalCommons"\)/);
   assert.match(app, /kind==='asianCommons'\|\|kind==='africanCommons'\|\|kind==='additionalCommons'/);
-  assert(html.includes('기존 미술관 API'));
+  assert(html.includes('클리블랜드(회화·드로잉·판화·사진)'));
   for (const file of ['app.js','core.js','index.html']) {
     assert.equal(source('web/'+file),source('android-app/app/src/main/assets/'+file), file);
   }
