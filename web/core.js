@@ -218,6 +218,50 @@
       };
     }).filter(a=>a.modern&&a.rightsOK);
   }
+  // Search engine spanning public community creator hosts beyond museum APIs.
+  // Only explicitly licensed original 2D media is eligible. A provider's
+  // upload time / category name cannot establish artwork production date.
+  const GLOBAL_OPENVERSE_TERMS=Object.freeze([
+    'original watercolor painting','original digital painting',
+    'original digital illustration','watercolor painting artwork',
+    '19th century illustration','Japanese woodblock print',
+    'art nouveau illustration','woodcut print artwork',
+    'abstract original painting','gouache painting artwork',
+    'ink drawing art','contemporary independent artist painting'
+  ]);
+  function normalizeGlobalOpenverse(data){
+    const result=data&&data.results;
+    const words=/\b(?:painting|illustration|drawing|watercolou?r|woodcut|engraving|lithograph|gouache|digital art|printmaking)\b/i;
+    const rejected=/\b(?:photograph|photography|photo of|selfie|exhibition|art gallery|museum room|installation|sculpture|statue|framed|interior|3d render|reproduction of|print of a photo)\b/i;
+    return (Array.isArray(result)?result:[]).map(item=>{
+      const title=string(item&&item.title).replace(/<[^>]+>/g,' ').trim();
+      const url=string(item&&item.url);
+      const license=string(item&&item.license).toLowerCase().trim();
+      let safeHost=false;
+      if(safeURL(url)){
+        const hostname=new URL(url).hostname.toLowerCase();
+        safeHost=hostname==='upload.wikimedia.org'||hostname==='live.staticflickr.com'||
+          /^farm[1-9]\.staticflickr\.com$/.test(hostname);
+      }
+      const source=string(item&&item.source).toLowerCase();
+      const sourceOK=(source==='wikimedia'||source==='flickr')&&safeHost;
+      const rightsOK=sourceOK&&!item.watermarked&&['cc0','pdm','by','by-sa'].includes(license)&&
+         words.test(title)&&!rejected.test(title);
+      return {
+        key:'openverse-world:'+string(item&&item.id),
+        source:'Openverse · '+source,
+        title:wikimediaText(title)||'제목 미상',
+        artist:wikimediaText(item&&item.creator)||'작가 미상',
+        image:url,width:Number(item&&item.width)||0,height:Number(item&&item.height)||0,
+        type:/\b(?:illustration|drawing|woodcut|engraving|lithograph|printmaking)\b/i.test(title)?'Illustration':'Painting',
+        classification:'',medium:'',description:'',
+        license,rightsOK,museumRegion:'additional',modern:false,
+        verifiedCollectionCategory:false,style:'',styles:[],
+        yearStart:null,yearEnd:null,date:'',
+        page:string(item&&item.foreign_landing_url)
+      };
+    }).filter(x=>x.rightsOK);
+  }
   // Retained as a legacy helper. The 1800+ gallery uses targetPost1800,
   // not "modern digital art" as a proxy for artwork creation dates.
   function targetModern(slot){
@@ -609,5 +653,6 @@
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
     artworkEra,targetPost1800,eraQuota90Days,MODERN_THRESHOLD_YEAR,
     GLOBAL_OPEN_ART_CATEGORIES,normalizeGlobalCommons,
+    GLOBAL_OPENVERSE_TERMS,normalizeGlobalOpenverse,
     portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance };
 });
