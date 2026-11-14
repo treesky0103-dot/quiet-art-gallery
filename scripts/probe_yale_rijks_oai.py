@@ -44,10 +44,27 @@ def main():
             row["formats"]=available
             preferred=next((x for x in ("lido","oai_lido","oai_dc","edm") if x in available),None)
             if preferred:
-                root,request_url=request(url,"ListRecords",metadataPrefix=preferred)
-                row.update(count_records(root,NS))
-                row["first_records_url"]=request_url
                 row["used_prefix"]=preferred
+                if "Yale" in name:
+                    root,request_url=request(url,"ListIdentifiers",metadataPrefix=preferred)
+                    headers=root.findall(".//o:header",NS)
+                    identifiers=[h.findtext("o:identifier",default="",namespaces=NS) for h in headers]
+                    identifiers=[x for x in identifiers if x]
+                    row["first_headers_count"]=len(headers)
+                    row["first_identifiers"]=identifiers[:6]
+                    row["resumption_token_present"]=bool(root.findtext(".//o:resumptionToken",default="",namespaces=NS))
+                    row["first_records_url"]=request_url
+                    if identifiers:
+                        try:
+                            xml,oneurl=request(url,"GetRecord",metadataPrefix=preferred,identifier=identifiers[0])
+                            row.update(count_records(xml,NS))
+                            row["example_record_url"]=oneurl
+                        except Exception as e:
+                            row["first_record_fetch_error"]=str(e)[:220]
+                else:
+                    root,request_url=request(url,"ListRecords",metadataPrefix=preferred)
+                    row.update(count_records(root,NS))
+                    row["first_records_url"]=request_url
             else:row["error"]="No recognized harvest format"
         except Exception as e:
             row["error"]=str(e)[:220]
