@@ -22,7 +22,7 @@
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관 26곳(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
+  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -729,7 +729,12 @@
   }
   function updateInfo(){
     el('seen-count').textContent=state.stats.shown.toLocaleString('ko-KR')+'점';
-    if(el('modern-count'))el('modern-count').textContent=(Number(state.stats.modernShown)||0).toLocaleString('ko-KR')+'점 / '+state.stats.shown.toLocaleString('ko-KR')+'점';
+    if(el('modern-count')){
+      const count=Number(state.stats.post1800Shown)||0;
+      const shown=Number(state.stats.shown)||0;
+      el('modern-count').textContent=count.toLocaleString('ko-KR')+' / '+
+        shown.toLocaleString('ko-KR')+'점 ('+(shown?((100*count/shown).toFixed(1)):'0.0')+'%)';
+    }
     const count=state.stats.portrait+state.stats.other;
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
