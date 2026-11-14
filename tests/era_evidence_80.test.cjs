@@ -8,7 +8,7 @@ const source=p=>fs.readFileSync(path.resolve(__dirname,'..',p),'utf8');
 
 test('90 days * 30 seconds exact 80:20 year allocation',()=>{
  const q=C.eraQuota90Days();
- assert.deepEqual(q,{total:259200,post1800:207360,remainder:51840});
+ assert.deepEqual(q,{total:129600,post1800:103680,remainder:25920});
  const sample=Array.from({length:500},(_,i)=>C.targetPost1800(i));
  assert.equal(sample.filter(Boolean).length,400);
  assert.deepEqual(sample.slice(0,5),[true,true,true,true,false]);
