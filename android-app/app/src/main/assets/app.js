@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75});
+  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:120000, maxPrefetchPerPump:3, savedCandidateLimit:180});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -15,14 +15,14 @@
     recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
     cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{}},
-    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,
-    modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,modernFetched:0,modernErrors:0,
+    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
+    modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
-    failures:{cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0},backoff:{},
+    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
+  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -42,7 +42,7 @@
     for(const entry of entries)s.put(entry);
     t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);
   });}
-  async function persist(){await dbPutMany('settings',[{key:'stats',value:state.stats},{key:'cursors',value:state.cursors}]);}
+  async function persist(){await dbPutMany('settings',[{key:'stats',value:state.stats},{key:'cursors',value:state.cursors},{key:'globalCategoryIndex',value:state.globalCategoryIndex}]);}
   function rowKeys(art,hash){
     const keys=C.identityKeys(art);
     if(hash)keys.push('vis:'+hash);
@@ -215,6 +215,17 @@
       const params={query:{bool:{filter:[{term:{is_public_domain:true}},{exists:{field:'image_id'}}]}},page,limit:100,fields:['id','title','artist_title','image_id','is_public_domain','artwork_type_title','medium_display','thumbnail','style_title','style_titles','date_display','date_start']};
       if(isMovement)params.query.bool.must=[{multi_match:{query:movement.en,fields:['style_title^5','style_titles^4','term_titles^2','artist_title','title']}}];
       url=`https://api.artic.edu/api/v1/artworks/search?params=${encodeURIComponent(JSON.stringify(params))}`;
+    }else if(kind==='globalCommons'){
+      const parts=String(param).split(':');
+      const cat=C.GLOBAL_OPEN_ART_CATEGORIES.find(x=>x.id===parts[0]);
+      const offset=Number(parts[1]);
+      if(parts.length!==2||!cat||!Number.isInteger(offset)||offset<0||offset>100000)
+        throw Error('공개 미술 소스 검색 조건 오류');
+      const qs=new URLSearchParams({action:'query',generator:'search',
+        gsrsearch:'deepcategory:"'+cat.category+'"',gsrnamespace:'6',
+        gsrlimit:'50',gsroffset:String(offset),prop:'imageinfo',
+        iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',format:'json',formatversion:'2',origin:'*'});
+      url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
     }else if(kind==='asianCommons'||kind==='africanCommons'||kind==='additionalCommons'){
       const [museumId, offsetText]=String(param).split(':');
       const museums=kind==='africanCommons'?C.AFRICAN_MUSEUMS:kind==='additionalCommons'?C.ADDITIONAL_MUSEUMS:C.ASIAN_MUSEUMS;
@@ -289,6 +300,15 @@
         addCandidates(normalizeBatch(source,res).filter(C.eligibleArt));
         const totalPages=Number(res.pagination&&res.pagination.total_pages)||999999;
         state.cursors.chicago=page>=totalPages?1:page+1;
+      }else if(source==='global'){
+        const category=C.GLOBAL_OPEN_ART_CATEGORIES[state.globalCategoryIndex++%C.GLOBAL_OPEN_ART_CATEGORIES.length];
+        const offset=Number(state.cursors.global&&state.cursors.global[category.id])||0;
+        const response=await request('globalCommons',category.id+':'+offset);
+        addCandidates(C.normalizeGlobalCommons(response,category.id).filter(C.eligibleArt));
+        const received=Array.isArray(response.query&&response.query.pages)?response.query.pages.length:0;
+        const total=Number(response.query&&response.query.searchinfo&&response.query.searchinfo.totalhits)||0;
+        state.cursors.global=state.cursors.global||{};
+        state.cursors.global[category.id]=(received===0||received<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
       }else if(source==='asian'){
         const museum=C.ASIAN_MUSEUMS[state.asianOrder++%C.ASIAN_MUSEUMS.length];
         const offset=Number(state.cursors.asian[museum.id])||0;
@@ -416,7 +436,7 @@
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<14){
         // Give year-dated museum APIs greater weight than undated Commons filenames.
-        const sources=['cleveland','chicago','met','cleveland','chicago','asian','african','additional','additional','smithsonian','modern'];
+        const sources=['cleveland','chicago','met','cleveland','global','chicago','asian','african','additional','global','additional','smithsonian','modern'];
         const source=sources[state.sourceOrder++%sources.length];
         attempts++;
         progress+=await fetchSource(source);
@@ -428,6 +448,55 @@
       return state.pool.length;
     })();
     try{return await state.filling;}finally{state.filling=null; updateInfo();}
+  }
+  // Foreground-only best-effort collector: independently requests worldwide public
+  // source metadata and predecodes a few eligible images WITHOUT marking them seen.
+  // Android may suspend JS when app goes to background; this is not a 24/7 daemon.
+  async function collectorPump(){
+    if(state.collectorRunning||!state.db||document.hidden)return;
+    if(state.collectorLastAt && Date.now()-state.collectorLastAt<CONFIG.collectorEveryMs-5000)return;
+    state.collectorRunning=true;state.collectorLastAt=Date.now();
+    try{
+      if(state.pool.length<CONFIG.targetPool)await fillPool(CONFIG.targetPool);
+      if(!state.prepared&&!state.preparing)await prepareNext();
+      let downloaded=0,attempted=0;
+      for(const art of state.pool){
+        if(downloaded>=CONFIG.maxPrefetchPerPump||attempted>=5)break;
+        if(state.prefetchedKeys.has(art.key)||seenInMemory(art,null))continue;
+        state.prefetchedKeys.add(art.key);
+        attempted++;
+        try{
+          await loadImage(art); // On Android, /art-image writes decoded-validated file cache.
+          state.collectorSuccess++;downloaded++;
+        }catch(e){state.prefetchedKeys.delete(art.key);state.collectorErrors++;state.lastErr='수집 재시도 대상: '+String(e.message||e);}
+      }
+      if(state.prefetchedKeys.size>400){
+        const live=new Set(state.pool.map(x=>x.key));
+        state.prefetchedKeys=new Set([...state.prefetchedKeys].filter(k=>live.has(k)));
+      }
+      // Save a modest manifest of verified metadata; image bytes remain in native
+      // bounded disk cache and 90-day shown identities remain in IndexedDB.
+      await dbPutMany('settings',[{key:'candidatePool',value:state.pool.slice(0,CONFIG.savedCandidateLimit)}]);
+      await persist();
+    }catch(e){state.collectorErrors++;state.lastErr='백그라운드 수집: '+String(e.message||e);}
+    finally{state.collectorRunning=false;updateInfo();}
+  }
+  function startContinuousCollector(){
+    if(state.collectorTimer)clearInterval(state.collectorTimer);
+    state.collectorTimer=setInterval(()=>{collectorPump().catch(()=>{});},CONFIG.collectorEveryMs);
+    collectorPump().catch(()=>{});
+  }
+  async function restoreCandidatePool(){
+    try{
+      const saved=await dbGet('settings','candidatePool');
+      if(!saved||!Array.isArray(saved.value))return 0;
+      for(const art of saved.value.slice(0,CONFIG.savedCandidateLimit)){
+        if(!C.eligibleArt(art)||!C.metadataResolutionOkay(art)||seenInMemory(art,null))continue;
+        if(state.pendingKeys.has(art.key))continue;
+        state.pendingKeys.add(art.key);state.pool.push(art);
+      }
+      return state.pool.length;
+    }catch(_){return 0;}
   }
   async function takeEraCandidate(era){
     // Strictly separate known dates from unknown: no guess based on upload date.
@@ -921,6 +990,9 @@
       state.cursors.smithsonian=state.cursors.smithsonian||{};
       state.cursors.modern=state.cursors.modern||{};
       state.cursors.openverseModern=state.cursors.openverseModern||{};
+      state.cursors.global=state.cursors.global||{};
+      const gIndex=await dbGet('settings','globalCategoryIndex');
+      state.globalCategoryIndex=Number.isInteger(gIndex&&gIndex.value)?Math.max(0,gIndex.value):0;
       state.stats.modernShown=Number(state.stats.modernShown)||0;
       state.cursors.met=Object.assign({'11':0,'9':0,'21':0,'6':0},state.cursors.met||{});
       state.movementPages=(movements&&movements.value&&typeof movements.value==='object')?movements.value:{};
@@ -931,6 +1003,7 @@
       // APK ships four true paintings. Load before starting the clock so a
       // transient outage or slow museum search cannot freeze a displayed work.
       await hydrateHistory();
+      await restoreCandidatePool();
       await loadOfflineDeck();
       const firstUnseen=state.offlineReady.find(x=>!seenInMemory(x.art,x.visualHash));
       if(firstUnseen){
@@ -948,6 +1021,7 @@
       prepareNext().catch(()=>{});
       setInterval(()=>refreshForDay().catch(()=>{}),60*1000);
       setInterval(updateInfo,30000);
+      startContinuousCollector();
       if('serviceWorker' in navigator && !window.GalleryAndroid && location.protocol==='https:'){
         navigator.serviceWorker.register('./sw.js').catch(()=>{});
       }
@@ -966,7 +1040,8 @@
     movementIndex:state.stats.movementIndex,movement:state.current&&state.current.art.movement,
     flipped:state.flipped,caption:[ui.title.textContent,ui.meta.textContent],
     dedupBlocked:state.dedupBlocked,exhaustedTicks:state.exhaustedTicks,recentKeys:state.recentKeys.size,
-    visualHashes:state.visualHashes.size,sourceCount:3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length+C.SMITHSONIAN_MUSEUMS.length,
+    visualHashes:state.visualHashes.size,sourceCount:3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length+C.SMITHSONIAN_MUSEUMS.length+C.GLOBAL_OPEN_ART_CATEGORIES.length,
+    collector:{running:state.collectorRunning,lastAt:state.collectorLastAt,validatedPrefetch:state.collectorSuccess,errors:state.collectorErrors,categoryIndex:state.globalCategoryIndex},
     modernShown:state.stats.modernShown,modernFetched:state.modernFetched,modernPool:state.pool.filter(a=>a.modern).length,modernTargetNext:C.targetModern(state.stats.slot),
     lastSwapAt:state.lastSwapAt,tickCount:state.tickCount,emergencySwaps:state.emergencySwaps,
     offlineReady:state.offlineReady.length,nativeClock:state.nativeClock,nextDueAt:state.nextDueAt});
