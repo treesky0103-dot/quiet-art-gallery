@@ -107,6 +107,7 @@ public final class MainActivity extends Activity {
     private WebView web;
     private File imageDir;
     private ShownImageLedger shownLedger;
+    private SeenIdentityLedger seenIdentityLedger;
     private volatile String currentDisplayedHash="";
     private long evictionDeletedBytes=0L;
     private int evictionDeletedFiles=0;
@@ -129,6 +130,7 @@ public final class MainActivity extends Activity {
         for(int i=0;i<imageFileLocks.length;i++)imageFileLocks[i]=new Object();
         imageDir = new File(getFilesDir(), "gallery-images");
         shownLedger = new ShownImageLedger(this);
+        seenIdentityLedger = new SeenIdentityLedger(this);
         if (!imageDir.exists()) imageDir.mkdirs();
         File oldImageDir = new File(getCacheDir(), "gallery-images");
         File[] oldImages=oldImageDir.listFiles((folder,name)->name.endsWith(".img"));
@@ -716,6 +718,26 @@ public final class MainActivity extends Activity {
                     return !f.exists()||f.delete();
                 }
             }catch(Exception e){return false;}
+        }
+        private java.util.List<String> parseIdentityKeys(String json) throws Exception {
+            if(json==null||json.length()<3||json.length()>11000)throw new IOException("Invalid identity payload");
+            JSONArray arr=new JSONArray(json);
+            if(arr.length()<1||arr.length()>12)throw new IOException("Invalid identity length");
+            java.util.List<String> keys=new java.util.ArrayList<>();
+            for(int i=0;i<arr.length();i++){
+                String key=arr.getString(i);
+                if(key==null||key.isEmpty()||key.length()>768)throw new IOException("Invalid identity");
+                if(!keys.contains(key))keys.add(key);
+            }
+            return keys;
+        }
+        @JavascriptInterface public boolean claimArtworkKeys(String keysJson){
+            try{return seenIdentityLedger.claim(parseIdentityKeys(keysJson));}
+            catch(Exception e){return false;}
+        }
+        @JavascriptInterface public boolean hasNativeSeenKeys(String keysJson){
+            try{return seenIdentityLedger.hasRecentlySeen(parseIdentityKeys(keysJson));}
+            catch(Exception e){return true;}
         }
         @JavascriptInterface public void markArtworkDisplayed(String url){
             markArtworkDisplayedNative(url);
