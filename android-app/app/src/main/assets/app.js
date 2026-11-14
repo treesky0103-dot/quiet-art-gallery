@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:600000, maxPrefetchPerPump:6, savedCandidateLimit:180});
+  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:1800000, maxPrefetchPerPump:6, savedCandidateLimit:180});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -131,7 +131,7 @@
   function imageURL(art){
     if(!C.safeURL(art.image))return '';
     // Strict offline-asset whitelist; runtime JSON cannot inject arbitrary asset paths.
-    if(window.GalleryAndroid && /^offline\/fallback-(?:[0-9]|1[0-5])\.jpg$/.test(art.offlineAsset||'')){
+    if(window.GalleryAndroid && /^(?:offline\/fallback-(?:[0-9]|1[0-5])|offline\/pack-[0-9]{4})\.jpg$/.test(art.offlineAsset||'')){
       return 'https://appassets.gallery/'+art.offlineAsset;
     }
     if(window.GalleryAndroid) return 'https://appassets.gallery/art-image?u='+encodeURIComponent(art.image);
@@ -161,15 +161,30 @@
       const r=await fetch('https://appassets.gallery/offline-deck.json',{cache:'no-store'});
       if(!r.ok)throw Error('비상 작품 목록 없음');
       const items=await r.json();
-      if(!Array.isArray(items)||items.length<2||items.length>16)throw Error('비상 작품 목록 형식 오류');
+      if(!Array.isArray(items)||items.length<2||items.length>886)throw Error('내장 작품 목록 형식 오류');
+      const all=items.filter(art=>
+        /^(?:offline\/fallback-(?:[0-9]|1[0-5])|offline\/pack-[0-9]{4})\.jpg$/.test(art.offlineAsset||'') &&
+        C.eligibleArt(art) && C.metadataResolutionOkay(art));
       const loaded=[];
-      for(const art of items){
-        if(!/^offline\/fallback-(?:[0-9]|1[0-5])\.jpg$/.test(art.offlineAsset||'')||
-          !C.eligibleArt(art)||!C.metadataResolutionOkay(art))continue;
+      // Preload first 12, then validate others asynchronously, without
+      // blocking the original 30-second rotation.
+      for(const art of all.slice(0,12)){
         art.movement=C.classifyMovement(art)||'additional';
-        try{loaded.push(await loadImage(art));}catch(e){state.lastErr='비상 작품: '+e.message;}
+        try{loaded.push(await loadImage(art));}catch(e){state.lastErr='내장 작품: '+e.message;}
       }
       state.offlineReady=loaded;
+      let index=12;
+      async function preloadMore(){
+        for(let k=0;k<10 && index<all.length;k++,index++){
+          const art=all[index];
+          art.movement=C.classifyMovement(art)||'additional';
+          try{state.offlineReady.push(await loadImage(art));}
+          catch(e){state.lastErr='내장 작품 점검: '+e.message;}
+        }
+        if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),350);
+        else updateInfo();
+      }
+      if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),350);
       return loaded.length;
     }catch(e){state.lastErr='비상 작품 준비: '+e.message;return 0;}
   }
@@ -420,7 +435,7 @@
     for(const a of items){
       if(state.pool.length>=CONFIG.maxQueue)break;
       if(!C.eligibleArt(a)||!C.metadataResolutionOkay(a)||state.pendingKeys.has(a.key))continue;
-      if(Number(a.width)>0&&Number(a.height)>0&&
+      if(!window.GalleryAndroid && Number(a.width)>0&&Number(a.height)>0&&
         !C.fillsPortraitScreen(a.width,a.height,innerWidth,innerHeight,CONFIG.minimumPortraitFill))continue;
       if(seenInMemory(a,null))continue;
       // Art history schools are optional; a work is not rejected for lacking one.
@@ -738,7 +753,7 @@
         if(!C.eligibleArt(a))continue;
         rec.eligible++;out.eligible++;
         if(!C.metadataResolutionOkay(a))continue;
-        if(Number(a.width)>0&&Number(a.height)>0&&!C.fillsPortraitScreen(a.width,a.height,innerWidth,innerHeight,CONFIG.minimumPortraitFill))continue;
+        if(!window.GalleryAndroid && Number(a.width)>0&&Number(a.height)>0&&!C.fillsPortraitScreen(a.width,a.height,innerWidth,innerHeight,CONFIG.minimumPortraitFill))continue;
         const verifiedSize=(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.museumRegion==='modern'||a.source==='클리블랜드');
         if(verifiedSize){rec.resolutionChecked++;out.resolutionChecked++;}
         else {rec.pixelUnknown++;out.pixelUnknown++;}
