@@ -1,0 +1,91 @@
+name: Consolidate later actually verified Met Rijks Smithsonian NGA image bytes
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/aggregate_latest_v3_artwork_evidence.py
+      - .github/workflows/aggregate-real-art-v3.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: qag-v3-artwork-ledger-commit
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install actual saved-image decoder
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Metropolitan source JPEGs
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43562238337
+          name: metropolitan-original-cc0-iiif-jpeg-portrait-art-proof
+          path: research-input/v3/met/audit-met-real-art
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Four additional Smithsonian museum actual image JPEGs
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43562565266
+          name: smithsonian-four-additional-museums-cc0-art-jpeg-files
+          path: research-input/v3/si_extra/audit-smithsonian-more-actual
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Distinct Rijksmuseum actual 60 files
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43562429102
+          name: rijks-80percent-expanded-2d-verified-file-batch
+          path: research-input/v3/rijks_more/audit-rijks-expanded-actual
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Newly validated NGA art JPEGs
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43562704467
+          name: national-gallery-of-art-second-cc0-portrait-image-files
+          path: research-input/v3/nga_more/audit-nga-real-expanded
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Chicago zero valid image evidence - do not count 403
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43562852917
+          name: chicago-100-real-cc0-80pct-painting-iiif-jpeg
+          path: research-input/v3/aic/audit-aic-real-100
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Check source metadata reports vs actual images and append only real hashes
+        run: |
+          python -m py_compile scripts/aggregate_latest_v3_artwork_evidence.py
+          python -u scripts/aggregate_latest_v3_artwork_evidence.py
+      - name: Independent row and target audit
+        run: |
+          python - <<'PY'
+          import csv,json
+          from pathlib import Path
+          r=Path("data/verified_80pct")
+          with (r/"verified_artwork_manifest.csv").open(encoding="utf-8-sig",newline="") as f:
+            rows=list(csv.DictReader(f))
+          j=json.loads((r/"cumulative_audit.json").read_text(encoding="utf-8"))
+          assert len(rows)==j["unique_verified_file_and_source_id_count"]
+          assert len(rows)==len({(x["source"],x["artwork_id"]) for x in rows})
+          assert len(rows)==len({x["file_sha256"] for x in rows})
+          assert sum(x["era"]=="modern" for x in rows)==j["verified_1800plus"]
+          assert sum(x["era"]=="older" for x in rows)==j["verified_older"]
+          assert j["missing_total"]==259200-len(rows)
+          assert j["all_259200_acquired"] is False
+          print("FULL ACTUAL SOURCE AND SHA AUDIT SUCCESS",len(rows))
+          PY
+      - name: Commit ONLY durable source/hash manifest; image files remain temporary
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/verified_80pct/cumulative_audit.json data/verified_80pct/verified_artwork_manifest.csv
+          git diff --cached --quiet && exit 0
+          git commit -m "Reverify and append actual new Met Rijks Smithsonian and NGA artwork JPEG evidence"
+          git push origin HEAD:collect-80pct-scale-batch-20261114
