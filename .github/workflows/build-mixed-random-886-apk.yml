@@ -1,4 +1,4 @@
-name: Build random mixed-media gallery APK with unified caption v2
+name: Build random mixed-media gallery APK with unified caption v3
 on:
   push:
     paths:
