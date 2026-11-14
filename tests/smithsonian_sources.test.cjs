@@ -95,7 +95,7 @@ test('new user-visible info, independent APK ID and original 75 percent policy r
  assert(html.includes('국립아시아미술관(NMAA)'));
  assert(gradle.includes("applicationId 'com.gallery.kiosk.tablet60'"));
  assert(gradle.includes("versionName '1.8.3-tablet60'"));
- assert(gradle.includes('versionCode 20'));
+ assert(gradle.includes('versionCode 21'));
  const app=read('web/app.js');
  assert.match(app,/pruneDays: 90/);
  assert.match(app,/intervalMs: 60000/);
