@@ -1,0 +1,2532 @@
+{
+  "schema_version": "1.0",
+  "description": "Requested movement/school taxonomy — catalog entries are search categories, not confirmed ingested artwork counts or stylistic attribution. Flat still imagery only.",
+  "group_count": 20,
+  "entry_count": 397,
+  "distinct_korean_terms": 395,
+  "english_query_terms": 142,
+  "groups": [
+    {
+      "id": "group-01",
+      "region": "서양·유럽·북미",
+      "section": "1800~1850",
+      "movements": [
+        {
+          "id": "m1-1",
+          "name_ko": "신고전주의",
+          "search_en": "Neoclassicism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m1-2",
+          "name_ko": "낭만주의",
+          "search_en": "Romanticism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m1-3",
+          "name_ko": "나사렛파",
+          "search_en": "Nazarene movement",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m1-4",
+          "name_ko": "비더마이어",
+          "search_en": "Biedermeier art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m1-5",
+          "name_ko": "아카데미즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m1-6",
+          "name_ko": "역사주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m1-7",
+          "name_ko": "허드슨강 화파",
+          "search_en": "Hudson River School",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m1-8",
+          "name_ko": "바르비종파",
+          "search_en": "Barbizon school",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m1-9",
+          "name_ko": "뒤셀도르프 화파",
+          "search_en": "Düsseldorf school of painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m1-10",
+          "name_ko": "오리엔탈리즘",
+          "search_en": "Orientalist painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m1-11",
+          "name_ko": "미국 루미니즘",
+          "search_en": "American Luminism",
+          "search_status": "english_term_mapped"
+        }
+      ]
+    },
+    {
+      "id": "group-02",
+      "region": "서양·유럽·북미",
+      "section": "1850~1900",
+      "movements": [
+        {
+          "id": "m2-1",
+          "name_ko": "사실주의",
+          "search_en": "Realism (arts)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-2",
+          "name_ko": "자연주의",
+          "search_en": "Naturalism (art)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-3",
+          "name_ko": "라파엘전파",
+          "search_en": "Pre-Raphaelite Brotherhood",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-4",
+          "name_ko": "미학주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m2-5",
+          "name_ko": "데카당스 운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m2-6",
+          "name_ko": "마키아이올리파",
+          "search_en": "Macchiaioli",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-7",
+          "name_ko": "헤이그 화파",
+          "search_en": "Hague School",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-8",
+          "name_ko": "이동파",
+          "search_en": "Peredvizhniki",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-9",
+          "name_ko": "인상주의",
+          "search_en": "Impressionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-10",
+          "name_ko": "미국 인상주의",
+          "search_en": "American Impressionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-11",
+          "name_ko": "후기인상주의",
+          "search_en": "Post-Impressionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-12",
+          "name_ko": "신인상주의",
+          "search_en": "Neo-Impressionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-13",
+          "name_ko": "점묘주의",
+          "search_en": "Pointillism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-14",
+          "name_ko": "분할주의",
+          "search_en": "Divisionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-15",
+          "name_ko": "상징주의",
+          "search_en": "Symbolism (arts)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-16",
+          "name_ko": "종합주의",
+          "search_en": "Synthetism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-17",
+          "name_ko": "클루아조니즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m2-18",
+          "name_ko": "퐁타방파",
+          "search_en": "Pont-Aven School",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-19",
+          "name_ko": "나비파",
+          "search_en": "Les Nabis",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-20",
+          "name_ko": "색조주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m2-21",
+          "name_ko": "유미주의",
+          "search_en": "Aestheticism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-22",
+          "name_ko": "자포니슴",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m2-23",
+          "name_ko": "아르누보",
+          "search_en": "Art Nouveau",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-24",
+          "name_ko": "유겐트슈틸",
+          "search_en": "Jugendstil",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-25",
+          "name_ko": "미술공예운동",
+          "search_en": "Arts and Crafts movement",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-26",
+          "name_ko": "글래스고 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m2-27",
+          "name_ko": "뮌헨 분리파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m2-28",
+          "name_ko": "빈 분리파",
+          "search_en": "Vienna Secession",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m2-29",
+          "name_ko": "베를린 분리파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-03",
+      "region": "서양·유럽·북미",
+      "section": "1900~1920",
+      "movements": [
+        {
+          "id": "m3-1",
+          "name_ko": "야수주의",
+          "search_en": "Fauvism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-2",
+          "name_ko": "신야수주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-3",
+          "name_ko": "표현주의",
+          "search_en": "Expressionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-4",
+          "name_ko": "독일 표현주의",
+          "search_en": "German Expressionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-5",
+          "name_ko": "다리파",
+          "search_en": "Die Brücke",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-6",
+          "name_ko": "청기사파",
+          "search_en": "Der Blaue Reiter",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-7",
+          "name_ko": "신미술가협회",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-8",
+          "name_ko": "입체주의",
+          "search_en": "Cubism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-9",
+          "name_ko": "원시입체주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-10",
+          "name_ko": "분석적 입체주의",
+          "search_en": "Analytical Cubism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-11",
+          "name_ko": "종합적 입체주의",
+          "search_en": "Synthetic Cubism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-12",
+          "name_ko": "수정입체주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-13",
+          "name_ko": "입체미래주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-14",
+          "name_ko": "미래주의",
+          "search_en": "Futurism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-15",
+          "name_ko": "오르피즘",
+          "search_en": "Orphism (art)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-16",
+          "name_ko": "광선주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-17",
+          "name_ko": "보티시즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-18",
+          "name_ko": "절대주의",
+          "search_en": "Suprematism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-19",
+          "name_ko": "구성주의",
+          "search_en": "Constructivism (art)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-20",
+          "name_ko": "분석미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-21",
+          "name_ko": "신원시주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-22",
+          "name_ko": "신조형주의",
+          "search_en": "Neoplasticism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-23",
+          "name_ko": "데 스틸",
+          "search_en": "De Stijl",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-24",
+          "name_ko": "순수주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-25",
+          "name_ko": "싱크로미즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-26",
+          "name_ko": "형이상학적 회화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-27",
+          "name_ko": "다다이즘",
+          "search_en": "Dada",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-28",
+          "name_ko": "취리히 다다",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-29",
+          "name_ko": "베를린 다다",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-30",
+          "name_ko": "쾰른 다다",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-31",
+          "name_ko": "뉴욕 다다",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-32",
+          "name_ko": "바우하우스",
+          "search_en": "Bauhaus",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-33",
+          "name_ko": "애시캔 화파",
+          "search_en": "Ashcan School",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m3-34",
+          "name_ko": "캠던타운 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m3-35",
+          "name_ko": "블룸즈버리 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-04",
+      "region": "서양·유럽·북미",
+      "section": "1920~1940",
+      "movements": [
+        {
+          "id": "m4-1",
+          "name_ko": "초현실주의",
+          "search_en": "Surrealism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-2",
+          "name_ko": "추상초현실주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-3",
+          "name_ko": "구상초현실주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-4",
+          "name_ko": "신즉물주의",
+          "search_en": "New Objectivity",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-5",
+          "name_ko": "마술적 사실주의",
+          "search_en": "Magic realism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-6",
+          "name_ko": "정밀주의",
+          "search_en": "Precisionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-7",
+          "name_ko": "사회적 사실주의",
+          "search_en": "Social realism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-8",
+          "name_ko": "사회주의 사실주의",
+          "search_en": "Socialist realism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-9",
+          "name_ko": "지역주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-10",
+          "name_ko": "미국 장면회화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-11",
+          "name_ko": "할렘 르네상스",
+          "search_en": "Harlem Renaissance",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-12",
+          "name_ko": "기하학적 추상주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-13",
+          "name_ko": "유기적 추상주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-14",
+          "name_ko": "구체미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-15",
+          "name_ko": "추상창조 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-16",
+          "name_ko": "파리 화파",
+          "search_en": "École de Paris",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-17",
+          "name_ko": "아르데코",
+          "search_en": "Art Deco",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-18",
+          "name_ko": "신낭만주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-19",
+          "name_ko": "서정적 추상주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m4-20",
+          "name_ko": "러시아 아방가르드",
+          "search_en": "Russian avant-garde",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m4-21",
+          "name_ko": "프롤레타리아 미술운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-05",
+      "region": "서양·유럽·북미",
+      "section": "1940~1960",
+      "movements": [
+        {
+          "id": "m5-1",
+          "name_ko": "추상표현주의",
+          "search_en": "Abstract Expressionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-2",
+          "name_ko": "액션 페인팅",
+          "search_en": "Action painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-3",
+          "name_ko": "색면추상",
+          "search_en": "Color field painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-4",
+          "name_ko": "앵포르멜",
+          "search_en": "Art Informel",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-5",
+          "name_ko": "타시즘",
+          "search_en": "Tachisme",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-6",
+          "name_ko": "서정적 추상",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-7",
+          "name_ko": "코브라 그룹",
+          "search_en": "CoBrA (art movement)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-8",
+          "name_ko": "아르 브뤼",
+          "search_en": "Art Brut",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-9",
+          "name_ko": "아웃사이더 아트",
+          "search_en": "Outsider art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-10",
+          "name_ko": "공간주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-11",
+          "name_ko": "하드에지 회화",
+          "search_en": "Hard-edge painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-12",
+          "name_ko": "기하학적 추상",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-13",
+          "name_ko": "네오다다",
+          "search_en": "Neo-Dada",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-14",
+          "name_ko": "아상블라주",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-15",
+          "name_ko": "콤바인 회화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-16",
+          "name_ko": "팝아트",
+          "search_en": "Pop art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m5-17",
+          "name_ko": "영국 팝아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-18",
+          "name_ko": "미국 팝아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-19",
+          "name_ko": "누보 레알리슴",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-20",
+          "name_ko": "키네틱 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-21",
+          "name_ko": "레트리즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-22",
+          "name_ko": "상황주의 인터내셔널",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-23",
+          "name_ko": "빈 환상적 사실주의파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-24",
+          "name_ko": "비트 미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m5-25",
+          "name_ko": "펑크 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-06",
+      "region": "서양·유럽·북미",
+      "section": "1960~1980",
+      "movements": [
+        {
+          "id": "m6-1",
+          "name_ko": "옵아트",
+          "search_en": "Op art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-2",
+          "name_ko": "미니멀리즘",
+          "search_en": "Minimalism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-3",
+          "name_ko": "포스트미니멀리즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-4",
+          "name_ko": "개념미술",
+          "search_en": "Conceptual art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-5",
+          "name_ko": "플럭서스",
+          "search_en": "Fluxus",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-6",
+          "name_ko": "해프닝",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-7",
+          "name_ko": "행위예술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-8",
+          "name_ko": "신체미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-9",
+          "name_ko": "과정미술",
+          "search_en": "Process art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-10",
+          "name_ko": "시스템 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-11",
+          "name_ko": "대지미술",
+          "search_en": "Land art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-12",
+          "name_ko": "환경미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-13",
+          "name_ko": "생태미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-14",
+          "name_ko": "아르테 포베라",
+          "search_en": "Arte Povera",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-15",
+          "name_ko": "내러티브 피규레이션",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-16",
+          "name_ko": "자유구상",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-17",
+          "name_ko": "초현실적 구상주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-18",
+          "name_ko": "극사실주의",
+          "search_en": "Hyperrealism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-19",
+          "name_ko": "포토리얼리즘",
+          "search_en": "Photorealism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-20",
+          "name_ko": "하이퍼리얼리즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-21",
+          "name_ko": "라이트 앤드 스페이스",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-22",
+          "name_ko": "캘리포니아 펑크 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-23",
+          "name_ko": "시카고 이미저스트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-24",
+          "name_ko": "헤어리 후",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-25",
+          "name_ko": "패턴 앤드 데커레이션",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-26",
+          "name_ko": "사이키델릭 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-27",
+          "name_ko": "페미니즘 미술",
+          "search_en": "Feminist art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m6-28",
+          "name_ko": "빈 행동주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-29",
+          "name_ko": "모스크바 개념주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-30",
+          "name_ko": "소츠 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-31",
+          "name_ko": "메일 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m6-32",
+          "name_ko": "이스트빌리지 미술운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-07",
+      "region": "서양·유럽·북미",
+      "section": "1980~2000",
+      "movements": [
+        {
+          "id": "m7-1",
+          "name_ko": "신표현주의",
+          "search_en": "Neo-expressionism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m7-2",
+          "name_ko": "독일 신표현주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-3",
+          "name_ko": "이탈리아 트랜스아방가르드",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-4",
+          "name_ko": "미국 신표현주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-5",
+          "name_ko": "신구상주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-6",
+          "name_ko": "신기하학적 개념주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-7",
+          "name_ko": "네오지오",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-8",
+          "name_ko": "네오팝",
+          "search_en": "Neo-pop",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m7-9",
+          "name_ko": "전유미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-10",
+          "name_ko": "픽처스 제너레이션",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-11",
+          "name_ko": "영국 청년작가 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-12",
+          "name_ko": "포스트모더니즘 미술",
+          "search_en": "Postmodern art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m7-13",
+          "name_ko": "신개념미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-14",
+          "name_ko": "관계미학",
+          "search_en": "Relational aesthetics",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m7-15",
+          "name_ko": "로브로 아트",
+          "search_en": "Lowbrow (art movement)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m7-16",
+          "name_ko": "팝 초현실주의",
+          "search_en": "Pop surrealism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m7-17",
+          "name_ko": "매스초현실주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-18",
+          "name_ko": "스터키즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-19",
+          "name_ko": "리모더니즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-20",
+          "name_ko": "신라이프치히 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-21",
+          "name_ko": "포스트컨셉추얼 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m7-22",
+          "name_ko": "뉴 브리티시 스컬프처",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-08",
+      "region": "서양·유럽·북미",
+      "section": "2000~2026",
+      "movements": [
+        {
+          "id": "m8-1",
+          "name_ko": "포스트인터넷 아트",
+          "search_en": "Post-Internet art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m8-2",
+          "name_ko": "알터모더니즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-3",
+          "name_ko": "메타모더니즘",
+          "search_en": "Metamodernism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m8-4",
+          "name_ko": "네오퓨처리즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-5",
+          "name_ko": "신구상 회화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-6",
+          "name_ko": "현대 초현실주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-7",
+          "name_ko": "포스트그래피티",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-8",
+          "name_ko": "어반 아트",
+          "search_en": "Urban art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m8-9",
+          "name_ko": "스트리트 아트",
+          "search_en": "Street art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m8-10",
+          "name_ko": "뉴 에스테틱",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-11",
+          "name_ko": "아프로퓨처리즘",
+          "search_en": "Afrofuturism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m8-12",
+          "name_ko": "현대 신표현주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-13",
+          "name_ko": "포스트휴머니즘 미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-14",
+          "name_ko": "탈식민주의 미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-15",
+          "name_ko": "사회참여미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-16",
+          "name_ko": "기후예술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-17",
+          "name_ko": "바이오 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-18",
+          "name_ko": "생성예술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-19",
+          "name_ko": "알고리즘 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-20",
+          "name_ko": "글리치 아트",
+          "search_en": "Glitch art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m8-21",
+          "name_ko": "넷아트",
+          "search_en": "Internet art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m8-22",
+          "name_ko": "인공지능 생성미술",
+          "search_en": "AI art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m8-23",
+          "name_ko": "NFT 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m8-24",
+          "name_ko": "온체인 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-09",
+      "region": "동아시아",
+      "section": "한국",
+      "movements": [
+        {
+          "id": "m9-1",
+          "name_ko": "조선 후기 문인화",
+          "search_en": "Korean literati painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m9-2",
+          "name_ko": "남종화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-3",
+          "name_ko": "북종화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-4",
+          "name_ko": "민화",
+          "search_en": "Minhwa",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m9-5",
+          "name_ko": "진경산수화",
+          "search_en": "True-view landscape painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m9-6",
+          "name_ko": "근대 한국화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-7",
+          "name_ko": "근대 동양화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-8",
+          "name_ko": "근대 서양화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-9",
+          "name_ko": "신사실파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-10",
+          "name_ko": "모던아트협회",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-11",
+          "name_ko": "현대미술가협회",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-12",
+          "name_ko": "창작미술협회",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-13",
+          "name_ko": "묵림회",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-14",
+          "name_ko": "한국 앵포르멜",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-15",
+          "name_ko": "한국 추상표현주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-16",
+          "name_ko": "한국 기하학적 추상",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-17",
+          "name_ko": "오리진 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-18",
+          "name_ko": "AG 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-19",
+          "name_ko": "제4집단",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-20",
+          "name_ko": "한국 실험미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-21",
+          "name_ko": "한국 아방가르드",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-22",
+          "name_ko": "단색화",
+          "search_en": "Dansaekhwa",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m9-23",
+          "name_ko": "민중미술",
+          "search_en": "Minjung art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m9-24",
+          "name_ko": "현실과 발언",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-25",
+          "name_ko": "두렁",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-26",
+          "name_ko": "한국 현대 수묵화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-27",
+          "name_ko": "한국 현대 구상미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m9-28",
+          "name_ko": "한국 포스트모더니즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-10",
+      "region": "동아시아",
+      "section": "일본",
+      "movements": [
+        {
+          "id": "m10-1",
+          "name_ko": "우키요에",
+          "search_en": "Ukiyo-e",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-2",
+          "name_ko": "린파",
+          "search_en": "Rinpa school",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-3",
+          "name_ko": "분진가",
+          "search_en": "Bunjinga",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-4",
+          "name_ko": "난가",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-5",
+          "name_ko": "니혼가",
+          "search_en": "Nihonga",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-6",
+          "name_ko": "요가",
+          "search_en": "Yōga (art)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-7",
+          "name_ko": "메이지 서양화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-8",
+          "name_ko": "신판화",
+          "search_en": "Shin-hanga",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-9",
+          "name_ko": "창작판화",
+          "search_en": "Sōsaku-hanga",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-10",
+          "name_ko": "일본 미래파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-11",
+          "name_ko": "일본 다다이즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-12",
+          "name_ko": "마보",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-13",
+          "name_ko": "일본 초현실주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-14",
+          "name_ko": "전위 서도",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-15",
+          "name_ko": "실험공방",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-16",
+          "name_ko": "규슈파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-17",
+          "name_ko": "구타이",
+          "search_en": "Gutai group",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-18",
+          "name_ko": "구체미술협회",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-19",
+          "name_ko": "일본 네오다다",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-20",
+          "name_ko": "네오다다 오거나이저스",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-21",
+          "name_ko": "하이레드 센터",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-22",
+          "name_ko": "모노하",
+          "search_en": "Mono-ha",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-23",
+          "name_ko": "일본 전후 추상미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-24",
+          "name_ko": "일본 현대 전위미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m10-25",
+          "name_ko": "슈퍼플랫",
+          "search_en": "Superflat",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m10-26",
+          "name_ko": "일본 네오팝",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-11",
+      "region": "동아시아",
+      "section": "중국",
+      "movements": [
+        {
+          "id": "m11-1",
+          "name_ko": "청대 문인화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-2",
+          "name_ko": "해상화파",
+          "search_en": "Shanghai School of painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m11-3",
+          "name_ko": "영남화파",
+          "search_en": "Lingnan school of painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m11-4",
+          "name_ko": "경진화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-5",
+          "name_ko": "신국화운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-6",
+          "name_ko": "중국 근대 수묵화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-7",
+          "name_ko": "신목판화운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-8",
+          "name_ko": "중국 혁명미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-9",
+          "name_ko": "사회주의 사실주의",
+          "search_en": "Socialist realism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m11-10",
+          "name_ko": "상흔미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-11",
+          "name_ko": "향토사실주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-12",
+          "name_ko": "무명화회",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-13",
+          "name_ko": "성성화회",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-14",
+          "name_ko": "북방예술군체",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-15",
+          "name_ko": "지서(池社) 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-16",
+          "name_ko": "샤먼 다다",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-17",
+          "name_ko": "85신조류",
+          "search_en": "85 New Wave",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m11-18",
+          "name_ko": "중국 아방가르드",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-19",
+          "name_ko": "정치적 팝아트",
+          "search_en": "Political Pop",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m11-20",
+          "name_ko": "냉소적 사실주의",
+          "search_en": "Cynical realism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m11-21",
+          "name_ko": "중국 현대 추상미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-22",
+          "name_ko": "중국 실험수묵",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-23",
+          "name_ko": "신문인화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m11-24",
+          "name_ko": "중국 현대 개념미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-12",
+      "region": "동아시아",
+      "section": "대만·홍콩",
+      "movements": [
+        {
+          "id": "m12-1",
+          "name_ko": "대만 근대 동양화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m12-2",
+          "name_ko": "대만 근대 서양화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m12-3",
+          "name_ko": "오월화회",
+          "search_en": "Fifth Moon Group",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m12-4",
+          "name_ko": "동방화회",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m12-5",
+          "name_ko": "대만 현대 수묵화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m12-6",
+          "name_ko": "대만 추상미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m12-7",
+          "name_ko": "홍콩 신수묵운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m12-8",
+          "name_ko": "홍콩 현대 실험미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-13",
+      "region": "남아시아·동남아시아",
+      "section": "인도",
+      "movements": [
+        {
+          "id": "m13-1",
+          "name_ko": "컴퍼니 화파",
+          "search_en": "Company painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m13-2",
+          "name_ko": "칼리갓 회화",
+          "search_en": "Kalighat painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m13-3",
+          "name_ko": "벵골화파",
+          "search_en": "Bengal School of Art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m13-4",
+          "name_ko": "샨티니케탄 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m13-5",
+          "name_ko": "봄베이 진보예술가그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m13-6",
+          "name_ko": "그룹 1890",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m13-7",
+          "name_ko": "마드라스 미술운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m13-8",
+          "name_ko": "바로다 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m13-9",
+          "name_ko": "네오탄트라 미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m13-10",
+          "name_ko": "인도 근대 추상주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m13-11",
+          "name_ko": "인도 현대 구상주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m13-12",
+          "name_ko": "인도 현대 세밀화운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-14",
+      "region": "남아시아·동남아시아",
+      "section": "동남아시아",
+      "movements": [
+        {
+          "id": "m14-1",
+          "name_ko": "난양 화파",
+          "search_en": "Nanyang style",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m14-2",
+          "name_ko": "인도네시아 근대미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-3",
+          "name_ko": "인도네시아 신미술운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-4",
+          "name_ko": "족자카르타 화파",
+          "search_en": "Yogyakarta art",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m14-5",
+          "name_ko": "반둥 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-6",
+          "name_ko": "베트남 인도차이나 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-7",
+          "name_ko": "베트남 근대 칠기회화",
+          "search_en": "Vietnamese lacquer painting",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m14-8",
+          "name_ko": "베트남 도이머이 이후 현대미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-9",
+          "name_ko": "필리핀 모더니즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-10",
+          "name_ko": "필리핀 사회적 사실주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-11",
+          "name_ko": "태국 실험미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-12",
+          "name_ko": "태국 현대불교미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-13",
+          "name_ko": "싱가포르 현대미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m14-14",
+          "name_ko": "말레이시아 현대 추상미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-15",
+      "region": "중동·아프리카",
+      "section": "중동·서아시아",
+      "movements": [
+        {
+          "id": "m15-1",
+          "name_ko": "사카하네 화파",
+          "search_en": "Saqqakhaneh movement",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m15-2",
+          "name_ko": "후루피야 운동",
+          "search_en": "Hurufiyya movement",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m15-3",
+          "name_ko": "바그다드 현대미술그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m15-4",
+          "name_ko": "이라크 개척자그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m15-5",
+          "name_ko": "이집트 초현실주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m15-6",
+          "name_ko": "이집트 예술과 자유 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m15-7",
+          "name_ko": "터키 D그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m15-8",
+          "name_ko": "이란 현대 수묵·서예추상",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m15-9",
+          "name_ko": "이슬람 현대 추상주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m15-10",
+          "name_ko": "아랍 모더니즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m15-11",
+          "name_ko": "중동 신표현주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-16",
+      "region": "중동·아프리카",
+      "section": "아프리카",
+      "movements": [
+        {
+          "id": "m16-1",
+          "name_ko": "자리아 미술운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-2",
+          "name_ko": "자연적 종합주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-3",
+          "name_ko": "오쇼그보 화파",
+          "search_en": "Oshogbo art movement",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m16-4",
+          "name_ko": "은수카 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-5",
+          "name_ko": "하르툼 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-6",
+          "name_ko": "다카르 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-7",
+          "name_ko": "카사블랑카 화파",
+          "search_en": "Casablanca Art School",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m16-8",
+          "name_ko": "네그리튀드 미술운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-9",
+          "name_ko": "콩고 대중회화",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-10",
+          "name_ko": "아프리카 현대 표현주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-11",
+          "name_ko": "아프리카 탈식민 미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-12",
+          "name_ko": "아프리카 현대 추상미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m16-13",
+          "name_ko": "아프로퓨처리즘",
+          "search_en": "Afrofuturism",
+          "search_status": "english_term_mapped"
+        }
+      ]
+    },
+    {
+      "id": "group-17",
+      "region": "중남미·오세아니아",
+      "section": "중남미",
+      "movements": [
+        {
+          "id": "m17-1",
+          "name_ko": "멕시코 벽화운동",
+          "search_en": "Mexican muralism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m17-2",
+          "name_ko": "에스트리덴티스모",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-3",
+          "name_ko": "인디헤니스모",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-4",
+          "name_ko": "멕시코 혁명미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-5",
+          "name_ko": "치카노 미술운동",
+          "search_en": "Chicano art movement",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m17-6",
+          "name_ko": "네오멕시카나",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-7",
+          "name_ko": "브라질 모더니즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-8",
+          "name_ko": "인류식인주의 운동",
+          "search_en": "Anthropophagic movement",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m17-9",
+          "name_ko": "구체미술운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-10",
+          "name_ko": "신구체주의",
+          "search_en": "Neoconcretism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m17-11",
+          "name_ko": "루프투라 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-12",
+          "name_ko": "프렌치 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-13",
+          "name_ko": "트로피칼리아",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-14",
+          "name_ko": "보편적 구성주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-15",
+          "name_ko": "마디 운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-16",
+          "name_ko": "구체발명미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-17",
+          "name_ko": "페르셉티스모",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-18",
+          "name_ko": "아르헨티나 신구상주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-19",
+          "name_ko": "라틴아메리카 기하학적 추상",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-20",
+          "name_ko": "라틴아메리카 키네틱 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-21",
+          "name_ko": "라틴아메리카 개념미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m17-22",
+          "name_ko": "라틴아메리카 사회참여미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-18",
+      "region": "중남미·오세아니아",
+      "section": "오세아니아",
+      "movements": [
+        {
+          "id": "m18-1",
+          "name_ko": "하이델베르크 화파",
+          "search_en": "Heidelberg School (Australian art)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m18-2",
+          "name_ko": "오스트레일리아 색조주의",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m18-3",
+          "name_ko": "안티포디언스 그룹",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m18-4",
+          "name_ko": "오스트레일리아 모더니즘",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m18-5",
+          "name_ko": "오스트레일리아 현대 추상미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m18-6",
+          "name_ko": "서부사막 현대 회화운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m18-7",
+          "name_ko": "파푸냐 툴라 화파",
+          "search_en": "Papunya Tula",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m18-8",
+          "name_ko": "오스트레일리아 원주민 현대미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m18-9",
+          "name_ko": "오세아니아 현대 토착미술",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-19",
+      "region": "사진·애니메이션",
+      "section": "사진예술",
+      "movements": [
+        {
+          "id": "m19-1",
+          "name_ko": "회화주의 사진",
+          "search_en": "Pictorialism",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m19-2",
+          "name_ko": "자연주의 사진",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-3",
+          "name_ko": "사진 분리파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-4",
+          "name_ko": "스트레이트 포토그래피",
+          "search_en": "Straight photography",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m19-5",
+          "name_ko": "신시각 사진",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-6",
+          "name_ko": "신즉물주의 사진",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-7",
+          "name_ko": "바우하우스 사진",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-8",
+          "name_ko": "초현실주의 사진",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-9",
+          "name_ko": "모더니즘 사진",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-10",
+          "name_ko": "다큐멘터리 사진운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-11",
+          "name_ko": "인본주의 사진",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-12",
+          "name_ko": "주관주의 사진",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-13",
+          "name_ko": "프로보크 사진운동",
+          "search_en": "Provoke (photography)",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m19-14",
+          "name_ko": "뉴 토포그래픽스",
+          "search_en": "New Topographics",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m19-15",
+          "name_ko": "뒤셀도르프 사진학파",
+          "search_en": "Düsseldorf School of Photography",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m19-16",
+          "name_ko": "밴쿠버 화파",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-17",
+          "name_ko": "개념사진",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m19-18",
+          "name_ko": "포스트포토그래피",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        }
+      ]
+    },
+    {
+      "id": "group-20",
+      "region": "사진·애니메이션",
+      "section": "애니메이션·영상예술",
+      "movements": [
+        {
+          "id": "m20-1",
+          "name_ko": "추상 애니메이션",
+          "search_en": "Abstract animation",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m20-2",
+          "name_ko": "전위 애니메이션",
+          "search_en": "Avant-garde animation",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m20-3",
+          "name_ko": "절대영화운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m20-4",
+          "name_ko": "시각음악운동",
+          "search_en": "Visual music",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m20-5",
+          "name_ko": "실험 애니메이션",
+          "search_en": "Experimental animation",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m20-6",
+          "name_ko": "자그레브 애니메이션 학파",
+          "search_en": "Zagreb School of Animated Films",
+          "search_status": "english_term_mapped"
+        },
+        {
+          "id": "m20-7",
+          "name_ko": "체코 인형 애니메이션",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m20-8",
+          "name_ko": "독립 애니메이션 운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m20-9",
+          "name_ko": "비디오 아트",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m20-10",
+          "name_ko": "확장영화운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m20-11",
+          "name_ko": "구조영화운동",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m20-12",
+          "name_ko": "디지털 실험 애니메이션",
+          "search_en": null,
+          "search_status": "korean_term_only_unverified"
+        },
+        {
+          "id": "m20-13",
+          "name_ko": "생성형 영상예술",
+          "search_en": "Generative video art",
+          "search_status": "english_term_mapped"
+        }
+      ]
+    }
+  ]
+}
