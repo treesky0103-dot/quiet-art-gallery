@@ -1,0 +1,171 @@
+name: Build collector v2 2061 unchanged art APK with adaptive queue and 8GiB cache
+on:
+  push:
+    paths:
+      - '.github/workflows/build-adaptive-collector-v2-2061-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: adaptive-collector-v2-build-2061
+  cancel-in-progress: false
+jobs:
+  build-portrait30-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout isolated research source (do not mutate existing production APK)
+        uses: actions/checkout@v4
+        with:
+          ref: feat-v2-adaptive-collector-8gb-20261114
+          persist-credentials: true
+      - name: Install Python 3.12 and image decoder
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Pillow for real images
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Check syntax and portrait30 program invariants
+        run: |
+          python -m py_compile scripts/build_886_adapted_deck.py scripts/append_photo_animation_deck.py scripts/restore_verified_worldart_2061.py
+          node --check web/app.js
+          node --check web/core.js
+          cmp web/app.js android-app/app/src/main/assets/app.js
+          cmp web/core.js android-app/app/src/main/assets/core.js
+          cmp web/index.html android-app/app/src/main/assets/index.html
+          cmp web/style.css android-app/app/src/main/assets/style.css
+          grep -q 'const eligible=C.shuffledCopy' web/app.js
+          grep -q 'artworkYearLabel' web/core.js
+          grep -q "collectorEveryMs:1800000" web/app.js
+          grep -q "PortraitAdapter.convert" android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "versionName '1.8.1-collectorv2'" android-app/app/build.gradle
+          node --test tests/*.test.cjs
+      - name: Install Java 17, SDK 35 and Gradle 8.9
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Use preinstalled runner Android SDK without obsolete tools package
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager=""
+          if test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; then
+            sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          else
+            sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          fi
+          test -n "$sdkmanager"
+          printf 'yes\n' | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Download exactly published 2061-art v1.8.0 APK (immutable baseline)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-global-397movements-50sources-v180-20261114 \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --pattern "QuietArtGallery-CollectorV2-2061-v181.apk" --clobber
+          test -s QuietArtGallery-CollectorV2-2061-v181.apk
+      - name: Restore and independently SHA-verify all 2061 JPEGs and catalog metadata
+        timeout-minutes: 14
+        run: python -u scripts/restore_verified_worldart_2061.py
+      - name: Reopen every original image, compare original APK bytes and validate persistent cache safety
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json,hashlib,zipfile
+          root=Path('android-app/app/src/main/assets')
+          rows=json.loads((root/'offline-deck.json').read_text(encoding='utf-8'))
+          rep=json.loads(Path('build-collector-v2-report.json').read_text(encoding='utf-8'))
+          assert len(rows)==rep['total_embedded_artworks']==2061
+          assert rep['images_added_during_this_code_upgrade']==0
+          assert rep['collector_goal_per_30_minutes']==60
+          assert not rep['collector_goals_are_guarantees']
+          assert rep['movement_english_search_aliases']==396
+          assert rep['limits_local_image_cache_bytes']==8*1024**3
+          assert rep['reserves_free_bytes']==1536*1024**2
+          assert len({x['key'] for x in rows})==2061
+          assert len({x['derivedSHA256'] for x in rows})==2061
+          assert len({x['sourceSHA256'] for x in rows})==2061
+          with zipfile.ZipFile('QuietArtGallery-CollectorV2-2061-v181.apk') as original:
+            old=json.loads(original.read('assets/offline-deck.json'))
+            assert rows==old
+            for i,x in enumerate(rows):
+              path='offline/pack-%04d.jpg'%i
+              fp=root/path
+              raw=fp.read_bytes()
+              assert raw==original.read('assets/'+path),i
+              assert hashlib.sha256(raw).hexdigest()==x['derivedSHA256']
+              with Image.open(fp) as img:
+                img.load()
+                assert img.format=='JPEG' and img.size==(1000,1667)
+          for path in ('app.js','core.js','index.html'):
+            assert (root/path).read_bytes()==Path('web/'+path).read_bytes()
+          print('V2_EXACT_ALL_2061_PRESERVED_AND_ALL_JPEGS_REOPENED')
+          print('COLLECTOR_V2_CONFIGURATION_POLICY_VERIFIED',rep['collector_goal_per_30_minutes'],
+                'target_per_half_hour',rep['limits_local_image_cache_bytes'],
+                'cache_limit_bytes')
+          PY
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build actual installable debug APK
+        working-directory: android-app
+        timeout-minutes: 15
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Inspect final installable APK ZIP, image count, native code and registers
+        run: |
+          python - <<'PY'
+          import zipfile,hashlib,json
+          from pathlib import Path
+          src=Path('android-app/app/build/outputs/apk/debug/app-debug.apk')
+          assert src.is_file() and src.stat().st_size>500_000_000
+          with zipfile.ZipFile(src) as apk:
+            assert apk.testzip() is None
+            rows=json.loads(apk.read('assets/offline-deck.json'))
+            assert len(rows)==2061
+            assert len(set(x['key'] for x in rows))==2061
+            assert apk.read('assets/app.js')==Path('web/app.js').read_bytes()
+            assert apk.read('assets/index.html')==Path('web/index.html').read_bytes()
+            assert apk.read('assets/art-movements.json')==Path('android-app/app/src/main/assets/art-movements.json').read_bytes()
+            assert apk.read('assets/art-providers.json')==Path('android-app/app/src/main/assets/art-providers.json').read_bytes()
+            names=set(apk.namelist())
+            assert all('assets/'+x['offlineAsset'] in names for x in rows)
+            print('APK_V2_ALL_2061_JPEGS_AND_ADAPTIVE_ENGINE_FILES_PRESENT',src.stat().st_size)
+          dest=Path('QuietArtGallery-CollectorV2-2061-v181.apk')
+          dest.write_bytes(src.read_bytes())
+          sha=hashlib.sha256(dest.read_bytes()).hexdigest()
+          Path('apk-sha256.txt').write_text(sha+'  '+dest.name+'\n')
+          result=json.loads(Path('build-collector-v2-report.json').read_text(encoding='utf-8'))
+          result.update({'apk_name':dest.name,'apk_sha256':sha,'apk_bytes':dest.stat().st_size})
+          Path('verified-release-report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+      - name: Release APK without metered Actions artifact uploads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="quiet-art-adaptive-collector-v2-2061-20261114"
+          cat > /tmp/release-notes.md <<'NOTE'
+          고요한 미술관 v1.8.1 · 수집 엔진 v2. v1.8.0에 내장된 2061개 원본 JPEG를 그대로 가져오며 각 이미지 SHA256, 픽셀 디코딩, APK 내부 파일 보존을 검사했습니다. 이번 빌드에서 신규 이미지를 추가하지 않았으므로 내장 작품 수는 여전히 2061점입니다.
+          기존 30분마다 사전검증 최대 6점 제한 대신, 앱이 전면에서 실행될 때 1분 간격 적응형 수집 대기열을 사용합니다. 30분 60점 / 하루 2880점은 목표값으로 실제 도달 수량을 보장하거나 검증한 수치가 아닙니다.
+          429 및 503의 Retry-After를 초 단위 또는 RFC1123 날짜로 판독해 공급원 호스트 전체에 쿨다운을 적용하며, 수집 후보 재시도 기록과 성공/실패 현황을 앱 저장소에 보존합니다. 수동 갱신도 쿨다운을 무시하지 않습니다.
+          클리블랜드 공식 CC0 회화·드로잉·판화·사진 API와 기존 시카고·메트로폴리탄·Commons/Openverse 검색을 유지하며, 397개 사조 중 396개에 영어 보조 검색어를 추가했습니다. 보조 명칭은 해당 작품의 실제 사조 검증을 의미하지 않습니다.
+          앱 전용 영구 파일 저장소에 최대 8GiB 이미지 캐시를 보관하고 한도/기기 여유 공간 부족 시 7GiB 지향으로 LRU를 정리합니다. 최소 1.5GiB 여유 공간 보호, 감상 이력 독립 IndexedDB 90일 중복 차단, 30초 전환, 모든 정지 매체 무작위 전시는 유지합니다.
+          앱 종료·화면 비활성·절전 중의 수집은 보장하지 않습니다. 60/30m 처리율, 90일 259200점 확보, Galaxy Tab A7에서의 실제 장시간 안정성은 미검증입니다. 무료 기능만 사용합니다.
+          v1.8.0과 별도 앱 ID(com.gallery.kiosk.collectorv2)입니다. 기존 앱 감상 기록은 앱의 CSV 내보내기/가져오기로만 이전할 수 있습니다.
+          NOTE
+          NOTE
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" QuietArtGallery-CollectorV2-2061-v181.apk verified-release-report.json apk-sha256.txt --clobber
+          else
+            gh release create "$TAG" QuietArtGallery-CollectorV2-2061-v181.apk verified-release-report.json apk-sha256.txt \
+              --target feat-v2-adaptive-collector-8gb-20261114 \
+              --title "고요한 미술관 v1.8.1 · 수집 엔진 v2 · 2061점 보존" \
+              --notes-file /tmp/release-notes.md
+          fi
+          gh release view "$TAG" --json url,assets --jq '{url:.url,assets:[.assets[].name]}'
