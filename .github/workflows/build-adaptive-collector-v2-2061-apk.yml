@@ -66,8 +66,8 @@ jobs:
         run: |
           gh release download quiet-art-global-397movements-50sources-v180-20261114 \
             --repo treesky0103-dot/quiet-art-gallery \
-            --pattern "QuietArtGallery-CollectorV2-2061-v181.apk" --clobber
-          test -s QuietArtGallery-CollectorV2-2061-v181.apk
+            --pattern "QuietArtGallery-397Movements-50Sources-v180.apk" --clobber
+          test -s QuietArtGallery-397Movements-50Sources-v180.apk
       - name: Restore and independently SHA-verify all 2061 JPEGs and catalog metadata
         timeout-minutes: 14
         run: python -u scripts/restore_verified_worldart_2061.py
@@ -90,7 +90,7 @@ jobs:
           assert len({x['key'] for x in rows})==2061
           assert len({x['derivedSHA256'] for x in rows})==2061
           assert len({x['sourceSHA256'] for x in rows})==2061
-          with zipfile.ZipFile('QuietArtGallery-CollectorV2-2061-v181.apk') as original:
+          with zipfile.ZipFile('QuietArtGallery-397Movements-50Sources-v180.apk') as original:
             old=json.loads(original.read('assets/offline-deck.json'))
             assert rows==old
             for i,x in enumerate(rows):
