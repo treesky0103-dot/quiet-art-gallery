@@ -1,0 +1,238 @@
+{
+  "project": "Quiet Art Gallery - expanding public discovery not all world servers",
+  "run_at": "2026-11-14",
+  "total_provider_records": 24,
+  "guaranteed_all_servers": false,
+  "source_registry": [
+    {
+      "name": "Wikimedia Commons",
+      "url": "https://commons.wikimedia.org/w/api.php",
+      "scope": "cross-institution art images",
+      "verified_connection": "verified_but_429_after_requests",
+      "rights_policy": "per-file CC0/PD/CC license",
+      "access": "no-key",
+      "actual_file_evidence": "actual-file 17 new"
+    },
+    {
+      "name": "Openverse",
+      "url": "https://api.openverse.org/v1/images/",
+      "scope": "community creators across websites",
+      "verified_connection": "HTTP401_HTTP429_in_GitHub_run",
+      "rights_policy": "source license per media",
+      "access": "anonymous sometimes limited",
+      "actual_file_evidence": "actual-file zero in current test"
+    },
+    {
+      "name": "Library of Congress",
+      "url": "https://www.loc.gov/photos/?fo=json",
+      "scope": "US government library prints and drawings",
+      "verified_connection": "HTTP429_in_GitHub_run",
+      "rights_policy": "rights advisory per item",
+      "access": "no-key",
+      "actual_file_evidence": "actual-file zero current test"
+    },
+    {
+      "name": "Internet Archive",
+      "url": "https://archive.org/advancedsearch.php",
+      "scope": "public web image archives and illustrations",
+      "verified_connection": "metadata_live_image_0",
+      "rights_policy": "metadata rights/licenseurl per item",
+      "access": "no-key",
+      "actual_file_evidence": "42 metadata, 0 saved JPEG"
+    },
+    {
+      "name": "Getty Open Content",
+      "url": "https://www.getty.edu/projects/open-content-program/",
+      "scope": "museum + scholarly archive artworks",
+      "verified_connection": "documented_not_newly_sampled",
+      "rights_policy": "per image CC0 exception only",
+      "access": "no-key",
+      "actual_file_evidence": "source catalog not art files"
+    },
+    {
+      "name": "Getty Museum LinkedArt",
+      "url": "https://data.getty.edu/museum/collection/docs/",
+      "scope": "Getty artwork and IIIF metadata",
+      "verified_connection": "documented_not_newly_sampled",
+      "rights_policy": "JSON per image right under subject_to",
+      "access": "no-key",
+      "actual_file_evidence": "no files current turn"
+    },
+    {
+      "name": "Smithsonian Open Access",
+      "url": "https://www.si.edu/openaccess",
+      "scope": "US museums and archives",
+      "verified_connection": "previously_verified",
+      "rights_policy": "CC0 for eligible images",
+      "access": "public S3 metadata",
+      "actual_file_evidence": "prior artifact"
+    },
+    {
+      "name": "Wellcome Collection",
+      "url": "https://api.wellcomecollection.org/catalogue/v2/",
+      "scope": "UK medical, scientific, history and prints archive",
+      "verified_connection": "previously_verified",
+      "rights_policy": "image-level license",
+      "access": "no-key",
+      "actual_file_evidence": "prior artifact"
+    },
+    {
+      "name": "Rijksmuseum Data",
+      "url": "https://data.rijksmuseum.nl/",
+      "scope": "Dutch museum artworks & collection index",
+      "verified_connection": "previously_verified",
+      "rights_policy": "per work rights",
+      "access": "no-key",
+      "actual_file_evidence": "prior artifact"
+    },
+    {
+      "name": "SMK Open",
+      "url": "https://api.smk.dk/api/v1/art/search/",
+      "scope": "Denmark national art and print collections",
+      "verified_connection": "previously_verified",
+      "rights_policy": "public_domain flag",
+      "access": "no-key",
+      "actual_file_evidence": "prior artifact"
+    },
+    {
+      "name": "Cleveland Museum Open Access",
+      "url": "https://openaccess-api.clevelandart.org/api/artworks/",
+      "scope": "US museum painting/drawing/prints",
+      "verified_connection": "previously_verified",
+      "rights_policy": "share_license_status CC0",
+      "access": "no-key",
+      "actual_file_evidence": "prior artifact"
+    },
+    {
+      "name": "Metropolitan Museum API",
+      "url": "https://collectionapi.metmuseum.org/public/collection/v1/",
+      "scope": "US museum and collections",
+      "verified_connection": "previously_verified",
+      "rights_policy": "isPublicDomain flag",
+      "access": "no-key",
+      "actual_file_evidence": "prior artifact"
+    },
+    {
+      "name": "Art Institute of Chicago",
+      "url": "https://api.artic.edu/api/v1/artworks",
+      "scope": "US museum artworks",
+      "verified_connection": "metadata_verified_IIIF_HTTP403",
+      "rights_policy": "is_public_domain flag",
+      "access": "no-key",
+      "actual_file_evidence": "source files 0 in sample"
+    },
+    {
+      "name": "National Gallery of Art (US) Data",
+      "url": "https://github.com/NationalGalleryOfArt/opendata",
+      "scope": "US paintings and prints",
+      "verified_connection": "previously_verified",
+      "rights_policy": "openaccess image field",
+      "access": "no-key",
+      "actual_file_evidence": "prior artifact"
+    },
+    {
+      "name": "Yale Center for British Art",
+      "url": "https://harvester-bl.britishart.yale.edu/oaicatmuseum/OAIHandler",
+      "scope": "British paintings and works on paper",
+      "verified_connection": "previously_verified",
+      "rights_policy": "CC0 per LIDO resource",
+      "access": "no-key",
+      "actual_file_evidence": "prior artifact"
+    },
+    {
+      "name": "Victoria and Albert Museum",
+      "url": "https://api.vam.ac.uk/",
+      "scope": "decorative and visual arts",
+      "verified_connection": "documented_only",
+      "rights_policy": "per-item rights",
+      "access": "no-key to check",
+      "actual_file_evidence": "no files"
+    },
+    {
+      "name": "Harvard Art Museums",
+      "url": "https://harvardartmuseums.org/collections/api",
+      "scope": "university art collections",
+      "verified_connection": "not_connected_key_required",
+      "rights_policy": "per-item rights",
+      "access": "API key",
+      "actual_file_evidence": "no files"
+    },
+    {
+      "name": "Europeana",
+      "url": "https://api.europeana.eu/en",
+      "scope": "Europe-wide digital cultural institutions",
+      "verified_connection": "not_connected_key_required",
+      "rights_policy": "per-record rights",
+      "access": "API key",
+      "actual_file_evidence": "no files"
+    },
+    {
+      "name": "DPLA",
+      "url": "https://pro.dp.la/developers/api-codex",
+      "scope": "US digital public library network",
+      "verified_connection": "not_connected_key_required",
+      "rights_policy": "per-item rights",
+      "access": "API key",
+      "actual_file_evidence": "no files"
+    },
+    {
+      "name": "DigitalNZ",
+      "url": "https://digitalnz.org/",
+      "scope": "New Zealand galleries and libraries",
+      "verified_connection": "not_connected_key_required",
+      "rights_policy": "per-item rights",
+      "access": "API key",
+      "actual_file_evidence": "no files"
+    },
+    {
+      "name": "BnF Gallica",
+      "url": "https://gallica.bnf.fr/",
+      "scope": "French national digital library prints & illustrations",
+      "verified_connection": "discovery_candidate_not_connected",
+      "rights_policy": "image/item rights separate",
+      "access": "not checked",
+      "actual_file_evidence": "no files"
+    },
+    {
+      "name": "British Library Wikimedia",
+      "url": "https://commons.wikimedia.org/",
+      "scope": "book illustrations indexed on Commons",
+      "verified_connection": "aggregated_candidates_only",
+      "rights_policy": "per-file open license",
+      "access": "Commons",
+      "actual_file_evidence": "no direct BL image integration"
+    },
+    {
+      "name": "Flickr Commons",
+      "url": "https://www.flickr.com/commons",
+      "scope": "global creators, libraries, institutional uploads",
+      "verified_connection": "only_via_openverse_search_candidate",
+      "rights_policy": "source vs underlying-work rights differ",
+      "access": "Flickr direct API may need key",
+      "actual_file_evidence": "no independent downloads"
+    },
+    {
+      "name": "Trove National Library of Australia",
+      "url": "https://trove.nla.gov.au/",
+      "scope": "Australia cultural archives",
+      "verified_connection": "discovery_candidate_not_connected",
+      "rights_policy": "per-item rights",
+      "access": "key may be required",
+      "actual_file_evidence": "no files"
+    }
+  ],
+  "warnings": [
+    "Public endpoint discovery is not remote scanning of all servers.",
+    "HTTP 401/429 and website restrictions must be respected.",
+    "Unlicensed artwork can be cataloged but not assumed reusable.",
+    "API/museum counts are not downloaded artwork files.",
+    "No fee/card services enabled."
+  ],
+  "counts": {
+    "last_dated_verified": 675,
+    "new_commons_byteverified_era_unknown": 17,
+    "unique_file_sha256_across_all": 692,
+    "total_target": 259200,
+    "files_safely_preserved_on_tablet": 0
+  }
+}
