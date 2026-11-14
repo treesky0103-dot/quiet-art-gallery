@@ -779,11 +779,7 @@
        typeof window.GalleryAndroid.discardDisplayedImage==='function' &&
        !previous.art.offlineAsset){
       Promise.resolve(previousSeenWrite).then(persisted=>{
-        if(!persisted)return;
-        // Old artwork is no longer visible and cannot be the prefetched next.
-        if(state.current && (state.current.art.key===previous.art.key ||
-           state.current.art.image===previous.art.image))return;
-        if(state.prepared && state.prepared.art.image===previous.art.image)return;
+        if(!C.canDiscardDisplayedCache(previous,state.current,state.prepared,persisted))return;
         const removed=window.GalleryAndroid.discardDisplayedImage(previous.art.image);
         if(removed===1){
           state.discardedCount++;
