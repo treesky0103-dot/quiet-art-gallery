@@ -11,9 +11,9 @@ function dashboard(native){
  const start=app.indexOf('  function nativeCacheStats(');
  const end=app.indexOf('  function updateInfo()',start);
  assert(start>0 && end>start,'Dashboard functions available');
- const ids=['cache-progress','cache-progress-fill','cache-photo-count','cache-volume','cache-percent','cache-apk-count','cache-detail'];
+ const ids=['cache-progress','cache-progress-fill','cache-photo-count','cache-volume','cache-percent','cache-apk-count','cache-detail','cache-unshown-count','cache-shown-count','cache-eligible-count','cache-available-days','cache-estimate-note'];
  const els=Object.fromEntries(ids.map(id=>[id,{textContent:'',style:{width:''},attrs:{},setAttribute(k,v){this.attrs[k]=v}}]));
- const state={cacheSnapshotAt:0,cacheSnapshot:null,offlineManifestCount:2692,collectorStopReason:''};
+ const state={cacheSnapshotAt:0,cacheSnapshot:null,offlineManifestCount:2692,collectorStopReason:'',downloadedKeys:new Set(['a','b']),offlineUnseenReady:120};
  const window=native?{GalleryAndroid:{cacheStats:()=>JSON.stringify(native)}}:{};
  const scope={state,window,el:id=>els[id],C:{prettyBytes:v=>String(v)},Date,Math,Number};
  vm.runInNewContext(app.slice(start,end)+'\nthis.dashboard={nativeCacheStats,renderCacheProgress};',scope);
@@ -24,13 +24,17 @@ function dashboard(native){
 test('settings bar reports downloaded FILE count and true cache bytes, NOT artwork metadata counts',()=>{
  const gib=1024**3;
  const {els}=dashboard({bytes:2*gib,limitBytes:8*gib,imageFiles:3719,
-    freeBytes:8*gib,reservedBytes:1.5*gib,purgedFiles:11,purgedBytes:4000000});
+    freeBytes:8*gib,reservedBytes:1.5*gib,purgedFiles:11,purgedBytes:4000000,unshownImageFiles:2800,shownCachedFiles:919});
  assert.equal(els['cache-photo-count'].textContent,'3,719점');
  assert.equal(els['cache-volume'].textContent,'2.00 / 8.00 GiB');
  assert.equal(els['cache-percent'].textContent,'25.0%');
  assert.equal(els['cache-progress'].attrs['aria-valuenow'],'25.0');
  assert.equal(els['cache-progress-fill'].style.width,'25.00%');
  assert.equal(els['cache-apk-count'].textContent,'2,692점');
+ assert.equal(els['cache-unshown-count'].textContent,'2,800점');
+ assert.equal(els['cache-shown-count'].textContent,'919점');
+ assert.equal(els['cache-eligible-count'].textContent,'2점');
+ assert.equal(els['cache-available-days'].textContent,'0일 2시간 이하');
 });
 
 test('settings bar does not invent 8GiB usage in browsers without native filesystem',()=>{
