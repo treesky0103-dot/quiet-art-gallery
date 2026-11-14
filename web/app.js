@@ -11,7 +11,7 @@
   const state = {
     collectorStopReason:'', offlineManifestCount:0, cacheSnapshot:null, cacheSnapshotAt:0,
     downloadedKeys:new Set(),downloadedVisualHashes:new Map(),downloadedURLs:new Set(),
-    inflightVisualHashes:new Map(),offlineUnseenReady:0,inventoryUpdatedAt:0,networkOnline:true,
+    inflightVisualHashes:new Map(),offlineUnseenReady:0,inventoryUpdatedAt:0,networkOnline:true,collectorRejectedKeys:new Set(),
     db:null,pool:[],pendingKeys:new Set(), prepared:null,current:null,currentNode:ui.b,
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
@@ -611,7 +611,7 @@
     }catch(e){state.lastErr='수집 대기열 복원 실패: '+String(e.message||e);}
   }
   async function collectorPump(){
-    if(state.collectorRunning||!state.db||document.hidden)return;
+    if(state.collectorRunning||!state.db||document.hidden||!state.networkOnline)return;
     const now=Date.now();
     if(state.collectorLastAt&&now-state.collectorLastAt<CONFIG.collectorTickMs-3000)return;
     state.collectorRunning=true;state.collectorLastAt=now;
@@ -635,7 +635,7 @@
         }
       }
       state.collectorStopReason='';
-      let ready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&
+      let ready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&!state.downloadedKeys.has(a.key)&&!state.collectorRejectedKeys.has(a.key)&&!state.downloadedKeys.has(a.key)&&!state.collectorRejectedKeys.has(a.key)&&
         !seenInMemory(a,null)&&!(state.collectorRetry[a.key]&&state.collectorRetry[a.key].nextAt>now));
       // Keep archived downloaded candidates on disk while allowing discovery
       // to continue if the 7200-item in-memory queue becomes entirely staged.
@@ -655,35 +655,78 @@
           !seenInMemory(a,null)&&!(state.collectorRetry[a.key]&&state.collectorRetry[a.key].nextAt>Date.now()));
       }
       if(!state.prepared&&!state.preparing&&state.pool.length)await prepareNext();
-      let downloaded=0,attempted=0;
-      for(const art of C.shuffledCopy(ready)){
-        if(downloaded>=quota||attempted>=CONFIG.collectorMaxAttemptsPerTick)break;
-        if(state.prefetchedKeys.has(art.key)||seenInMemory(art,null))continue;
+      // JS requests overlap across independent URLs, but Android allows only
+      // three simultaneous native transfers and serializes same-URL writes.
+      // No bypass of source cooldowns, Retry-After or the 1.5GiB free reserve.
+      let downloaded=0,attempted=0,queueIndex=0;
+      const candidates=C.shuffledCopy(ready);
+      async function collectOne(art){
+        if(state.downloadedKeys.has(art.key)||state.collectorRejectedKeys.has(art.key)||
+           state.prefetchedKeys.has(art.key)||seenInMemory(art,null))return;
         const old=state.collectorRetry[art.key];
-        if(old&&old.nextAt>Date.now())continue;
+        if(old&&old.nextAt>Date.now())return;
         attempted++;
+        let reserved=false;
         try{
           const already=await dbGet('downloaded',art.key);
-          if(already){state.prefetchedKeys.add(art.key);continue;}
-          await loadImage(art);
-          // Count a download only after its metadata is durably indexed.
-          await dbPutMany('downloaded',[{key:art.key,art,when:Date.now()}]);
+          if(already){
+            state.downloadedKeys.add(art.key);
+            state.prefetchedKeys.add(art.key);
+            return;
+          }
+          if(state.downloadedURLs.has(art.image)){
+            state.collectorRejectedKeys.add(art.key);
+            state.dedupBlocked++;
+            return;
+          }
+          const loaded=await loadImage(art);
+          if(!cachedArtworkExists(art))throw Error('실제 캐시 파일이 저장되지 않음');
+          if((await seenRecently(art,loaded.visualHash))||
+             similarDownloadedImage(loaded.visualHash,art.key)){
+            state.collectorRejectedKeys.add(art.key);
+            state.dedupBlocked++;
+            if(!state.downloadedURLs.has(art.image))discardRejectedArtwork(art);
+            return;
+          }
+          if(loaded.visualHash){
+            state.inflightVisualHashes.set(art.key,loaded.visualHash);
+            reserved=true;
+          }
+          await dbPutMany('downloaded',[{key:art.key,art,visualHash:loaded.visualHash,when:Date.now()}]);
+          state.downloadedKeys.add(art.key);
+          state.downloadedURLs.add(art.image);
+          if(loaded.visualHash)state.downloadedVisualHashes.set(art.key,loaded.visualHash);
           state.prefetchedKeys.add(art.key);
           delete state.collectorRetry[art.key];
           downloaded++;state.collectorSuccess++;state.collectorWindowSaved++;state.collectorDaySaved++;
         }catch(e){
           const info=collectorErrorInfo(e),attempts=Math.min(10,Number(old&&old.attempts||0)+1);
-          state.collectorRetry[art.key]={attempts,nextAt:Date.now()+collectorDelay(info.status,attempts,info.retryMs)};
+          state.collectorRetry[art.key]={
+            attempts,nextAt:Date.now()+collectorDelay(info.status,attempts,info.retryMs),
+            network:info.status===0
+          };
           state.collectorErrors++;
           if(info.status===429)state.collectorThrottled++;
           state.lastErr='수집 재시도 대기: '+String(e&&e.message||e);
+        }finally{
+          if(reserved)state.inflightVisualHashes.delete(art.key);
         }
       }
+      async function worker(){
+        while(queueIndex<candidates.length &&
+              downloaded<quota&&attempted<CONFIG.collectorMaxAttemptsPerTick){
+          const idx=queueIndex++;
+          await collectOne(candidates[idx]);
+        }
+      }
+      await Promise.all(Array.from({length:Math.min(3,candidates.length)},()=>worker()));
+      if(state.collectorRejectedKeys.size>6000)
+        state.collectorRejectedKeys=new Set([...state.collectorRejectedKeys].slice(-3000));
       if(state.prefetchedKeys.size>1500){
         const live=new Set(state.pool.map(a=>a.key));
         state.prefetchedKeys=new Set([...state.prefetchedKeys].filter(k=>live.has(k)).slice(-1000));
       }
-      const unready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key));
+      const unready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&!state.downloadedKeys.has(a.key));
       const staged=state.pool.filter(a=>state.prefetchedKeys.has(a.key));
       await dbPutMany('settings',[{key:'candidatePool',value:
         unready.slice(0,Math.min(800,CONFIG.savedCandidateLimit))
@@ -902,6 +945,9 @@
     // Persist in the background: storage latency may not delay a visual transition.
     recordSeen(show).then(async()=>{
       await dbDelete('downloaded',show.art.key);
+      state.downloadedKeys.delete(show.art.key);
+      state.downloadedVisualHashes.delete(show.art.key);
+      state.downloadedURLs.delete(show.art.image);
       await dbPutMany('settings',[{key:'lastArtwork',value:show.art}]);
     }).catch(e=>{
       state.lastErr='감상 기록 저장 실패: '+String(e.message||e);
@@ -1379,6 +1425,20 @@
     });
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings(); if(e.key==='ArrowRight'&&ui.settings.hidden)next(); if(e.key===' '&&ui.settings.hidden){e.preventDefault();el('toggle-pause').click();}});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(state.playing)startClock();refreshForDay().catch(()=>{});collectorPump().catch(()=>{});}});
+    window.addEventListener('offline',()=>{
+      state.networkOnline=false;
+      state.collectorStopReason='인터넷 연결 없음 · 저장된 작품으로 계속 전시';
+      updateInfo();
+    });
+    window.addEventListener('online',()=>{
+      state.networkOnline=true;state.collectorLastAt=0;
+      // Retry connection failures, never shorten a provider's 429/503 cooldown.
+      state.collectorRetry=Object.fromEntries(Object.entries(state.collectorRetry)
+        .filter(([_,entry])=>!entry.network));
+      state.collectorStopReason='';
+      if(!document.hidden){fillPool(CONFIG.targetPool).catch(()=>{});collectorPump().catch(()=>{});}
+      updateInfo();
+    });
   }
   async function init(){
     wire();
