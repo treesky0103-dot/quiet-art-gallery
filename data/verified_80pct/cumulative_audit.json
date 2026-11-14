@@ -1,0 +1,35 @@
+{
+  "as_of_utc": "2026-11-14T04:41:33.225133+00:00",
+  "target": {
+    "modern": 207360,
+    "older": 51840,
+    "all": 259200
+  },
+  "reported_input_files": 439,
+  "exact_duplicate_source_ids_removed": 0,
+  "exact_duplicate_image_hashes_removed": 0,
+  "unique_verified_file_and_source_id_count": 439,
+  "verified_1800plus": 341,
+  "verified_older": 98,
+  "actual_modern_share_percent": 77.6765,
+  "missing_1800plus": 207019,
+  "missing_older": 51742,
+  "missing_total": 258761,
+  "suspected_visual_duplicate_pairs_requiring_review": 0,
+  "visual_pairs_first_30": [],
+  "duplicate_ids_sample": [],
+  "duplicate_image_hashes_sample": [],
+  "all_259200_acquired": false,
+  "evidence": {
+    "baseline": "GitHub Actions 43555200749",
+    "four_batches": "GitHub Actions 43557017166",
+    "national_gallery_of_art": "GitHub Actions 43557443707"
+  },
+  "limitations": [
+    "Actual JPEG bytes remain in expiring GitHub Actions artifacts, not in this repository manifest.",
+    "NGA museum creation-year ranges can use artist lifespans; independent per-artwork era audit incomplete.",
+    "Perceptual similarity flags are not a conclusive same-work identity test.",
+    "All 259200 durable local image files have NOT been acquired.",
+    "Tablet APK unchanged; 90-day gap-free 30-sec playback NOT verified."
+  ]
+}
