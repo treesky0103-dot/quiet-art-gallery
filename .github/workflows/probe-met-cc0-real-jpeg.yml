@@ -1,0 +1,58 @@
+name: Met museum actual original CC0 image bytes and 1800-era verification
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_met_cc0_real_image_bytes.py
+      - .github/workflows/probe-met-cc0-real-jpeg.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow decoder
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Load Met official full CC0 candidate index from completed source audit
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43562089661
+          name: metropolitan-museum-2d-cc0-modern-and-older-metadata-census
+          path: research-input/met
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Reverify real Met API images and uncropped JPEG file bytes
+        run: |
+          python -m py_compile scripts/probe_met_cc0_real_image_bytes.py
+          python -u scripts/probe_met_cc0_real_image_bytes.py
+      - name: Independently check saved file bytes
+        run: |
+          python - <<'PY'
+          import hashlib,json,io
+          from pathlib import Path
+          from PIL import Image
+          data=json.loads(Path('audit-met-real-art/report.json').read_text())
+          assert data['all_259200_acquired'] is False
+          assert data['actual_downloaded_count']==len(data['actual_downloaded'])
+          for r in data['actual_downloaded']:
+            b=Path(r['saved_file']).read_bytes()
+            assert hashlib.sha256(b).hexdigest()==r['sha256']
+            im=Image.open(io.BytesIO(b));im.load()
+            assert im.width>=1000 and im.height>=1400 and im.width<im.height
+            assert min((im.width/im.height)/.625,.625/(im.width/im.height))>=.75
+          print('Real Met museum image files verified:',len(data['actual_downloaded']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: metropolitan-original-cc0-iiif-jpeg-portrait-art-proof
+          path: audit-met-real-art/
+          if-no-files-found: warn
+          retention-days: 3
