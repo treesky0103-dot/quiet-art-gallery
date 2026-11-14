@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:120000, maxPrefetchPerPump:3, savedCandidateLimit:180});
+  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:120000, maxPrefetchPerPump:6, savedCandidateLimit:180});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -461,7 +461,7 @@
       if(!state.prepared&&!state.preparing)await prepareNext();
       let downloaded=0,attempted=0;
       for(const art of state.pool){
-        if(downloaded>=CONFIG.maxPrefetchPerPump||attempted>=5)break;
+        if(downloaded>=CONFIG.maxPrefetchPerPump||attempted>=12)break;
         if(state.prefetchedKeys.has(art.key)||seenInMemory(art,null))continue;
         state.prefetchedKeys.add(art.key);
         attempted++;
@@ -806,6 +806,9 @@
     const count=state.stats.portrait+state.stats.other;
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
+    if(el('collector-status'))el('collector-status').textContent=
+      (document.hidden?'화면 비활성':'화면 활성 · 2분 주기')+
+      ' · 사전 검증 '+state.collectorSuccess+'점 · 재시도 '+state.collectorErrors+'회';
     if(el('dedup-count'))el('dedup-count').textContent=
       '중복 차단 '+state.dedupBlocked+'건 · 후보 부족 '+state.exhaustedTicks+'회';
     const backup=el('fallback-status');
