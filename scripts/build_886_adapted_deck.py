@@ -30,7 +30,7 @@ USER_MAX=886
 ASPECT=0.60
 TARGET_SIZE=(1000,1667)
 MAX_INPUT=16*1024*1024
-MAX_EMBED_BYTES=350*1024*1024
+MAX_EMBED_BYTES=400*1024*1024
 ALLOWED_IMAGE_HOSTS={
  "openaccess-cdn.clevelandart.org","images.metmuseum.org",
  "iiif.wellcomecollection.org","iiif.micr.io","images.collections.yale.edu",
@@ -188,6 +188,84 @@ def smart_portrait(im):
         if verify.size!=TARGET_SIZE or verify.format!="JPEG":raise AssertionError("JPEG verification failed")
     return payload,box,round(factor,3),(w,h)
 
+
+def additional_cma_landscape_candidates(known,limit=300):
+    """Discover *new*, licensed, actual source URLs of wide or modest-pixel flat art.
+
+    This stage only discovers metadata. Verified count increases strictly after
+    the original JPEG has downloaded, decoded, smart-cropped, and hashed on disk.
+    """
+    results=[]
+    seen={(r["_provider"],r["_id"]) for r in known}
+    rejected=collections.Counter()
+    # Scan different ranges so newly discovered art does not merely repeat
+    # the portrait-only source ledger; preserve official public-domain status.
+    offsets=(0,100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400)
+    for era in ("1800-2026","pre-1800"):
+        for offset in offsets:
+            if len(results)>=limit:break
+            params={"has_image":"1","limit":"100","skip":str(offset),
+                    "created_before":"2027" if era=="1800-2026" else "1800"}
+            if era=="1800-2026":params["created_after"]="1799"
+            url="https://openaccess-api.clevelandart.org/api/artworks/?"+urlencode(params)+"&cc0"
+            try:
+                raw,_,_=fetch(url,cap=6*1024*1024,timeout=23)
+                docs=json.loads(raw).get("data") or []
+            except Exception as ex:
+                print("ADAPTED_METADATA_ERROR",era,offset,str(ex)[:130],flush=True)
+                continue
+            if not isinstance(docs,list):continue
+            for doc in docs:
+                if len(results)>=limit:break
+                ident=str(doc.get("id") or "")
+                item=("Cleveland Museum of Art",ident)
+                if not ident or item in seen:continue
+                if str(doc.get("share_license_status") or "").lower()!="cc0":
+                    rejected["rights"]+=1;continue
+                kind=str(doc.get("type") or "")
+                medium=str(doc.get("technique") or "")
+                evidence=(kind+" "+medium).lower()
+                if not any(k in evidence for k in ("painting","drawing","print","watercolor","watercolour","etching","lithograph","engraving","woodcut","gouache","ink on","oil on","pastel","tempera")):
+                    rejected["not_flat_art"]+=1;continue
+                if any(k in evidence for k in ("sculpture","vase","pottery","ceramic","textile","photograph","video","carving","frame","architecture","jewelry")):
+                    rejected["not_flat_art"]+=1;continue
+                images=doc.get("images") or {}
+                pic=images.get("print") or images.get("web") or {}
+                src=str(pic.get("url") or "")
+                if not host_ok(src):continue
+                try: w=int(pic.get("width") or 0);h=int(pic.get("height") or 0)
+                except Exception:continue
+                if w<380 or h<650:continue
+                # Specifically rescue paintings formerly excluded by the
+                # 75%-portrait and native-pixel gates.
+                is_landscape=w>=h
+                is_lowres=(w<1000 or h<1400)
+                portrait_fill=min((w/h)/ASPECT,ASPECT/(w/h))>=.75
+                if not (is_landscape or is_lowres or not portrait_fill):continue
+                if w*h>45_000_000:continue
+                creators=doc.get("creators") or []
+                artist=", ".join(x.get("description","") for x in creators if isinstance(x,dict))
+                title=str(doc.get("title") or "").strip()
+                if not title:continue
+                years=(doc.get("creation_date_earliest"),doc.get("creation_date_latest"))
+                # No fabricated work dates. Unknown year is allowed in
+                # the supplementary art pool; it is not labeled modern.
+                results.append({
+                    "source":"Cleveland Museum of Art","_provider":"Cleveland Museum of Art",
+                    "artwork_id":ident,"_id":ident,"title":title,"artist":artist,
+                    "rights":"CC0 (Cleveland official metadata)",
+                    "original_url":src,"source_url":str(doc.get("url") or ""),
+                    "type":kind,"medium":medium,
+                    "year_start":years[0],"year_end":years[1],
+                    "_adapted_source_orientation":"landscape" if is_landscape else "narrow/lowres",
+                    "_evidence_kind":"new_adaptive_metadata"
+                })
+                seen.add(item)
+            print("ADAPTED_METADATA",era,offset,"total",len(results),flush=True)
+        if len(results)>=limit:break
+    print("ADAPTED_METADATA_COMPLETE",len(results),"rejected",json.dumps(rejected),flush=True)
+    return results
+
 def run_one(row):
     provider=row["_provider"];ident=row["_id"]
     try:
@@ -217,7 +295,9 @@ def run_one(row):
             "museumRegion":"bundled","offlineAsset":"",
             "sourceSHA256":source_sha,"derivedSHA256":derived_sha,
             "originalPixels":list(original_size),"cropBox":list(box),
-            "upscaleFactor":factor,"adaptType":"SMART_PORTRAIT_CROP"
+            "upscaleFactor":factor,"adaptType":"SMART_PORTRAIT_CROP",
+            "metadataProvenance":row.get("_evidence_kind") or "previous_hash_ledger",
+            "originalLandscape":bool(original_size[0]>=original_size[1])
         }
         return art,processed,None
     except Exception as e:
@@ -226,6 +306,11 @@ def run_one(row):
 def main():
     rows,base_count,new_count=candidates()
     print("PROVENANCE baseline",base_count,"delta",new_count,"candidates",len(rows),"user_request_max",USER_MAX,flush=True)
+    # Discover previously rejected wide or lower-resolution images; do not
+    # count discoveries as actual works until real byte verification succeeds.
+    additional=additional_cma_landscape_candidates(rows,limit=300)
+    rows.extend(additional)
+    print("ADAPTIVE_POOL total",len(rows),"prior_ledger",base_count+new_count,"additional_metadata",len(additional),flush=True)
     IMAGES.mkdir(parents=True,exist_ok=True)
     for f in IMAGES.glob("pack-*.jpg"):f.unlink()
     nga=load_nga_lookup(rows)
@@ -263,8 +348,13 @@ def main():
     if len(good)<8:raise RuntimeError("Fewer than 8 real artworks downloaded; fail closed")
     (ROOT/"offline-deck.json").write_text(json.dumps(good,ensure_ascii=False,separators=(",",":")),encoding="utf-8")
     report={"user_starting_number":736,"user_total_claim":886,"evidence_rows":base_count+new_count,
+       "supplementary_metadata_candidates":len(additional),
        "embedded_verified_jpegs":len(good),"raw_source_pixels_checked":len(good),
        "smart_cropped_and_upscaled_count":len(good),
+       "actually_upscaled_count":sum(x["upscaleFactor"]>1.001 for x in good),
+       "landscape_to_portrait_count":sum(x["originalLandscape"] for x in good),
+       "new_adapted_originals_embedded":sum(x["metadataProvenance"]=="new_adaptive_metadata" for x in good),
+       "previous_ledger_embedded":sum(x["metadataProvenance"]=="previous_hash_ledger" for x in good),
        "unverified_61_not_fabricated":True,"bytes_in_apk_assets":total,
        "download_failures":len(failed),"first_failures":failed[:60],
        "source_distribution":dict(collections.Counter(x["source"] for x in good))}
