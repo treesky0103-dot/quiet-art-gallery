@@ -14,10 +14,13 @@ import json
 import os
 from pathlib import Path
 import re
+import warnings
 from urllib.parse import urlencode, quote, urlsplit
 from urllib.request import Request, urlopen
 
 from PIL import Image
+Image.MAX_IMAGE_PIXELS = 36_000_000
+warnings.simplefilter('error', Image.DecompressionBombWarning)
 
 ROOT = Path("data/collector_10min")
 BASE = Path("data/verified_80pct/verified_artwork_manifest.csv")
@@ -26,7 +29,7 @@ NEW_CSV = ROOT / "new_verified.csv"
 OUT = Path("collector-10min-batch")
 IMAGES = OUT / "images"
 MAX_BYTES = 15 * 1024 * 1024
-TARGET = 4
+TARGET = 3
 MAX_ATTEMPTS = 12
 YEAR = 2026
 ASPECT = 0.625
@@ -211,18 +214,33 @@ def run():
                 visual_hash=dhash(im)
                 n=int(visual_hash,16)
                 if any((n ^ old).bit_count()<=2 for old in visual):continue
-                # Preserve the actual downloaded image bytes, not just its URL.
-                fn=IMAGES/(source_hash[:24]+".img")
-                fn.write_bytes(raw)
+                # Keep a display-ready, uncropped JPEG as proof; source bytes are
+                # decoded/hashed but not retained to avoid unlimited artifact bills.
+                scale=max(1000/w,1400/h)
+                if scale>1:continue
+                if scale<1:
+                    im=im.resize((round(w*scale),round(h*scale)),Image.Resampling.LANCZOS)
+                if not screen_ok(*im.size):continue
+                retained=None
+                for quality in (84,78,72,66,60):
+                    buffer=io.BytesIO()
+                    im.convert("RGB").save(buffer,format="JPEG",quality=quality,optimize=True,progressive=True)
+                    if buffer.tell()<=600_000:
+                        retained=buffer.getvalue();break
+                if not retained:continue
+                file_hash=hashlib.sha256(retained).hexdigest()
+                if file_hash in hashes:continue
+                fn=IMAGES/(file_hash[:24]+".jpg")
+                fn.write_bytes(retained)
                 decoded=Image.open(fn);decoded.load()
-                if decoded.size != (w,h) or not screen_ok(*decoded.size):raise ValueError("Saved-image validation failed")
-                if hashlib.sha256(fn.read_bytes()).hexdigest()!=source_hash:raise ValueError("Disk hash mismatch")
-                recorded={**art,"original_sha256":source_hash,"file_sha256":source_hash,
-                  "visual_dhash":visual_hash,"width":w,"height":h,"bytes":len(raw),
+                if decoded.size != im.size or not screen_ok(*decoded.size):raise ValueError("Saved-image validation failed")
+                if hashlib.sha256(fn.read_bytes()).hexdigest()!=file_hash:raise ValueError("Disk hash mismatch")
+                recorded={**art,"original_sha256":source_hash,"file_sha256":file_hash,
+                  "visual_dhash":visual_hash,"width":im.width,"height":im.height,"bytes":len(retained),
                   "artifact_run":os.getenv("GITHUB_RUN_ID","local"),
                   "verified_utc":datetime.now(timezone.utc).isoformat()}
                 rows.append(recorded);found.append(recorded)
-                ids.add(identifier);hashes.add(source_hash);visual.append(n)
+                ids.add(identifier);hashes.update((source_hash,file_hash));visual.append(n)
                 print("VERIFIED "+art["source"]+" "+art["artwork_id"]+" "+source_hash,flush=True)
             except Exception as ex:
                 probes.append({"source":key,"artwork_id":art["artwork_id"],"error":str(ex)[:170]})
@@ -232,7 +250,7 @@ def run():
             "new_verified_this_run":len(found),"increment_verified_unique":len(rows),
             "user_baseline_plus_new":736+len(rows),
             "metadata_source_ok":ok_sources,"download_attempts":attempts,
-            "proof_files":len(list(IMAGES.glob("*.img"))),"details":probes,
+            "proof_files":len(list(IMAGES.glob("*.jpg"))),"details":probes,
             "limitations":["736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
             "Original JPEG/PNG/WebP proof files live in expiring GitHub Actions artifacts, not tablet",
             "Server-side scheduled run does not update the existing v1.7.2 APK"]}
