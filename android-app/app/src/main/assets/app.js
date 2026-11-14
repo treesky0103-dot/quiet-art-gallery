@@ -14,15 +14,15 @@
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
     recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
-    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{}},
+    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{},movement:{}},
     sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
-    modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,mediaCategoryIndex:0,modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),
+    modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,mediaCategoryIndex:0,movementTermIndex:0,movementQueries:[],modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
-    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0,media:0},backoff:{},
+    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0,media:0,movement:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어',media:'사진·일러스트·애니메이션 스틸(공개 아카이브)'};
+  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어',media:'사진·일러스트·애니메이션 스틸(공개 아카이브)',movement:'전 세계 사조·화파 (검증된 정지 이미지)'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -155,13 +155,30 @@
     return {art,src,width:img.naturalWidth,height:img.naturalHeight,orient:'portrait',visualHash:visualHash(img)};
   }
 
+  async function loadMovementCatalog(){
+    try{
+      const r=await fetch('https://appassets.gallery/art-movements.json',{cache:'no-store'});
+      if(!r.ok)throw Error('movement catalog not yet served');
+      const catalog=await r.json();
+      const items=(catalog.groups||[]).flatMap(x=>Array.isArray(x.movements)?x.movements:[])
+          .filter(x=>x&&typeof x.name_ko==='string'&&(typeof x.search_en==='string'||x.search_en===null));
+      if(items.length!==catalog.entry_count||items.length<375)throw Error('Movement count mismatch');
+      state.movementQueries=items;
+      return items.length;
+    }catch(e){
+      state.movementQueries=[];
+      state.lastErr='사조별 상세 검색 목록: '+String(e.message||e);
+      return 0; // Non-blocking. Existing 1511+ still artworks remain playable.
+    }
+  }
+
   async function loadOfflineDeck(){
     if(!window.GalleryAndroid)return 0;
     try{
       const r=await fetch('https://appassets.gallery/offline-deck.json',{cache:'no-store'});
       if(!r.ok)throw Error('비상 작품 목록 없음');
       const items=await r.json();
-      if(!Array.isArray(items)||items.length<2||items.length>2110)throw Error('내장 작품 목록 형식 오류');
+      if(!Array.isArray(items)||items.length<2||items.length>2700)throw Error('내장 작품 목록 형식 오류');
       const all=C.shuffledCopy(items.filter(art=>
         /^(?:offline\/fallback-(?:[0-9]|1[0-5])|offline\/pack-[0-9]{4})\.jpg$/.test(art.offlineAsset||'') &&
         C.eligibleArt(art) && C.metadataResolutionOkay(art)));
@@ -240,6 +257,19 @@
         gsrsearch:'deepcategory:"'+cat.category+'"',gsrnamespace:'6',
         gsrlimit:'50',gsroffset:String(offset),prop:'imageinfo',
         iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',format:'json',formatversion:'2',origin:'*'});
+      url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
+    }else if(kind==='movementCommons'){
+      const parts=String(param).split(':');
+      const idx=Number(parts[0]),offset=Number(parts[1]);
+      const school=state.movementQueries[idx];
+      if(parts.length!==2||!school||!Number.isInteger(idx)||
+         !Number.isInteger(offset)||offset<0||offset>2500)throw Error('사조 검색 범위 오류');
+      const phrase=(school.search_en||school.name_ko).trim();
+      const q=phrase+' painting drawing illustration photograph';
+      const qs=new URLSearchParams({action:'query',generator:'search',
+        gsrsearch:q,gsrnamespace:'6',gsrlimit:'25',gsroffset:String(offset),
+        prop:'imageinfo',iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',
+        format:'json',formatversion:'2',origin:'*'});
       url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
     }else if(kind==='mediaCommons'){
       const parts=String(param).split(':');
@@ -335,6 +365,17 @@
         const total=Number(response.query&&response.query.searchinfo&&response.query.searchinfo.totalhits)||0;
         state.cursors.global=state.cursors.global||{};
         state.cursors.global[category.id]=(received===0||received<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
+      }else if(source==='movement'){
+        if(!state.movementQueries.length)return 0;
+        const idx=state.movementTermIndex++%state.movementQueries.length;
+        const school=state.movementQueries[idx];
+        const key=String(idx);
+        const offset=Number(state.cursors.movement&&state.cursors.movement[key])||0;
+        const res=await request('movementCommons',idx+':'+offset);
+        const candidates=C.normalizeMovementCommons(res,school).filter(C.eligibleArt);
+        addCandidates(candidates);
+        const count=Array.isArray(res.query&&res.query.pages)?res.query.pages.length:0;
+        state.cursors.movement[key]=(count<25||offset>=2500)?0:offset+25;
       }else if(source==='media'){
         const category=C.MIXED_MEDIA_CATEGORIES[state.mediaCategoryIndex++%C.MIXED_MEDIA_CATEGORIES.length];
         const offset=Number(state.cursors.media&&state.cursors.media[category.id])||0;
@@ -469,7 +510,7 @@
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<14){
         // Give year-dated museum APIs greater weight than undated Commons filenames.
-        const sources=['media','cleveland','chicago','media','met','cleveland','global','chicago','asian','media','african','additional','global','additional','smithsonian','modern'];
+        const sources=['movement','media','cleveland','chicago','media','met','cleveland','global','chicago','asian','media','african','additional','movement','global','additional','smithsonian','modern'];
         const source=sources[state.sourceOrder++%sources.length];
         attempts++;
         progress+=await fetchSource(source);
@@ -974,6 +1015,33 @@
       if(state.playing)startClock();else stopClock();
       updateInfo();controlsFor();
     });
+    const catalogBox=el('catalog-result');
+    el('show-movements').addEventListener('click',async()=>{
+      try{
+        const r=await fetch('https://appassets.gallery/art-movements.json');
+        if(!r.ok)throw Error('데이터를 읽을 수 없습니다.');
+        const j=await r.json();
+        const body=(j.groups||[]).map(g=>'['+g.region+' · '+g.section+']\n'+
+          g.movements.map(m=>'• '+m.name_ko+(m.search_en?' ('+m.search_en+')':'')).join('\n')).join('\n\n');
+        catalogBox.textContent='검색 분류 '+j.entry_count+'개 등록 · 실제 작품 확보량과 별개\n\n'+body;
+        catalogBox.hidden=false;
+      }catch(e){catalogBox.textContent='사조 목록 오류: '+e.message;catalogBox.hidden=false;}
+    });
+    el('show-providers').addEventListener('click',async()=>{
+      try{
+        const r=await fetch('https://appassets.gallery/art-providers.json');
+        if(!r.ok)throw Error('데이터를 읽을 수 없습니다.');
+        const j=await r.json();
+        catalogBox.textContent=j.requested_source_entries+'개 요청 / '+j.unique_source_names+
+          '곳 중복 제외 · '+j.automatic_search_integrations+
+          '곳 검색 연동 · 나머지는 열람용 목록(자동 수집 불가)\n\n'+
+          j.entries.map(x=>x.request_number+'. '+x.name+' — '+
+            (x.integration_status==='existing_search_api'||x.integration_status==='existing_open_license_search_api'?'검색 연동':
+             x.integration_status==='duplicate_reference'?'중복':'사이트 목록만')+
+            (x.homepage?' · '+x.homepage:'')).join('\n');
+        catalogBox.hidden=false;
+      }catch(e){catalogBox.textContent='공급원 목록 오류: '+e.message;catalogBox.hidden=false;}
+    });
     el('audit-now').addEventListener('click',()=>runInventoryAudit().catch(e=>{ui.msg.textContent='조사 실패: '+String(e.message||e);state.auditing=false;el('audit-now').disabled=false;}));
     el('refresh-now').addEventListener('click',async()=>{
       ui.msg.textContent='새 목록 확인 중...';
@@ -1018,6 +1086,7 @@
       state.cursors.modern=state.cursors.modern||{};
       state.cursors.openverseModern=state.cursors.openverseModern||{};
       state.cursors.media=state.cursors.media||{};
+      state.cursors.movement=state.cursors.movement||{};
       state.cursors.global=state.cursors.global||{};
       const gIndex=await dbGet('settings','globalCategoryIndex');
       state.globalCategoryIndex=Number.isInteger(gIndex&&gIndex.value)?Math.max(0,gIndex.value):0;
@@ -1030,6 +1099,7 @@
       if(!Number.isInteger(state.stats.movementIndex)||state.stats.movementIndex<0||state.stats.movementIndex>=C.MOVEMENTS.length)state.stats.movementIndex=0;
       // APK ships four true paintings. Load before starting the clock so a
       // transient outage or slow museum search cannot freeze a displayed work.
+      await loadMovementCatalog();
       await hydrateHistory();
       await restoreCandidatePool();
       await loadOfflineDeck();
