@@ -20,8 +20,8 @@ jobs:
       - run: python -m pip install --disable-pip-version-check Pillow==11.3.0
       - name: Fetch first-page pilot and test file decoding
         env:
-          MAX_IMAGES: "8"
-          MAX_PAGES: "1"
+          MAX_IMAGES: "12"
+          MAX_PAGES: "2"
         run: python -u scripts/download_verified_paintings_pilot.py
       - uses: actions/upload-artifact@v4
         if: always()
