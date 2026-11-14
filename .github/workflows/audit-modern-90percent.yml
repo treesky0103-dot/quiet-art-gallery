@@ -1,0 +1,46 @@
+name: Audit modern flat art from 1800 (90-percent target)
+on:
+  push:
+    branches:
+      - research-1800plus-90pct-259200-20261114
+    paths:
+      - scripts/collect_1800plus_90pct_pilot.py
+      - .github/workflows/audit-modern-90percent.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pillow for actual image decode and perceptual duplicate screening
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Python syntax
+        run: python -m py_compile scripts/collect_1800plus_90pct_pilot.py
+      - name: Query museum APIs and download a small evidence sample
+        run: python -u scripts/collect_1800plus_90pct_pilot.py
+      - name: Verify output schema and no false readiness assertion
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('audit-1800plus-90pct/audit_report.json').read_text())
+          assert j['target']['modern_1800_to_2026']==233280
+          assert j['target']['earlier_before_1800']==25920
+          assert j['actual_90day_ready'] is False
+          assert j['actual_downloaded_decoded']['all'] == len(list(Path('audit-1800plus-90pct/samples').glob('*')))
+          assert j['modern_shortfall']>=0 and j['earlier_shortfall']>=0
+          print('Date quota, file counts and no-false-completion checks PASSED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-1800-plus-paintings-sample-and-source-audit
+          path: audit-1800plus-90pct/
+          if-no-files-found: warn
+          retention-days: 14
