@@ -100,6 +100,6 @@ test('new user-visible info, independent APK ID and original 75 percent policy r
  assert.match(app,/pruneDays: 90/);
  assert.match(app,/intervalMs: 30000/);
  assert.match(app,/minimumPortraitFill:\.75/);
- assert.match(app,/C\.qualityTier\(b\)-C\.qualityTier\(a\)/);
+ assert.match(app,/const eligible=C\.shuffledCopy\(state\.pool/);
  assert.match(app,/const csv=await r\.text\(\);await importHistoryCsv\(csv\)/);
 });
