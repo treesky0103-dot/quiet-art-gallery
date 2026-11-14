@@ -46,10 +46,10 @@ test('global category request is bounded in web and Android; not arbitrary URLs'
 test('collector makes progress only while visible, rate-limits attempts and saves pool',()=>{
   const app=read('web/app.js');
   assert.match(app,/collectorEveryMs:1800000/);
-  assert.match(app,/collectorTickMs:60000/);
-  assert.match(app,/collectorTargetPerWindow:60/);
-  assert.match(app,/collectorMaxPerTick:4/);
-  assert.match(app,/화면 활성 · 1분마다 보충/);
+  assert.match(app,/collectorTickMs:15000/);
+  assert.match(app,/collectorMaxAttemptsPerTick:18/);
+  assert.match(app,/collectorMaxPerTick:6/);
+  assert.match(app,/화면 활성 · 8GiB 우선 수집/);
   assert.match(app,/collectorPump\(\)\.catch\(\(\)=>\{\}\);\}\}\);/);
   assert.match(app,/attempted>=CONFIG\.collectorMaxAttemptsPerTick/);
   assert.match(app,/document\.hidden/);
