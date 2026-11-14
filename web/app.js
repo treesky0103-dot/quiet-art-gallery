@@ -925,6 +925,17 @@
   function displayLoaded(show,emergency=false){
     if(!show || (state.current&&state.current.art.key===show.art.key))return false;
     if(seenInMemory(show.art,show.visualHash)){state.dedupBlocked++;return false;}
+    // Atomic native journal is committed BEFORE on-screen display. A crash
+    // between the render and IndexedDB's async commit cannot repeat the art.
+    if(window.GalleryAndroid&&typeof window.GalleryAndroid.claimArtworkKeys==='function'){
+      let claimed=false;
+      try{claimed=!!window.GalleryAndroid.claimArtworkKeys(
+        JSON.stringify(rowKeys(show.art,show.visualHash)));}catch(_){}
+      if(!claimed){
+        state.dedupBlocked++;state.lastErr='기기 전시 기록 저장 실패 또는 최근 90일 작품';
+        return false;
+      }
+    }
     markSeen(show); // Reserve identities before asynchronous disk writes.
     const target=state.currentNode===ui.a?ui.b:ui.a;
     target.alt=show.art.title+' — '+show.art.artist;
