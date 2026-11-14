@@ -87,15 +87,15 @@ test('both browser and native Android allowlist only official configured Commons
 });
 test('new user-visible info, independent APK ID and original 75 percent policy remain',()=>{
  const html=read('web/index.html'), gradle=read('android-app/app/build.gradle');
- assert(html.includes('전시 관리 · v1.6.6'));
+ assert(html.includes('전시 관리 · v1.7.4'));
  assert(html.includes('총 40곳'));
  assert(html.includes('75% 이상'));
  assert(html.includes('고화질 우선'));
  assert(html.includes('스미스소니언 미국미술관'));
  assert(html.includes('스미스소니언 국립아시아미술관'));
- assert(gradle.includes("applicationId 'com.gallery.kiosk.v166'"));
- assert(gradle.includes("versionName '1.6.6'"));
- assert(gradle.includes('versionCode 13'));
+ assert(gradle.includes("applicationId 'com.gallery.kiosk.mixedmedia'"));
+ assert(gradle.includes("versionName '1.7.4-mixed'"));
+ assert(gradle.includes('versionCode 15'));
  const app=read('web/app.js');
  assert.match(app,/pruneDays: 90/);
  assert.match(app,/intervalMs: 30000/);
