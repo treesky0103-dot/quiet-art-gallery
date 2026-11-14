@@ -20,6 +20,7 @@
     <div class="intro-sub">그림만, 조용하게.</div>
   </div>
   <div class="touch-hint">화면을 터치하면 메뉴가 열립니다</div>
+  <div id="ambient-orbit" class="ambient-orbit" aria-hidden="true"></div>
 </main>
 <header id="hud" class="hud" aria-label="전시 제어">
   <div class="header-left"><div class="live-dot"></div><span id="hud-name">고요한 미술관</span><span class="micro">1분 자동 전시</span></div>
@@ -32,8 +33,25 @@
 <footer id="caption" class="caption" aria-live="polite"><div id="art-title"></div><div id="art-meta"></div></footer>
 <div id="settings-backdrop" class="backdrop" hidden></div>
 <section id="settings" class="settings" aria-label="전시 설정" aria-modal="true" role="dialog" hidden>
-  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.8.3</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
-  <p class="sheet-copy">회화·사진·일러스트·애니메이션 스틸 이미지를 분야 순서 없이 무작위로 전시합니다. 이미지 아래에는 모든 분야에 동일하게 작품명·작가명·제작 연도만 표기합니다. 세로 작품은 화면에 맞춰 보여주고 가로·저해상도 작품은 스마트 크롭과 리사이즈를 적용합니다. 앱을 화면에 켜두면 최대 1분마다 수집 대기열에서 신규 이미지 검증을 시도하며, 30분당 60점은 달성을 보장하지 않는 목표입니다. 다운로드 성공 및 파일 검증을 통과한 미전시 작품 목록은 앱 재실행 후에도 복원합니다. 기존 자료 탐색은 공식 API와 공개 검색 경로를 이용하며, 등록된 공개 공급원의 실제 이미지 품질·출처·재사용 조건을 확인한 작품만 오프라인 캐시에 저장합니다. 1분 교체·90일 재전시 제한은 유지합니다. 이미지가 부족한 분야는 다른 분야 작품으로 자연스럽게 이어집니다.</p>
+  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.8.4</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
+  <section class="cache-dashboard" aria-label="태블릿 이미지 저장 현황">
+    <div class="cache-dashboard-header">
+      <div class="cache-dashboard-eyebrow">LIVE STORAGE</div>
+      <strong>8GiB 우선 자동 수집</strong>
+    </div>
+    <div class="cache-dashboard-data">
+      <div><strong id="cache-photo-count">확인 중</strong><small>추가 다운로드해 실제 저장한 이미지 파일</small></div>
+      <div class="cache-storage-number"><strong id="cache-percent">—</strong><small>저장 용량 채움</small></div>
+    </div>
+    <div class="cache-progress-meta"><span>실제 저장 용량</span><strong id="cache-volume">확인 중</strong></div>
+    <div id="cache-progress" class="cache-progress-track" role="progressbar" aria-label="8GiB 이미지 저장 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="cache-progress-fill" class="cache-progress-fill"></div>
+    </div>
+    <div class="cache-progress-ends"><span>0 GiB</span><span>8 GiB</span></div>
+    <p id="cache-detail" class="cache-detail">기기의 실제 파일 저장 현황을 확인합니다.</p>
+    <div class="cache-embedded">APK 내장 작품 <strong id="cache-apk-count">확인 중</strong> <span>· 위 막대와 별도로 보관</span></div>
+  </section>
+  <p class="sheet-copy">회화·사진·일러스트·애니메이션 스틸 이미지를 분야 순서 없이 무작위로 전시합니다. 이미지 아래에는 모든 분야에 동일하게 작품명·작가명·제작 연도만 표기합니다. 세로 작품은 화면에 맞춰 보여주고 가로·저해상도 작품은 스마트 크롭과 리사이즈를 적용합니다. 앱을 화면에 켜두면 8GiB를 우선 목표로 수집 대기열을 반복 실행합니다. 하루 또는 30분당 확보 수를 제한하지 않지만, 공급원 요청 제한과 기기 성능을 보호하기 위해 각 실행의 시도 수는 제한합니다. 다운로드 성공 및 파일 검증을 통과한 미전시 작품 목록은 앱 재실행 후에도 복원합니다. 기존 자료 탐색은 공식 API와 공개 검색 경로를 이용하며, 등록된 공개 공급원의 실제 이미지 품질·출처·재사용 조건을 확인한 작품만 오프라인 캐시에 저장합니다. 1분 교체·90일 재전시 제한은 유지합니다. 이미지가 부족한 분야는 다른 분야 작품으로 자연스럽게 이어집니다.</p>
   <div class="pill-row"><div class="metric"><small>전환 주기</small><strong>1분</strong></div><div class="metric"><small>화면 채움</small><strong>75% 이상</strong></div><div class="metric"><small>재사용 제한</small><strong>90일 엄격</strong></div></div>
   <div class="rule"><span>화질 선택</span><strong>고화질 우선 · 중화질 허용</strong></div>
   <div class="rule"><span>전시 순서</span><strong>회화·사진·일러스트·애니메이션·현대미술·스트리트 아트·그래피티 무작위</strong></div>
@@ -67,7 +85,7 @@
   <p id="audit-summary" class="small-note" style="white-space:pre-wrap;max-height:36vh;overflow:auto">조사 전 · 전체 수 미확인</p>
   <pre id="catalog-result" hidden style="white-space:pre-wrap;overflow:auto;max-height:42vh;border:1px solid #554c43;border-radius:8px;padding:12px;font-size:12px;text-align:left"></pre>
   <div id="source-catalog-links" hidden style="max-height:42vh;overflow-y:auto;border:1px solid #554c43;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;text-align:left"></div>
-  <p id="setting-message" class="small-note">태블릿에서 앱을 화면에 계속 표시할 때만 1분 간격으로 적응형 대기열을 실행합니다. 30분당 60점(하루 2,880점)은 목표일 뿐 실제 확보량은 수집 상태에 표시됩니다. 429 요청 제한을 받으면 공급원별 대기 시간을 준수하며, 실패 이미지의 재시도 시각과 검증 성공 작품 ID를 저장합니다. 절전·앱 종료·네트워크 장애 중에는 수집이 중단될 수 있으며, 자동 복귀와 저장 용량은 실기기 검증이 필요합니다.</p>
+  <p id="setting-message" class="small-note">태블릿에서 앱 화면이 활성 상태일 때 15초 간격으로 8GiB 우선 수집을 시도합니다. 수집이 오래 걸리면 다음 실행은 중첩하지 않습니다. 1분 전시와 별개로 수집량에 하루 상한을 설정하지 않았으며, 실제 확보량은 수집 상태와 상단 저장 막대에 표시됩니다. 429 요청 제한을 받으면 공급원별 대기 시간을 준수하며, 실패 이미지의 재시도 시각과 검증 성공 작품 ID를 저장합니다. 절전·앱 종료·네트워크 장애 중에는 수집이 중단될 수 있으며, 자동 복귀와 저장 용량은 실기기 검증이 필요합니다.</p>
   <p class="small-note">추가된 5곳은 공식 미술관 API가 아니라 Wikimedia Commons의 작품 분류에서 조회합니다. 대영박물관은 판화를, 나머지 4곳은 회화를 수집합니다. 퍼블릭 도메인 또는 CC0 작품만 후보로 삼습니다.</p>
    <p class="small-note">스미스소니언 작품은 미술관 자체 API가 아닌 Wikimedia Commons의 소장품별 분류를 통해 검색합니다. 작품마다 퍼블릭 도메인 또는 CC0 표기를 확인하며, 개별 이미지가 부족하거나 권리가 제한된 경우 전시하지 않습니다. 국립아시아미술관(NMAA)의 프리어 미술관은 중국·일본·인도 회화 세 분류를 번갈아 검색합니다.</p>
   <p class="small-note">1800년 이후 비중 80%는 작품 제작 연도가 확인되는 경우를 기준으로 합니다. 메타데이터 검색과 실제 다운로드·디코딩·작품 연대 확인은 구분합니다. 원본 디지털 회화는 별도 근거가 있어야 합니다. 후보가 부족해도 임의 제작 연도를 부여하지 않으며 실제 달성률을 표시합니다.</p>
