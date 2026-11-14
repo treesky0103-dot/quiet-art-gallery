@@ -86,8 +86,8 @@ test('Android API now uses 60 seconds, v1.6.6 isolated app and 90d dedup',()=>{
  assert(app.includes('hydrateHistory'));
  assert(app.includes('visualHashes'));
  const gradle=source('android-app/app/build.gradle');
- assert(gradle.includes("versionName '1.8.3-tablet60'"));
- assert(gradle.includes("applicationId 'com.gallery.kiosk.tablet60'"));
+ assert(gradle.includes("versionName '1.8.4-fast8g'"));
+ assert(gradle.includes("applicationId 'com.gallery.kiosk.fast8g'"));
  const html=source('web/index.html');
  assert(html.includes('분야 순서 없이 무작위로 전시'));
  assert(html.includes('id="modern-count"'));
