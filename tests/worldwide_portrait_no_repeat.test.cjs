@@ -69,6 +69,6 @@ test('user choice: hold frame if candidate exhausted rather than repeat against 
  const java=src('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java');
  assert.match(java,/ART_INTERVAL_MS = 30000L/);
  const gradle=src('android-app/app/build.gradle');
- assert.match(gradle,/versionName '1\.7\.5-mediafull'/);
- assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.mediafull'/);
+ assert.match(gradle,/versionName '1\.7\.6-urbanart'/);
+ assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.urbanart'/);
 });
