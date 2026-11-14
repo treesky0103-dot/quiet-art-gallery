@@ -1,4 +1,4 @@
-name: Build 1511 saved gallery plus 397 art movements and 50 source registry APK
+name: Build 1511 saved gallery plus 397 art movements and 50 source registry APK v2
 on:
   push:
     paths:
