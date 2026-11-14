@@ -54,7 +54,7 @@ test('gallery does not enforce seventeen schools and shows actual achieved fract
  assert(app.includes('C.targetPost1800(state.stats.slot)'));
  assert(app.includes('post1800Shown'));
  assert(!app.includes('for(let delta=0;delta<C.MOVEMENTS.length;delta++)'));
- assert(html.includes('1800년 이후 제작 80% · 기타 20%'));
- assert(html.includes('후보 부족 시 실제 비율 변동'));
- assert(html.includes('세상의 모든 아카이브가 이미 연결된 것은 아닙니다'));
+ assert(html.includes('무작위로 전시합니다'));
+ assert(html.includes('장르 고정 순서 없음'));
+ assert(html.includes('30분 간격'));
 });
