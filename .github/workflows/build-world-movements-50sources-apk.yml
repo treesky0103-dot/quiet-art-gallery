@@ -1,0 +1,174 @@
+name: Build 1511 saved gallery plus 397 art movements and 50 source registry APK
+on:
+  push:
+    paths:
+      - '.github/workflows/build-world-movements-50sources-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: world-art-397-movements-50-platforms
+  cancel-in-progress: false
+jobs:
+  build-portrait30-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout isolated research source (do not mutate existing production APK)
+        uses: actions/checkout@v4
+        with:
+          ref: feat-global-250movements-50sources-build-20261114
+          persist-credentials: true
+      - name: Install Python 3.12 and image decoder
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Pillow for real images
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Check syntax and portrait30 program invariants
+        run: |
+          python -m py_compile scripts/build_886_adapted_deck.py scripts/append_photo_animation_deck.py scripts/append_global_movement_deck.py
+          node --check web/app.js
+          node --check web/core.js
+          cmp web/app.js android-app/app/src/main/assets/app.js
+          cmp web/core.js android-app/app/src/main/assets/core.js
+          cmp web/index.html android-app/app/src/main/assets/index.html
+          cmp web/style.css android-app/app/src/main/assets/style.css
+          grep -q 'const eligible=C.shuffledCopy' web/app.js
+          grep -q 'artworkYearLabel' web/core.js
+          grep -q "collectorEveryMs:1800000" web/app.js
+          grep -q "PortraitAdapter.convert" android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "versionName '1.8.0-worldart'" android-app/app/build.gradle
+          node --test tests/*.test.cjs
+      - name: Install Java 17, SDK 35 and Gradle 8.9
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Use preinstalled runner Android SDK without obsolete tools package
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager=""
+          if test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; then
+            sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          else
+            sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          fi
+          test -n "$sdkmanager"
+          printf 'yes\n' | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Download exact published v1.7.6 APK preserving 1511 artworks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-contemporary-street-graffiti-20261114 \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --pattern "QuietArtGallery-397Movements-50Sources-v180.apk" --clobber
+          test -s QuietArtGallery-397Movements-50Sources-v180.apk
+      - name: Restore exact 1511 and independently collect world paintings, drawings, prints and photos
+        timeout-minutes: 29
+        run: python -u scripts/append_global_movement_deck.py
+      - name: Independently audit every JPEG and original source catalog before APK packaging
+        run: |
+          python - <<'PY'
+          import collections,hashlib,json,zipfile
+          from pathlib import Path
+          from PIL import Image
+          root=Path('android-app/app/src/main/assets')
+          rows=json.loads((root/'offline-deck.json').read_text(encoding='utf-8'))
+          rep=json.loads(Path('build-global-movement-report.json').read_text(encoding='utf-8'))
+          prevfile=Path('QuietArtGallery-397Movements-50Sources-v180.apk')
+          assert len(rows)==rep['total_verified_jpegs']==1511+rep['actual_new_jpegs']
+          assert len(rows)>1530 and len(rows)<=2700
+          assert rep['unchanged_previous_works']==1511
+          assert len({x['key'] for x in rows})==len(rows)
+          assert len({x['sourceSHA256'] for x in rows})==len(rows)
+          assert len({x['derivedSHA256'] for x in rows})==len(rows)
+          assert rep['movement_registry_entries']==397
+          assert rep['requested_source_entries']==50
+          assert rep['unique_requested_source_names']==47
+          with zipfile.ZipFile(prevfile) as z:
+              previous=json.loads(z.read('assets/offline-deck.json'))
+              assert len(previous)==1511
+              assert rows[:1511]==previous
+              for p in previous:
+                  assert (root/p['offlineAsset']).read_bytes()==z.read('assets/'+p['offlineAsset'])
+          for i,x in enumerate(rows):
+              name='offline/pack-%04d.jpg'%i
+              assert x['offlineAsset']==name
+              assert x['image']=='https://appassets.gallery/'+name
+              fp=root/name
+              assert hashlib.sha256(fp.read_bytes()).hexdigest()==x['derivedSHA256']
+              with Image.open(fp) as im:
+                  im.load()
+                  assert im.size==(1000,1667) and im.format=='JPEG'
+          for name in ('art-movements.json','art-providers.json'):
+              assert (root/name).is_file()
+          print('EXACT_1511_PRESERVED_NEW_GLOBAL_ART_ALL_VERIFIED',len(rows),
+                'additional',rep['actual_new_jpegs'],
+                'media',rep['new_by_medium'],'total_bytes',rep['bytes_all_embedded_jpegs'])
+          PY
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build actual installable debug APK
+        working-directory: android-app
+        timeout-minutes: 15
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Open APK ZIP and inspect all embedded JPEGs, activity and web assets
+        run: |
+          python - <<'PY'
+          import zipfile,hashlib,json
+          from pathlib import Path
+          src=Path('android-app/app/build/outputs/apk/debug/app-debug.apk')
+          rows=json.loads(Path('android-app/app/src/main/assets/offline-deck.json').read_text())
+          assert src.is_file() and src.stat().st_size>30000
+          with zipfile.ZipFile(src) as z:
+              assert z.testzip() is None
+              names=set(z.namelist())
+              assert 'assets/offline-deck.json' in names
+              assert 'assets/app.js' in names and 'assets/core.js' in names
+              assert 'assets/art-movements.json' in names
+              assert 'assets/art-providers.json' in names
+              packaged=json.loads(z.read('assets/offline-deck.json'))
+              assert len(packaged)==len(rows)
+              assert len(rows)>1530
+              for art in rows:
+                  assert 'assets/'+art['offlineAsset'] in names
+              print('APK_REAL_ART_BYTES_PRESENT',len(rows),'TOTAL_APK_BYTES',src.stat().st_size)
+          dest=Path('QuietArtGallery-397Movements-50Sources-v180.apk')
+          dest.write_bytes(src.read_bytes())
+          sha=hashlib.sha256(dest.read_bytes()).hexdigest()
+          Path('apk-sha256.txt').write_text(sha+'  '+dest.name+'\n')
+          result=json.loads(Path('build-global-movement-report.json').read_text())
+          result.update({'apk_name':dest.name,'apk_sha256':sha,'apk_bytes':dest.stat().st_size})
+          Path('verified-release-report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+          PY
+      - name: Release APK without metered Actions artifact uploads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="quiet-art-global-397movements-50sources-v180-20261114"
+          cat > /tmp/release-notes.md <<'NOTE'
+          고요한 미술관 v1.8.0. 이전 v1.7.6 APK에 실제 검증·내장된 그림 1511점을 1바이트도 바꾸지 않고 보존합니다.
+          미술사 397개 예술사조·화파를 지역/시대별 검색 목록으로 등록했습니다. 전체 분류 등록은 397개 분야에서 실제 이미지를 확보했다는 의미가 아닙니다. 현재 번역된 142개 영어 검색어와 한국어 원어 검색을 Wikimedia Commons 공개 이미지 메타데이터를 통해 순차 탐색합니다.
+          사용자 요청 50개 공급원(중복 제외 47개)의 실제 자동 검색 API와 열람용 사이트 목록을 분리했습니다. Wikimedia Commons·Openverse는 기존 검색 연동이며, 타 사이트의 무제한 다운로드가 가능하다고 주장하지 않습니다.
+          공식 클리블랜드 미술관의 CC0 평면 회화·드로잉·판화·사진을 추가로 실제 다운로드/디코딩·세로 스마트 크롭·보간 확대해 내장했습니다. 정확한 추가 작품 수와 실제 크롭/업스케일 수, 수집 오류·검색 분야별 확보 현황은 verified-release-report.json에 기록했습니다.
+          기존 30초 작품 교체, 장르 무관 무작위 전시, 작품명·작가명·제작 연도 통일 표시, 앱이 켜진 동안 30분마다 추가 검색 시도와 90일 재전시 제한은 유지합니다. 90일 동안 30초마다 계속 다른 작품을 보여줄 만큼의 259200점 확보는 미완료입니다.
+          직접 소유하거나 출처에서 CC0로 공개한 이미지의 재사용을 대상으로 하며, 저작권 불명·접근제한 콘텐츠의 무단 수집은 하지 않습니다. 기기 장시간 안정성 및 작품별 미술사 전문가 감수는 미완료입니다.
+          APK debug 서명이며 기존 앱과 별도 설치(앱 ID com.gallery.kiosk.worldart)합니다.
+          NOTE
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" QuietArtGallery-397Movements-50Sources-v180.apk verified-release-report.json apk-sha256.txt --clobber
+          else
+            gh release create "$TAG" QuietArtGallery-397Movements-50Sources-v180.apk verified-release-report.json apk-sha256.txt \
+              --target feat-global-250movements-50sources-build-20261114 \
+              --title "고요한 미술관 v1.8.0 · 397사조·50공급원 목록·검증 미술 작품 확대" \
+              --notes-file /tmp/release-notes.md
+          fi
+          gh release view "$TAG" --json url,assets --jq '{url:.url,assets:[.assets[].name]}'
