@@ -1,0 +1,61 @@
+name: Cross-deduplicate global public art second real image batch
+on:
+  push:
+    branches:
+      - feat-multisource-world-openart-20261114
+    paths:
+      - scripts/append_global_polite_second_run.py
+      - .github/workflows/append-global-polite-real.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow for independent decode
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Retrieve actual second source decoded JPG files
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43570622654
+          name: actual-multisource-global-open-art-JPG-and-evidence
+          path: research-input/retry-polite
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Verify actual images and deduplicate against existing museums and initial global run
+        run: |
+          python -m py_compile scripts/append_global_polite_second_run.py
+          python -u scripts/append_global_polite_second_run.py
+      - name: Check no false claim of production years and image retention
+        run: |
+          python - <<'PY'
+          import csv,json
+          from pathlib import Path
+          p=Path('data/verified_80pct')
+          a=json.loads((p/'additional_global_art_audit.json').read_text())
+          with (p/'additional_global_art_unknown_year.csv').open(encoding='utf-8-sig',newline='') as f:
+            rows=list(csv.DictReader(f))
+          assert len(rows)==a['additional_byte_verified']
+          assert len(rows)==len({x['id'] for x in rows})
+          assert len(rows)==len({x['sha256'] for x in rows})
+          assert all(x['era']=='unknown' for x in rows)
+          assert a['combined_distinct_file_sha256_count']==675+len(rows)
+          assert not a['artwork_year_80percent_verified']
+          assert not a['files_persist_in_repo']
+          assert not a['completed']
+          print('CROSS ART FILE HASHES VERIFIED, YEAR UNKNOWN',len(rows))
+          PY
+      - name: Commit source and hash evidence only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/verified_80pct/additional_global_art_audit.json data/verified_80pct/additional_global_art_unknown_year.csv
+          git diff --cached --quiet && exit 0
+          git commit -m "Cross-validate 58 actual world art files against prior dated and undated image SHA proofs"
+          git push origin HEAD:feat-multisource-world-openart-20261114
