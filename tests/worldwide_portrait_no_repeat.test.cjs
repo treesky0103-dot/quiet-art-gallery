@@ -52,10 +52,10 @@ test('visual hashes prevent subtle resized duplicates but not unrelated pictures
 });
 test('no 90-day emergency-repeat loophole, old history import supports Commons and visual keys',()=>{
  const app=src('web/app.js');
- assert.match(app,/const all=state\.offlineReady;/);
+ assert.match(app,/const all=state\.offlineReady\.filter\(item=>item &&/);
  assert.doesNotMatch(app,/const all=\[\.\.\.state\.offlineReady,\.\.\.state\.recentLoaded\]/);
  assert.match(app,/function emergencyChoice\(\)/);
- assert.match(app,/if\(item&&!seenInMemory\(item\.art,item\.visualHash\)/);
+ assert.match(app,/!seenInMemory\(item\.art,item\.visualHash\)/);
  assert.match(app,/return null; \/\/ HOLD current image/);
  assert.match(app,/await hydrateHistory\(\)/);
  assert.match(app,/commons:\[1-9\]/);
@@ -69,6 +69,6 @@ test('user choice: hold frame if candidate exhausted rather than repeat against 
  const java=src('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java');
  assert.match(java,/ART_INTERVAL_MS = 30000L/);
  const gradle=src('android-app/app/build.gradle');
- assert.match(gradle,/versionName '1\.6\.6'/);
- assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.v166'/);
+ assert.match(gradle,/versionName '1\.7\.4-mixed'/);
+ assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.mixedmedia'/);
 });
