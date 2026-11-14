@@ -1,13 +1,13 @@
 {
-  "as_of_utc": "2026-11-14T07:12:21.302817+00:00",
+  "as_of_utc": "2026-11-14T07:24:47.596810+00:00",
   "prior_full_artwork_year_verified": 675,
-  "additional_byte_verified": 17,
+  "additional_byte_verified": 61,
   "additional_year_verified_1800plus": 0,
-  "additional_year_unknown": 17,
+  "additional_year_unknown": 61,
   "source_record_count": 17,
   "exact_sha_duplicates_with_past_or_new": [],
   "near_visual_matches_for_review": [],
-  "combined_distinct_file_sha256_count": 692,
+  "combined_distinct_file_sha256_count": 736,
   "target_259200": 259200,
   "completed": false,
   "artwork_year_80percent_verified": false,
@@ -18,5 +18,12 @@
     "Source category 19th century is not individual artwork production-year proof.",
     "Per-file image duplicates only; same original artwork rephotographed across archives may remain.",
     "Legal permission beyond the source's posted terms is not independently established."
-  ]
+  ],
+  "second_run": 43570622654,
+  "second_run_downloaded_decoded": 58,
+  "second_run_new_unique": 44,
+  "second_run_previous_page_id_overlap": 14,
+  "second_run_sha_overlap": 0,
+  "second_run_prior_museum_sha_overlap": 0,
+  "latest_file_artifact_expires": "2026-11-16 (verify exact GitHub expiry metadata)"
 }
