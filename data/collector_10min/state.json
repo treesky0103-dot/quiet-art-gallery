@@ -2,14 +2,14 @@
   "baseline_requested": 736,
   "verified_manifest_base": 675,
   "baseline_unmatched_count": 61,
-  "runs": 0,
-  "last_run": null,
+  "runs": 1,
+  "last_run": "2026-11-14T08:52:11.994403+00:00",
   "new_verified": 0,
   "claimed_total_with_requested_baseline": 736,
   "last_download_success": 0,
-  "last_metadata_sources_ok": 0,
+  "last_metadata_sources_ok": 1,
   "cursor": {
-    "cma_modern": 2500,
+    "cma_modern": 2600,
     "aic_modern": 16,
     "cma_older": 2500,
     "aic_older": 16
