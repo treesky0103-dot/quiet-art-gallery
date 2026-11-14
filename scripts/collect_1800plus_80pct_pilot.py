@@ -91,7 +91,7 @@ def normalize(record):
 
 def cleveland(era):
     # Official CMA docs: 'created_after', 'created_before', 'cc0', 'has_image', 'limit', 'skip'.
-    args={"has_image":1,"limit":500,"skip":0,"created_before":1800 if era=="pre-1800" else CURRENT+1}
+    args={"has_image":1,"limit":300,"skip":0,"created_before":1800 if era=="pre-1800" else CURRENT+1}
     if era=="1800-2026":args["created_after"]=1799
     url="https://openaccess-api.clevelandart.org/api/artworks/?"+urlencode(args)+"&cc0"
     data=request(url)
@@ -210,7 +210,7 @@ def download_verified(candidates):
     attempted=0
     for item in candidates:
         src=item["source"]
-        if by_source.get(src,0)>=30 or len(results)>=MAX_DOWNLOAD:continue
+        if by_source.get(src,0)>=48 or len(results)>=MAX_DOWNLOAD:continue
         if item["era"] not in ERA_SAMPLE_QUOTA:continue
         if per_era[item["era"]]>=ERA_SAMPLE_QUOTA[item["era"]]:continue
         if len(results)>=MAX_DOWNLOAD or attempted>=MAX_IMAGE_ATTEMPTS:break
