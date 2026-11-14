@@ -11,7 +11,7 @@ test('397 actual requested movement names retained, but search terms are not mis
  assert.equal(all.length,397);
  assert.equal(movements.entry_count,397);
  assert.equal(movements.group_count,20);
- assert.equal(movements.english_query_terms,142);
+ assert.equal(movements.english_query_terms,396);
  assert.equal(new Set(all.map(x=>x.name_ko)).size,395);
  for(const needed of ['신고전주의','바르비종파','인상주의','초현실주의','단색화','구타이','벵골화파','파푸냐 툴라 화파','회화주의 사진','생성형 영상예술','그래피티']) {
   if(needed==='그래피티') continue; // stand-alone media category in core
