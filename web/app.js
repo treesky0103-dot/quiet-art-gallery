@@ -1135,7 +1135,9 @@
     el('audit-now').addEventListener('click',()=>runInventoryAudit().catch(e=>{ui.msg.textContent='조사 실패: '+String(e.message||e);state.auditing=false;el('audit-now').disabled=false;}));
     el('refresh-now').addEventListener('click',async()=>{
       ui.msg.textContent='새 목록 확인 중...';
-      state.backoff={};try{await refreshForDay(true);await fillPool(CONFIG.targetPool);ui.msg.textContent=`작품 후보 ${state.pool.length}점을 확보했습니다.`;}
+      // Manual refresh must not bypass a provider's 429/Retry-After cooldown.
+      state.backoff=Object.fromEntries(Object.entries(state.backoff).filter(([source,until])=>Number(until)>Date.now()));
+      try{await refreshForDay(true);await fillPool(CONFIG.targetPool);ui.msg.textContent=`작품 후보 ${state.pool.length}점을 확보했습니다.`;}
       catch(e){ui.msg.textContent='갱신 실패: '+e.message;}updateInfo();
     });
     el('free-space').addEventListener('click',()=>{
