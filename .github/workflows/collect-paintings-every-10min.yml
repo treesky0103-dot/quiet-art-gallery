@@ -11,6 +11,8 @@ permissions:
 concurrency:
   group: quiet-art-gallery-collector-10min
   cancel-in-progress: false
+env:
+  PYTHONUNBUFFERED: '1'
 jobs:
   collect:
     runs-on: ubuntu-latest
