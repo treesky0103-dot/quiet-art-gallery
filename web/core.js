@@ -46,7 +46,7 @@
       if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return false;
       const h = u.hostname.toLowerCase();
       // Only exact named, APK-embedded artworks may use the pseudo-local host.
-      if(h === 'appassets.gallery')return /^/offline/pack-[0-9]{4}.jpg$/.test(u.pathname) && !u.search && !u.hash;
+      if(h === 'appassets.gallery')return /^\/offline\/pack-[0-9]{4}\.jpg$/.test(u.pathname) && !u.search && !u.hash;
       return h === 'upload.wikimedia.org' || h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
     } catch (_) { return false; }
   }
