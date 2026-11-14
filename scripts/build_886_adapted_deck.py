@@ -258,11 +258,20 @@ def additional_cma_landscape_candidates(known,limit=300):
                     "type":kind,"medium":medium,
                     "year_start":years[0],"year_end":years[1],
                     "_adapted_source_orientation":"landscape" if is_landscape else "narrow/lowres",
+                    "_preview_pixels":[w,h],
                     "_evidence_kind":"new_adaptive_metadata"
                 })
                 seen.add(item)
             print("ADAPTED_METADATA",era,offset,"total",len(results),flush=True)
         if len(results)>=limit:break
+    # Favor images whose native rendition is insufficient and will actually
+    # require upscaling; then include the wide landscape images. The final
+    # unique artwork count is still decided by downloaded/decoded output.
+    results.sort(key=lambda row: (
+        0 if min(row["_preview_pixels"])<1000 or row["_preview_pixels"][1]<1667 else 1,
+        0 if row["_preview_pixels"][0]>=row["_preview_pixels"][1] else 1,
+        row["_id"]
+    ))
     print("ADAPTED_METADATA_COMPLETE",len(results),"rejected",json.dumps(rejected),flush=True)
     return results
 
@@ -321,6 +330,9 @@ def main():
     good=[];failed=[];seen_sources=set();seen_derived=set();total=0
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as executor:
         for index,(row,result) in enumerate(zip(rows,executor.map(lambda x:run_one_with_nga(x,nga),rows)),1):
+            if len(good)>=USER_MAX:
+                print("MAX_USER_REQUESTED_UNIQUE_REACHED",USER_MAX,"at candidate",index,flush=True)
+                break
             art,blob,error=result
             if error:
                 failed.append(error)
