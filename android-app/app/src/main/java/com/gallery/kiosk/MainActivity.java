@@ -395,7 +395,7 @@ public final class MainActivity extends Activity {
             for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))category=cats[i];
             if(category==null)throw new IOException("등록되지 않은 공용 미술 분류");
             int off=bounded(parts[1],0,100000);
-            String query="deepcategory:\\""+category+"\\"";
+            String query="deepcategory:\""+category+"\"";
             return "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=50&gsrsearch="+
                 URLEncoder.encode(query,"UTF-8")+"&gsroffset="+off+
                 "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=2000&format=json&formatversion=2";
