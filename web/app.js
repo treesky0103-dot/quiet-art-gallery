@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 350, maxQueue: 7200, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:1800000, collectorTickMs:60000, collectorTargetPerWindow:60, collectorMaxPerTick:4, collectorMaxAttemptsPerTick:16, savedCandidateLimit:1000});
+  const CONFIG = Object.freeze({intervalMs: 60000, minPool: 28, targetPool: 350, maxQueue: 7200, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:1800000, collectorTickMs:60000, collectorTargetPerWindow:60, collectorMaxPerTick:4, collectorMaxAttemptsPerTick:16, savedCandidateLimit:1000});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -28,8 +28,13 @@
   function openDB(){
     return new Promise((resolve,reject)=>{
       if(!window.indexedDB) return reject(new Error('IndexedDB 지원 없음'));
-      const r=indexedDB.open('quiet-art-gallery-v1',1);
-      r.onupgradeneeded=()=>{const db=r.result;const seen=db.createObjectStore('seen',{keyPath:'key'});seen.createIndex('when','when');db.createObjectStore('settings',{keyPath:'key'});};
+      const r=indexedDB.open('quiet-art-gallery-v1',2);
+      r.onupgradeneeded=()=>{const db=r.result;
+        if(!db.objectStoreNames.contains('seen')){const seen=db.createObjectStore('seen',{keyPath:'key'});seen.createIndex('when','when');}
+        if(!db.objectStoreNames.contains('settings'))db.createObjectStore('settings',{keyPath:'key'});
+        // Unshown, fully downloaded images survive closing and reopening the app.
+        if(!db.objectStoreNames.contains('downloaded'))db.createObjectStore('downloaded',{keyPath:'key'});
+      };
       r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error||new Error('DB 연결 실패'));
     });
   }
@@ -41,6 +46,16 @@
     const t=state.db.transaction(store,'readwrite'),s=t.objectStore(store);
     for(const entry of entries)s.put(entry);
     t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);
+  });}
+  function dbDelete(store,key){return new Promise((resolve,reject)=>{
+    const tx=state.db.transaction(store,'readwrite');
+    tx.objectStore(store).delete(key);
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+  });}
+  function dbClear(store){return new Promise((resolve,reject)=>{
+    const tx=state.db.transaction(store,'readwrite');
+    tx.objectStore(store).clear();
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
   });}
   async function persist(){await dbPutMany('settings',[{key:'stats',value:state.stats},{key:'cursors',value:state.cursors},{key:'globalCategoryIndex',value:state.globalCategoryIndex}]);}
   function rowKeys(art,hash){
@@ -526,7 +541,7 @@
     try{return await state.filling;}finally{state.filling=null; updateInfo();}
   }
   // The 60/30m rate is an aspirational goal, not a guaranteed download result.
-  // The 30s slideshow stays independent from this foreground-only queue.
+  // The one-minute slideshow stays independent from this foreground-only queue.
   function collectorDelay(status,attempt,retryMs=0){
     const n=Math.max(1,Math.min(10,Number(attempt)||1));
     const base=status===429?1800000:status===503?480000:45000;
@@ -602,6 +617,16 @@
       if(quota<=0)return;
       let ready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&
         !seenInMemory(a,null)&&!(state.collectorRetry[a.key]&&state.collectorRetry[a.key].nextAt>now));
+      // Keep archived downloaded candidates on disk while allowing discovery
+      // to continue if the 7200-item in-memory queue becomes entirely staged.
+      if(ready.length<Math.max(12,quota*4)&&state.pool.length>=CONFIG.maxQueue){
+        const park=new Set(state.pool.filter(a=>state.prefetchedKeys.has(a.key))
+          .slice(0,600).map(a=>a.key));
+        if(park.size){
+          state.pool=state.pool.filter(a=>!park.has(a.key));
+          for(const key of park)state.pendingKeys.delete(key);
+        }
+      }
       if(ready.length<Math.max(12,quota*4)&&state.pool.length<CONFIG.maxQueue&&
          (!state.collectorLastIndexAt||now-state.collectorLastIndexAt>CONFIG.collectorTickMs-3000)){
         state.collectorLastIndexAt=now;
@@ -618,7 +643,11 @@
         if(old&&old.nextAt>Date.now())continue;
         attempted++;
         try{
+          const already=await dbGet('downloaded',art.key);
+          if(already){state.prefetchedKeys.add(art.key);continue;}
           await loadImage(art);
+          // Count a download only after its metadata is durably indexed.
+          await dbPutMany('downloaded',[{key:art.key,art,when:Date.now()}]);
           state.prefetchedKeys.add(art.key);
           delete state.collectorRetry[art.key];
           downloaded++;state.collectorSuccess++;state.collectorWindowSaved++;state.collectorDaySaved++;
@@ -647,6 +676,31 @@
     if(state.collectorTimer)clearInterval(state.collectorTimer);
     state.collectorTimer=setInterval(()=>{collectorPump().catch(()=>{});},CONFIG.collectorTickMs);
     collectorPump().catch(()=>{});
+  }
+  // Read at most a small page of saved unshown artworks, so 8GiB of downloads
+  // need not become a single giant settings record or startup JS array.
+  async function restoreDownloadedInventory(limit=300){
+    if(!state.db||!state.db.objectStoreNames.contains('downloaded'))return 0;
+    return new Promise((resolve,reject)=>{
+      let added=0;
+      const tx=state.db.transaction('downloaded','readonly');
+      const req=tx.objectStore('downloaded').openCursor();
+      req.onsuccess=()=>{
+        const cursor=req.result;
+        if(!cursor||added>=limit||state.pool.length>=CONFIG.maxQueue)return;
+        const art=cursor.value&&cursor.value.art;
+        if(art&&C.eligibleArt(art)&&C.metadataResolutionOkay(art)&&
+           !seenInMemory(art,null)&&!state.pendingKeys.has(art.key)){
+          state.pendingKeys.add(art.key);state.pool.push(art);
+          state.prefetchedKeys.add(art.key);
+          added++;
+        }
+        cursor.continue();
+      };
+      tx.oncomplete=()=>resolve(added);
+      tx.onerror=()=>reject(tx.error);
+      tx.onabort=()=>reject(tx.error);
+    });
   }
   async function restoreCandidatePool(){
     try{
@@ -685,6 +739,7 @@
     if(state.prepared)return state.prepared;
     if(state.preparing)return state.preparing;
     state.preparing=(async()=>{
+      if(state.pool.length<CONFIG.minPool)await restoreDownloadedInventory(300);
       if(!state.pool.length)await fillPool(CONFIG.minPool);
       const requestedPost1800=C.targetPost1800(state.stats.slot);
       const first=requestedPost1800?'post1800':'pre1800';
@@ -771,9 +826,10 @@
     if(emergency)state.emergencySwaps++;
     if(test&&test.onShow)test.onShow(show.art,show.orient,emergency);
     // Persist in the background: storage latency may not delay a visual transition.
-    recordSeen(show).then(()=>
-      dbPutMany('settings',[{key:'lastArtwork',value:show.art}])
-    ).catch(e=>{
+    recordSeen(show).then(async()=>{
+      await dbDelete('downloaded',show.art.key);
+      await dbPutMany('settings',[{key:'lastArtwork',value:show.art}]);
+    }).catch(e=>{
       state.lastErr='감상 기록 저장 실패: '+String(e.message||e);
       // Keep the artwork clock running, but disclose that 90-day records
       // may be incomplete until storage recovers.
@@ -809,7 +865,7 @@
       state.exhaustedTicks++;
       state.lastErr='최근 90일 내 보지 않은 새 그림을 준비 중입니다. 중복 재생하지 않습니다.';
     }
-    // This may take minutes; it NEVER blocks the next 30-second tick.
+    // This may take minutes; it NEVER blocks the next one-minute tick.
     prepareNext().catch(e=>{state.lastErr='다음 그림 준비: '+e.message;});
   }
   function stopClock(){
@@ -840,13 +896,13 @@
       window.GalleryAndroid.startArtworkClock(CONFIG.intervalMs);
     }else armBrowserClock();
   }
-  // Android calls this from a main-thread Handler every 30,000ms, independent
+  // Android calls this from a main-thread Handler every 60,000ms, independent
   // of the API and loading promises.
   window.__galleryClockTick=()=>advanceSlide();
   window.__galleryForeground=()=>{if(state.playing)startClock();};
   function next(){
     advanceSlide();
-    if(state.playing)startClock(); // manual skip resets the 30-second clock
+    if(state.playing)startClock(); // manual skip resets the one-minute clock
   }
   async function pruneExpired(){
     const cutoff=Date.now()-C.NINETY_DAYS_MS;
@@ -955,7 +1011,7 @@
 
   function cacheStatus(){
     if(window.GalleryAndroid&&window.GalleryAndroid.cacheStats){
-      try{const s=JSON.parse(window.GalleryAndroid.cacheStats());return `${C.prettyBytes(s.bytes||0)} / 8GiB · 전시 후 삭제 ${Number(s.purgedFiles||0)}점 (${C.prettyBytes(s.purgedBytes||0)})`;}catch(_){return '확인할 수 없음';}
+      try{const s=JSON.parse(window.GalleryAndroid.cacheStats());return `${C.prettyBytes(s.bytes||0)} / 8GiB · 실제 저장 ${Number(s.imageFiles||0).toLocaleString('ko-KR')}점 · 전시 후 삭제 ${Number(s.purgedFiles||0)}점 (${C.prettyBytes(s.purgedBytes||0)})`;}catch(_){return '확인할 수 없음';}
     }
     return '브라우저 관리 (자동 캐시 제한 불가)';
   }
@@ -1174,9 +1230,14 @@
       try{await refreshForDay(true);await fillPool(CONFIG.targetPool);ui.msg.textContent=`작품 후보 ${state.pool.length}점을 확보했습니다.`;}
       catch(e){ui.msg.textContent='갱신 실패: '+e.message;}updateInfo();
     });
-    el('free-space').addEventListener('click',()=>{
+    el('free-space').addEventListener('click',async()=>{
       if(window.GalleryAndroid&&window.GalleryAndroid.clearImageCache){
-        const ok=window.GalleryAndroid.clearImageCache();ui.msg.textContent=ok?'저장된 이미지 캐시를 삭제했습니다. 감상 기록은 그대로입니다.':'캐시 정리에 실패했습니다.';
+        const ok=window.GalleryAndroid.clearImageCache();
+        if(ok){
+          try{await dbClear('downloaded');state.prefetchedKeys.clear();}
+          catch(e){state.lastErr='캐시 목록 정리 실패: '+String(e.message||e);}
+        }
+        ui.msg.textContent=ok?'이미지 캐시와 다운로드 목록을 삭제했습니다. 90일 감상 기록은 보존됩니다.':'캐시 정리에 실패했습니다.';
       }else{ui.msg.textContent='웹 브라우저의 이미지 HTTP 캐시는 사이트에서 직접 지울 수 없습니다. 안드로이드 APK에서는 자동 정리됩니다.';}
       updateInfo();
     });
@@ -1229,6 +1290,7 @@
       await restoreCollector();
       await hydrateHistory();
       await restoreCandidatePool();
+      await restoreDownloadedInventory(300);
       await loadOfflineDeck();
       const firstUnseen=state.offlineReady.find(x=>!seenInMemory(x.art,x.visualHash));
       if(firstUnseen){
