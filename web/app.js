@@ -659,7 +659,7 @@
       // JS requests overlap across independent URLs, but Android allows only
       // three simultaneous native transfers and serializes same-URL writes.
       // No bypass of source cooldowns, Retry-After or the 1.5GiB free reserve.
-      let downloaded=0,attempted=0,queueIndex=0;
+      let downloaded=0,attempted=0,queueIndex=0,active=0;
       const candidates=C.shuffledCopy(ready);
       async function collectOne(art){
         if(state.downloadedKeys.has(art.key)||state.collectorRejectedKeys.has(art.key)||
@@ -715,9 +715,11 @@
       }
       async function worker(){
         while(queueIndex<candidates.length &&
-              downloaded<quota&&attempted<CONFIG.collectorMaxAttemptsPerTick){
+              downloaded+active<quota&&attempted<CONFIG.collectorMaxAttemptsPerTick){
           const idx=queueIndex++;
-          await collectOne(candidates[idx]);
+          active++;
+          try{await collectOne(candidates[idx]);}
+          finally{active--;}
         }
       }
       await Promise.all(Array.from({length:Math.min(3,candidates.length)},()=>worker()));
