@@ -1,29 +1,39 @@
 {
-  "as_of_utc": "2026-11-14T04:41:33.225133+00:00",
+  "as_of_utc": "2026-11-14T05:13:28.631825+00:00",
   "target": {
     "modern": 207360,
     "older": 51840,
     "all": 259200
   },
-  "reported_input_files": 439,
-  "exact_duplicate_source_ids_removed": 0,
+  "reported_input_files": 488,
+  "exact_duplicate_source_ids_removed": 1,
   "exact_duplicate_image_hashes_removed": 0,
-  "unique_verified_file_and_source_id_count": 439,
-  "verified_1800plus": 341,
-  "verified_older": 98,
-  "actual_modern_share_percent": 77.6765,
-  "missing_1800plus": 207019,
-  "missing_older": 51742,
-  "missing_total": 258761,
+  "unique_verified_file_and_source_id_count": 487,
+  "verified_1800plus": 377,
+  "verified_older": 110,
+  "actual_modern_share_percent": 77.4127,
+  "missing_1800plus": 206983,
+  "missing_older": 51730,
+  "missing_total": 258713,
   "suspected_visual_duplicate_pairs_requiring_review": 0,
   "visual_pairs_first_30": [],
-  "duplicate_ids_sample": [],
+  "duplicate_ids_sample": [
+    {
+      "source": "Wellcome Collection",
+      "id": "fuvt77qy",
+      "prior_stage": "wellcome",
+      "later_stage": "wellcome"
+    }
+  ],
   "duplicate_image_hashes_sample": [],
   "all_259200_acquired": false,
   "evidence": {
     "baseline": "GitHub Actions 43555200749",
     "four_batches": "GitHub Actions 43557017166",
-    "national_gallery_of_art": "GitHub Actions 43557443707"
+    "national_gallery_of_art": "GitHub Actions 43557443707",
+    "wellcome": "GitHub Actions 43558532875",
+    "smk": "GitHub Actions 43559855032",
+    "smithsonian": "GitHub Actions 43560141359"
   },
   "limitations": [
     "Actual JPEG bytes remain in expiring GitHub Actions artifacts, not in this repository manifest.",
