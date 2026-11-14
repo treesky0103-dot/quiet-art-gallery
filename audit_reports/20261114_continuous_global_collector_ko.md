@@ -7,7 +7,7 @@
 
 ## 반영된 변경
 
-1. 기존 미술관 중심 소장품 검색에 더해 세계 도서관 삽화·판화·드로잉·개인 창작 작품을 포함하는 Wikimedia Commons **12개 검색 분류**를 추가. 이는 12개 독립 서버나 전 세계 모든 서버에 연결했다는 뜻이 아니다.
+1. 기존 미술관 중심 소장품 검색에 더해 세계 삽화·판화·드로잉·개인 창작 작품을 포함하는 Wikimedia Commons **12개 검색 분류**를 추가. 이는 12개 독립 서버나 전 세계 모든 서버에 연결했다는 뜻이 아니다.
 2. `web/core.js`: `GLOBAL_OPEN_ART_CATEGORIES`, `normalizeGlobalCommons` 추가. Commons의 CC0/퍼블릭 도메인 표기를 확인하고 비평면 작품·전시실·액자 사진을 필터링. 시대 분류 카테고리 이름을 작품의 실제 제작 연도로 인정하지 않음.
 3. `web/app.js`: 전시 기능과 별도의 **2분 간격 수집 보충 펌프**. 1회 최대 6개 실제 이미지 로드·디코딩 사전검증, 최대 12회 다운로드 시도. 실패는 다음 회차에 재시도. 앱이 화면에 활성 상태일 때 동작하며, Android 앱 종료 후 무중단 작동은 구현·검증하지 않음.
 4. IndexedDB에 최대 180건의 수집 후보 매니페스트 및 소스 커서를 저장하여 재실행 시 후보를 복원. 이는 실제 이미지 파일 다운로드 완료를 증명하지 않음. 노출한 작품의 90일 미사용 판단은 기존 감상 ID·시각·시각해시 로직을 유지.
@@ -17,13 +17,13 @@
 
 ## 검증
 
-- GitHub Actions <https://github.com/treesky0103-dot/quiet-art-gallery/actions/runs/43565340568>
+- 최종 소스 검증 GitHub Actions <https://github.com/treesky0103-dot/quiet-art-gallery/actions/runs/43565763864>
 - Node 기반 전체 회귀 테스트 **74/74 통과**.
 - `web/core.js` 및 `web/app.js`가 Android 자산 사본과 정확하게 일치.
 - Android SDK 35를 사용한 `gradle :app:assembleDebug` 빌드 성공.
-- 연구용 debug APK SHA256 `be92d23e1562c915ad0d54a1410a7aabc8e9b5726a64b4cb83a37afdf8093262`.
+- 연구용 debug APK SHA256 `0828754ab46090fcae637288f13f4d9f1fed66f360571b3120f779ee86be71fa`.
 - 갤럭시 탭 A7 실기기 24시간·90일 실증, 화면 꺼짐·재부팅·장시간 네트워크 장애 회복, 실제 8GiB 축적·재사용 차단 및 다른 APK 서명 호환 검증: **미실시**.
-- 새 12개 Commons 분류의 공개 API 실측: <https://github.com/treesky0103-dot/quiet-art-gallery/actions/runs/43565557941> (결과 확인 전에는 성공 건수 미확정).
+- 새 12개 Commons 분류의 공개 API 실측: <https://github.com/treesky0103-dot/quiet-art-gallery/actions/runs/43565749034>. 모든 분류에서 응답 성공, 첫 페이지 기준 이미지 URL·크기 메타데이터 221건, 실제 JPG 다운로드·디코딩 **0건**. 빈 결과였던 British Library 명칭 대신 실제 결과가 반환된 '19th-century illustrations'로 교체함.
 
 ## 현실적 제약
 
