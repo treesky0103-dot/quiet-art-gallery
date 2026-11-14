@@ -48,6 +48,13 @@ public final class ShownImageLedger extends SQLiteOpenHelper {
         if(hash!=null&&hash.matches("[0-9a-f]{64}"))
             getWritableDatabase().delete("shown","urlhash=?",new String[]{hash});
     }
+    public synchronized boolean contains(String hash){
+        if(hash==null||!hash.matches("[0-9a-f]{64}"))return false;
+        try(Cursor c=getReadableDatabase().rawQuery(
+                "SELECT 1 FROM shown WHERE urlhash=? LIMIT 1",new String[]{hash})){
+            return c.moveToFirst();
+        }
+    }
     public synchronized int count(){
         try(Cursor c=getReadableDatabase().rawQuery("SELECT COUNT(*) FROM shown",null)){
             return c.moveToFirst()?c.getInt(0):0;
