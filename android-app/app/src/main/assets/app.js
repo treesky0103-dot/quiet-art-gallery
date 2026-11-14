@@ -635,10 +635,10 @@
         state.prefetchedKeys=new Set([...state.prefetchedKeys].filter(k=>live.has(k)).slice(-1000));
       }
       const unready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key));
-      const ready=state.pool.filter(a=>state.prefetchedKeys.has(a.key));
+      const staged=state.pool.filter(a=>state.prefetchedKeys.has(a.key));
       await dbPutMany('settings',[{key:'candidatePool',value:
         unready.slice(0,Math.min(800,CONFIG.savedCandidateLimit))
-        .concat(ready.slice(-200)).slice(0,CONFIG.savedCandidateLimit)}]);
+        .concat(staged.slice(-200)).slice(0,CONFIG.savedCandidateLimit)}]);
       await persistCollector();await persist();
     }catch(e){state.collectorErrors++;state.lastErr='수집 대기열 오류: '+String(e.message||e);}
     finally{state.collectorRunning=false;updateInfo();}
