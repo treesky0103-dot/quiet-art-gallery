@@ -7,6 +7,8 @@ on:
       - web/core.js
       - web/app.js
       - web/index.html
+      - android-app/app/src/main/assets/**
+      - tests/medium_quality_priority.test.cjs
       - tests/modern_art.test.cjs
       - tests/era_evidence_80.test.cjs
       - .github/workflows/validate-80pct-gallery.yml
