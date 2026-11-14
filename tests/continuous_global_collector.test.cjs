@@ -51,7 +51,7 @@ test('collector makes progress only while visible, rate-limits attempts and save
   assert.match(app,/collectorMaxPerTick:6/);
   assert.match(app,/화면 활성 · 8GiB 우선 수집/);
   assert.match(app,/collectorPump\(\)\.catch\(\(\)=>\{\}\);\}\}\);/);
-  assert.match(app,/attempted>=CONFIG\.collectorMaxAttemptsPerTick/);
+  assert.match(app,/attempted<CONFIG\.collectorMaxAttemptsPerTick/);
   assert.match(app,/document\.hidden/);
   assert.match(app,/delete state\.collectorRetry\[art\.key\]/);
   assert.match(app,/key:'candidatePool'/);
