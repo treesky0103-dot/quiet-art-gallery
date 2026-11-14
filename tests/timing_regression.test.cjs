@@ -5,7 +5,7 @@ const path=require('node:path');
 const load=p=>fs.readFileSync(path.resolve(__dirname,'..',p),'utf8');
 test('Native Android uses non-blocking fixed-interval scheduler',()=>{
  const java=load('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java');
- assert.match(java,/ART_INTERVAL_MS = 30000L/);
+ assert.match(java,/ART_INTERVAL_MS = 60000L/);
  assert.match(java,/galleryClock\.postAtTime\(this,galleryDeadline\)/);
  assert.match(java,/@JavascriptInterface public void startArtworkClock\(int intervalMs\)/);
  assert.match(java,/window\.__galleryClockTick/);
