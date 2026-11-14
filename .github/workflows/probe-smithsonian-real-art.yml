@@ -1,0 +1,50 @@
+name: Smithsonian public-domain artworks actual image proof
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_smithsonian_real_art.py
+      - .github/workflows/probe-smithsonian-real-art.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pillow
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Audit dates and download image bytes
+        run: |
+          python -m py_compile scripts/probe_smithsonian_real_art.py
+          python -u scripts/probe_smithsonian_real_art.py
+      - name: Independently verify stored bytes
+        run: |
+          python - <<'PY'
+          import json,hashlib,io
+          from PIL import Image
+          from pathlib import Path
+          r=json.loads(Path('audit-smithsonian-actual/report.json').read_text())
+          assert r['completion_of_259200'] is False
+          assert r['verified_byte_count']==len(r['actual_downloaded'])
+          for record in r['actual_downloaded']:
+              data=Path(record['saved_file']).read_bytes()
+              assert hashlib.sha256(data).hexdigest()==record['sha256']
+              im=Image.open(io.BytesIO(data));im.load()
+              assert im.width>=1000 and im.height>=1400 and im.width<im.height
+              assert min((im.width/im.height)/.625,.625/(im.width/im.height))>=.75
+          print('Smithsonian actual byte files verified:',r['verified_byte_count'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smithsonian-1800plus-and-older-actual-2d-art
+          path: audit-smithsonian-actual/
+          if-no-files-found: warn
+          retention-days: 3
