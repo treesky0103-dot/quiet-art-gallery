@@ -1,0 +1,46 @@
+name: SMK Denmark entire 39k open art metadata era census
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/census_smk_40k_metadata.py
+      - .github/workflows/census-smk-40k.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit every SMK public domain record for artwork year, 2D type and portrait ratio
+        run: |
+          python -m py_compile scripts/census_smk_40k_metadata.py
+          python -u scripts/census_smk_40k_metadata.py
+      - name: Confirm no metadata image inflation
+        run: |
+          python - <<'PY'
+          import gzip,csv,json
+          from pathlib import Path
+          root=Path('audit-smk-metadata-census')
+          j=json.loads((root/'summary.json').read_text())
+          with gzip.open(root/'smk_75pct_era_metadata_candidates.csv.gz','rt',encoding='utf-8') as f:
+              rows=list(csv.DictReader(f))
+          assert j['actual_downloaded_image_files_this_run']==0
+          assert j['complete_for_259200'] is False
+          assert j['unique_portrait_flat_art_metadata_candidates']==len(rows)
+          assert len({x['id'] for x in rows})==len(rows)
+          print('SMK source record and dedup audit:',len(rows))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smk-39k-dated-portrait-art-metadata-only
+          path: audit-smk-metadata-census/
+          if-no-files-found: warn
+          retention-days: 7
