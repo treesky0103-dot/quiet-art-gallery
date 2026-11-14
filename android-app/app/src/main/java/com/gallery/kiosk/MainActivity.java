@@ -126,7 +126,7 @@ public final class MainActivity extends Activity {
                 }
                 String assetPath = (path == null || path.equals("/")) ? "index.html" : path.substring(1);
                 boolean offlineImage=assetPath.matches("(?:offline/fallback-(?:[0-9]|1[0-5])|offline/pack-[0-9]{4})\\.jpg");
-                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json").contains(assetPath))
+                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json", "art-movements.json", "art-providers.json").contains(assetPath))
                     return response(404, "text/plain", new byte[0]);
                 try {
                     InputStream in = getAssets().open(assetPath);
@@ -286,6 +286,40 @@ public final class MainActivity extends Activity {
             params.put("query",q).put("page",page).put("limit",100);
             params.put("fields",new JSONArray().put("id").put("title").put("artist_title").put("image_id").put("is_public_domain").put("artwork_type_title").put("medium_display").put("thumbnail").put("style_title").put("style_titles").put("date_display").put("date_start"));
             return "https://api.artic.edu/api/v1/artworks/search?params="+URLEncoder.encode(params.toString(),"UTF-8");
+        }
+        if(type.equals("movementCommons")){
+            String[] parts=p.split(":",-1);
+            if(parts.length!=2)throw new IOException("전 세계 사조 조회 조건 오류");
+            int n=bounded(parts[0],0,999),off=bounded(parts[1],0,2500);
+            // The search string is read only from our packaged, immutable
+            // registry; the external caller cannot inject arbitrary queries.
+            ByteArrayOutputStream bytes=new ByteArrayOutputStream();
+            try(InputStream catalogFile=getAssets().open("art-movements.json")){
+                byte[] buf=new byte[8192];int read;
+                while((read=catalogFile.read(buf))!=-1){
+                    bytes.write(buf,0,read);
+                    if(bytes.size()>220000)throw new IOException("사조 목록 파일 크기 오류");
+                }
+            }
+            JSONObject catalog=new JSONObject(new String(bytes.toByteArray(),StandardCharsets.UTF_8));
+            JSONArray groups=catalog.getJSONArray("groups");
+            JSONObject chosen=null;int count=0;
+            for(int i=0;i<groups.length()&&chosen==null;i++){
+                JSONArray schools=groups.getJSONObject(i).getJSONArray("movements");
+                for(int j=0;j<schools.length();j++,count++){
+                    if(count==n){chosen=schools.getJSONObject(j);break;}
+                }
+            }
+            if(chosen==null)throw new IOException("등록되지 않은 사조 순번");
+            String term=chosen.optString("search_en","");
+            if(term==null||term.trim().isEmpty())term=chosen.optString("name_ko","");
+            if(term.length()<2||term.length()>90)throw new IOException("사조 검색어 길이 오류");
+            String query=term+" painting drawing illustration photograph";
+            return "https://commons.wikimedia.org/w/api.php?action=query&generator=search"+
+                "&gsrnamespace=6&gsrlimit=25&gsrsearch="+
+                URLEncoder.encode(query,"UTF-8")+"&gsroffset="+off+
+                "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata"+
+                "&iiurlwidth=2000&format=json&formatversion=2";
         }
         if(type.equals("mediaCommons")){
             String[] parts=p.split(":",-1);
