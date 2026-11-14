@@ -30,8 +30,8 @@ def count_records(root,ns):
     data["record_count_first_response"]=len(root.findall(".//o:record",ns))
     data["identifiers"]=len(root.findall(".//o:header",ns))
     data["resumption_token_present"]=bool(root.findtext(".//o:resumptionToken",default="",namespaces=ns))
-    d=ET.tostring(root.find(".//o:record",ns),encoding="unicode")
-    if root.find(".//o:record",ns) is not None else ""
+    first=root.find(".//o:record",ns)
+    d=ET.tostring(first,encoding="unicode") if first is not None else ""
     data["first_record_excerpt"]=d[:2600]
     data["error_entries"]=len(root.findall(".//o:error",ns))
     return data
