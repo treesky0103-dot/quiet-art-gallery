@@ -1,0 +1,58 @@
+name: Reverify page2 Wellcome genuine JPEG files and append to durable 90-day unique ID register
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/append_wellcome_page2_real.py
+      - .github/workflows/append-wellcome-page2.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Decode actual image files with Pillow
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Retrieve only real new Wellcome JPEGs
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43563547762
+          name: wellcome-page2-1800-verified-artwork-files
+          path: research-input/wellcome2
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Independently recheck all file bytes and de-duplicate source Work IDs
+        run: |
+          python -m py_compile scripts/append_wellcome_page2_real.py
+          python -u scripts/append_wellcome_page2_real.py
+      - name: Check every persisted row and no false 90-day completion
+        run: |
+          python - <<'PY'
+          import csv,json
+          from pathlib import Path
+          p=Path('data/verified_80pct')
+          with (p/'verified_artwork_manifest.csv').open(encoding='utf-8-sig',newline='') as f:
+              rows=list(csv.DictReader(f))
+          j=json.loads((p/'cumulative_audit.json').read_text())
+          assert len(rows)==j['unique_verified_file_and_source_id_count']
+          assert len({(x['source'],x['artwork_id']) for x in rows})==len(rows)
+          assert len({x['file_sha256'] for x in rows})==len(rows)
+          assert j['all_259200_acquired'] is False
+          assert j['missing_total']==259200-len(rows)
+          print('Verified durable global artwork manifest rows:',len(rows))
+          PY
+      - name: Commit manifest hashes and source provenance, not large image binaries
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/verified_80pct/verified_artwork_manifest.csv data/verified_80pct/cumulative_audit.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Append verified and de-duplicated second Wellcome original artwork page"
+          git push origin HEAD:collect-80pct-scale-batch-20261114
