@@ -12,6 +12,7 @@ import hashlib
 import io
 import json
 import os
+import time
 from pathlib import Path
 import re
 import warnings
@@ -26,11 +27,15 @@ ROOT = Path("data/collector_10min")
 BASE = Path("data/verified_80pct/verified_artwork_manifest.csv")
 STATE = ROOT / "state.json"
 NEW_CSV = ROOT / "new_verified.csv"
+HISTORY = ROOT / "run_history.csv"
 OUT = Path("collector-10min-batch")
 IMAGES = OUT / "images"
 MAX_BYTES = 15 * 1024 * 1024
-TARGET = 3
-MAX_ATTEMPTS = 70
+TARGET = 80  # aspirational cap; actual batch is bounded by time, source/rights, proof-byte budget
+MAX_ATTEMPTS = 200
+MAX_PAGES = 12
+TIME_BUDGET_SECONDS = 345
+MAX_PROOF_BYTES = 20 * 1024 * 1024
 YEAR = 2026
 ASPECT = 0.625
 HEADERS = {"User-Agent": "QuietArtGalleryResearch/1.0 (+https://github.com/treesky0103-dot/quiet-art-gallery)", "Accept": "*/*"}
@@ -191,76 +196,94 @@ def run():
     # Rotate source priority across runs; make modern artworks the default.
     turn=int(state.get("runs",0))
     if turn%5==4:sources=[sources[1],sources[0]]
-    attempts=0;found=[];probes=[];ok_sources=0;rejects={}
+    started=time.monotonic()
+    attempts=0;found=[];probes=[];ok_sources=0;rejects={};pages=0;proof_bytes=0
+    # Cycle source pages until the time/attempt/output cap, not a fixed three works.
+    # Keep scans read-only on the production branch. Save cursors only after completed pages.
     for key,which,source in sources:
-        if len(found)>=TARGET or attempts>=MAX_ATTEMPTS:break
-        offset=int(cursors.get(key,2500 if key.startswith("cma") else 16))
-        try:
-            candidates,step=source(which,offset)
-            ok_sources+=1;cursors[key]=offset+step
-            probes.append({"source":key,"cursor":offset,"candidates":len(candidates),"ok":True})
-        except Exception as ex:
-            probes.append({"source":key,"cursor":offset,"ok":False,"error":str(ex)[:170]})
-            continue
-        for art in candidates:
-            if len(found)>=TARGET or attempts>=MAX_ATTEMPTS:break
-            identifier=(art["source"],art["artwork_id"])
-            if not identifier[1] or identifier in ids:continue
-            attempts+=1
+        while (len(found)<TARGET and attempts<MAX_ATTEMPTS and
+               pages<MAX_PAGES and time.monotonic()-started<TIME_BUDGET_SECONDS):
+            offset=int(cursors.get(key,2500 if key.startswith("cma") else 16))
+            pages+=1
             try:
-                raw=get_image(art["original_url"])
-                im=Image.open(io.BytesIO(raw));im.load()
-                if im.format not in ("JPEG","PNG","WEBP"):continue
-                w,h=im.size
-                if not screen_ok(w,h):
-                    rejects["decoded_dimensions"]=rejects.get("decoded_dimensions",0)+1
-                    continue
-                source_hash=hashlib.sha256(raw).hexdigest()
-                if source_hash in hashes:
-                    rejects["existing_sha"]=rejects.get("existing_sha",0)+1
-                    continue
-                visual_hash=dhash(im)
-                n=int(visual_hash,16)
-                if any((n ^ old).bit_count()<=2 for old in visual):
-                    rejects["existing_visual"]=rejects.get("existing_visual",0)+1
-                    continue
-                # Keep a display-ready, uncropped JPEG as proof; source bytes are
-                # decoded/hashed but not retained to avoid unlimited artifact bills.
-                scale=max(1000/w,1400/h)
-                if scale>1:continue
-                if scale<1:
-                    im=im.resize((round(w*scale),round(h*scale)),Image.Resampling.LANCZOS)
-                if not screen_ok(*im.size):
-                    rejects["optimized_dimensions"]=rejects.get("optimized_dimensions",0)+1
-                    continue
-                retained=None
-                for quality in (84,78,72,66,60):
-                    buffer=io.BytesIO()
-                    im.convert("RGB").save(buffer,format="JPEG",quality=quality,optimize=True,progressive=True)
-                    if buffer.tell()<=600_000:
-                        retained=buffer.getvalue();break
-                if not retained:
-                    rejects["optimized_file_over_600kb"]=rejects.get("optimized_file_over_600kb",0)+1
-                    continue
-                file_hash=hashlib.sha256(retained).hexdigest()
-                if file_hash in hashes:
-                    rejects["optimized_duplicate_sha"]=rejects.get("optimized_duplicate_sha",0)+1
-                    continue
-                fn=IMAGES/(file_hash[:24]+".jpg")
-                fn.write_bytes(retained)
-                decoded=Image.open(fn);decoded.load()
-                if decoded.size != im.size or not screen_ok(*decoded.size):raise ValueError("Saved-image validation failed")
-                if hashlib.sha256(fn.read_bytes()).hexdigest()!=file_hash:raise ValueError("Disk hash mismatch")
-                recorded={**art,"original_sha256":source_hash,"file_sha256":file_hash,
-                  "visual_dhash":visual_hash,"width":im.width,"height":im.height,"bytes":len(retained),
-                  "artifact_run":os.getenv("GITHUB_RUN_ID","local"),
-                  "verified_utc":datetime.now(timezone.utc).isoformat()}
-                rows.append(recorded);found.append(recorded)
-                ids.add(identifier);hashes.update((source_hash,file_hash));visual.append(n)
-                print("VERIFIED "+art["source"]+" "+art["artwork_id"]+" "+source_hash,flush=True)
+                candidates,step=source(which,offset)
+                ok_sources+=1
+                cursors[key]=offset+step
+                if len(probes)<30:
+                    probes.append({"source":key,"cursor":offset,"candidates":len(candidates),"ok":True})
             except Exception as ex:
-                rejects["download_decode_error"]=rejects.get("download_decode_error",0)+1
-                if len(probes)<30:probes.append({"source":key,"artwork_id":art["artwork_id"],"error":str(ex)[:170]})
+                if len(probes)<30:
+                    probes.append({"source":key,"cursor":offset,"ok":False,"error":str(ex)[:170]})
+                break
+            for art in candidates:
+                if (len(found)>=TARGET or attempts>=MAX_ATTEMPTS or
+                    proof_bytes>=MAX_PROOF_BYTES or
+                    time.monotonic()-started>=TIME_BUDGET_SECONDS):break
+                identifier=(art["source"],art["artwork_id"])
+                if not identifier[1] or identifier in ids:continue
+                attempts+=1
+                try:
+                    raw=get_image(art["original_url"])
+                    im=Image.open(io.BytesIO(raw));im.load()
+                    if im.format not in ("JPEG","PNG","WEBP"):continue
+                    w,h=im.size
+                    if not screen_ok(w,h):
+                        rejects["decoded_dimensions"]=rejects.get("decoded_dimensions",0)+1
+                        continue
+                    source_hash=hashlib.sha256(raw).hexdigest()
+                    if source_hash in hashes:
+                        rejects["existing_sha"]=rejects.get("existing_sha",0)+1
+                        continue
+                    visual_hash=dhash(im)
+                    n=int(visual_hash,16)
+                    if any((n ^ old).bit_count()<=2 for old in visual):
+                        rejects["existing_visual"]=rejects.get("existing_visual",0)+1
+                        continue
+                    # Keep a display-ready, uncropped JPEG as temporary file proof.
+                    scale=max(1000/w,1400/h)
+                    if scale>1:continue
+                    if scale<1:
+                        im=im.resize((round(w*scale),round(h*scale)),Image.Resampling.LANCZOS)
+                    if not screen_ok(*im.size):
+                        rejects["optimized_dimensions"]=rejects.get("optimized_dimensions",0)+1
+                        continue
+                    retained=None
+                    for quality in (84,78,72,66,60):
+                        buffer=io.BytesIO()
+                        im.convert("RGB").save(buffer,format="JPEG",quality=quality,optimize=True,progressive=True)
+                        if buffer.tell()<=600_000:
+                            retained=buffer.getvalue();break
+                    if not retained:
+                        rejects["optimized_file_over_600kb"]=rejects.get("optimized_file_over_600kb",0)+1
+                        continue
+                    if proof_bytes+len(retained)>MAX_PROOF_BYTES:
+                        rejects["proof_byte_budget"]=rejects.get("proof_byte_budget",0)+1
+                        break
+                    file_hash=hashlib.sha256(retained).hexdigest()
+                    if file_hash in hashes:
+                        rejects["optimized_duplicate_sha"]=rejects.get("optimized_duplicate_sha",0)+1
+                        continue
+                    fn=IMAGES/(file_hash[:24]+".jpg")
+                    fn.write_bytes(retained)
+                    decoded=Image.open(fn);decoded.load()
+                    if decoded.size != im.size or not screen_ok(*decoded.size):
+                        raise ValueError("Saved-image validation failed")
+                    if hashlib.sha256(fn.read_bytes()).hexdigest()!=file_hash:
+                        raise ValueError("Disk hash mismatch")
+                    recorded={**art,"original_sha256":source_hash,"file_sha256":file_hash,
+                      "visual_dhash":visual_hash,"width":im.width,"height":im.height,"bytes":len(retained),
+                      "artifact_run":os.getenv("GITHUB_RUN_ID","local"),
+                      "verified_utc":datetime.now(timezone.utc).isoformat()}
+                    rows.append(recorded);found.append(recorded)
+                    proof_bytes+=len(retained)
+                    ids.add(identifier);hashes.update((source_hash,file_hash));visual.append(n)
+                    print("VERIFIED "+art["source"]+" "+art["artwork_id"]+" "+source_hash,flush=True)
+                except Exception as ex:
+                    rejects["download_decode_error"]=rejects.get("download_decode_error",0)+1
+                    if len(probes)<30:
+                        probes.append({"source":key,"artwork_id":art["artwork_id"],"error":str(ex)[:170]})
+            if not candidates or proof_bytes>=MAX_PROOF_BYTES:break
+        if len(found)>=TARGET or proof_bytes>=MAX_PROOF_BYTES:break
     now=datetime.now(timezone.utc).isoformat()
     report={"run_utc":now,"github_run_id":os.getenv("GITHUB_RUN_ID","local"),
             "baseline_requested":736,"baseline_with_independent_hash_records":675,
@@ -268,6 +291,8 @@ def run():
             "user_baseline_plus_new":736+len(rows),
             "metadata_source_ok":ok_sources,"download_attempts":attempts,
             "proof_files":len(list(IMAGES.glob("*.jpg"))),"details":probes,"rejection_summary":rejects,
+            "scan_pages":pages,"elapsed_sec":round(time.monotonic()-started,1),
+            "proof_bytes":proof_bytes,"target_cap":TARGET,"max_output_bytes":MAX_PROOF_BYTES,
             "limitations":["736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
             "Original JPEG/PNG/WebP proof files live in expiring GitHub Actions artifacts, not tablet",
             "Server-side scheduled run does not update the existing v1.7.2 APK"]}
@@ -282,6 +307,15 @@ def run():
                   "last_download_success":len(found),"last_metadata_sources_ok":ok_sources})
     save_csv(NEW_CSV,rows)
     save_json(STATE,state)
+    history_fields=["run_utc","github_run_id","new_verified_this_run","increment_verified_unique",
+                    "user_baseline_plus_new","download_attempts","scan_pages","proof_bytes","elapsed_sec"]
+    previous=read_csv(HISTORY)
+    previous.append({k:report.get(k,"") for k in history_fields})
+    # Preserve history across scheduled runs; history is a manifest, not proof of permanent image bytes.
+    HISTORY.parent.mkdir(parents=True,exist_ok=True)
+    with HISTORY.open("w",encoding="utf-8",newline="") as hfile:
+        writer=csv.DictWriter(hfile,fieldnames=history_fields)
+        writer.writeheader();writer.writerows(previous)
     print("BATCH "+json.dumps({k:report[k] for k in ("new_verified_this_run","increment_verified_unique","user_baseline_plus_new","metadata_source_ok","download_attempts","proof_files")}),flush=True)
 
 def self_test():
@@ -293,10 +327,11 @@ def self_test():
     im=Image.new("RGB",(1000,1600),color=(220,40,20))
     assert re.fullmatch("[a-f0-9]{16}",dhash(im))
     baseline,rows,ids,hashes,visual=load_provenance()
-    assert len(baseline)==675 and len(rows)==0
+    assert len(baseline)==675
+    assert len(rows)==int(json.loads(STATE.read_text(encoding="utf-8"))["new_verified"])
     state=json.loads(STATE.read_text(encoding="utf-8"))
     assert state["baseline_requested"]==736 and state["verified_manifest_base"]==675
-    print("PASS baseline=736 | 675 independent source records | bitmap checks | 90-day ledger untouched")
+    print("PASS baseline=736 | 675 independent source records | verified increments="+str(len(rows))+" | bitmap checks | 90-day ledger untouched")
 
 if __name__=="__main__":
     p=argparse.ArgumentParser();p.add_argument("--self-test",action="store_true")
