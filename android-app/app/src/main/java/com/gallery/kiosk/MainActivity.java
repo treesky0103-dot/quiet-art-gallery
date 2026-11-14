@@ -163,7 +163,7 @@ public final class MainActivity extends Activity {
                 }
                 String assetPath = (path == null || path.equals("/")) ? "index.html" : path.substring(1);
                 boolean offlineImage=assetPath.matches("(?:offline/fallback-(?:[0-9]|1[0-5])|offline/pack-[0-9]{4})\\.jpg");
-                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json", "art-movements.json", "art-providers.json").contains(assetPath))
+                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json", "art-movements.json", "art-providers.json", "art-sources-85.json").contains(assetPath))
                     return response(404, "text/plain", new byte[0]);
                 try {
                     InputStream in = getAssets().open(assetPath);
@@ -622,6 +622,35 @@ public final class MainActivity extends Activity {
                 catch(Exception e){result=e.getMessage()==null?"연결 실패":e.getMessage();}
                 boolean success=ok;String payload=result;
                 runOnUiThread(()->{if(web!=null){String js="window.__galleryResolve("+JSONObject.quote(rid)+","+success+","+JSONObject.quote(payload)+");";web.evaluateJavascript(js,null);}});
+            });
+        }
+        @JavascriptInterface public void openRegisteredSource(int index){
+            if(index<0||index>=85)return;
+            io.execute(()->{
+                try{
+                    ByteArrayOutputStream bytes=new ByteArrayOutputStream();
+                    try(InputStream source=getAssets().open("art-sources-85.json")){
+                        byte[] chunk=new byte[8192];int n;
+                        while((n=source.read(chunk))!=-1){
+                            bytes.write(chunk,0,n);
+                            if(bytes.size()>160000)throw new IOException("Source catalog too large");
+                        }
+                    }
+                    JSONObject entry=new JSONObject(bytes.toString("UTF-8"))
+                        .getJSONArray("entries").getJSONObject(index);
+                    if(entry.getInt("number")!=index+1)return;
+                    String link=entry.optString("link","");
+                    if(link.isEmpty())return; // Unknown 99 Art / China Artists URLs
+                    URL url=new URL(link);
+                    if(!"https".equals(url.getProtocol())||
+                       (url.getPort()!=-1&&url.getPort()!=443)||
+                       url.getUserInfo()!=null||url.getHost().isEmpty())return;
+                    Intent intent=new Intent(Intent.ACTION_VIEW,Uri.parse(link));
+                    intent.addCategory(Intent.CATEGORY_BROWSABLE);
+                    runOnUiThread(()->{
+                        try{startActivity(intent);}catch(Exception ignored){}
+                    });
+                }catch(Exception ignored){}
             });
         }
         @JavascriptInterface public String cacheStats(){
