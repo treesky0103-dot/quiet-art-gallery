@@ -1,0 +1,41 @@
+name: Inspect Yale Center for British Art and Rijksmuseum OAI open harvesting
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_yale_rijks_oai.py
+      - .github/workflows/probe-yale-rijks-oai.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Inspect official OAI formats and first page of collection records
+        run: |
+          python -m py_compile scripts/probe_yale_rijks_oai.py
+          python -u scripts/probe_yale_rijks_oai.py
+      - name: Check no source metadata counted as byte verified art
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('audit-yale-rijks-oai/oai_formats_and_first_artwork.xml.json').read_text())
+          assert len(j['sources'])==2
+          assert j['actual_image_downloads']==0 and not j['complete_259200']
+          print('OAI source metadata inspection completed (images acquired: 0)')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: yale-rijks-actual-oai-api-probe
+          path: audit-yale-rijks-oai/
+          if-no-files-found: warn
+          retention-days: 5
