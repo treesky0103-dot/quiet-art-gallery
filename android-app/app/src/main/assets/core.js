@@ -26,6 +26,13 @@
   }
   function metadataResolutionOkay(a){
     if(!a)return false;
+    // On Android, the native image proxy can upscale eligible low-resolution
+    // 2D art and make portrait smart crops. The actual decoded JPEG must still
+    // pass strict 1000x1400/75%-fill validation before display.
+    if(typeof window!=='undefined' && window.GalleryAndroid){
+      const w=Number(a.width),h=Number(a.height);
+      return !(w>0&&h>0) || (w>=380&&h>=630) || (w>=630&&h>=380);
+    }
     // Commons source dimensions and Cleveland web rendition can be checked before download.
     if(a.museumRegion==='asia'||a.museumRegion==='africa'||a.museumRegion==='additional'||a.museumRegion==='modern'||a.source==='클리블랜드')return acceptableResolution(a.width,a.height);
     return true; // Other sources must pass the decoded-image check.
@@ -38,6 +45,8 @@
       const u = new URL(url);
       if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return false;
       const h = u.hostname.toLowerCase();
+      // Only exact named, APK-embedded artworks may use the pseudo-local host.
+      if(h === 'appassets.gallery')return /^/offline/pack-[0-9]{4}.jpg$/.test(u.pathname) && !u.search && !u.hash;
       return h === 'upload.wikimedia.org' || h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
     } catch (_) { return false; }
   }
