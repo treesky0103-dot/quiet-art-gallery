@@ -201,6 +201,7 @@
       const all=C.shuffledCopy(items.filter(art=>
         /^(?:offline\/fallback-(?:[0-9]|1[0-5])|offline\/pack-[0-9]{4})\.jpg$/.test(art.offlineAsset||'') &&
         C.eligibleArt(art) && C.metadataResolutionOkay(art)));
+      state.offlineUnseenReady=all.filter(a=>!state.recentKeys.has(a.key)).length;
       const loaded=[];
       // Load an initial dozen. Pace later decoding in small batches so
       // background prefetch does not starve low-memory tablets.
@@ -952,6 +953,7 @@
     state.recentLoaded=[show,...state.recentLoaded.filter(x=>x.art.key!==show.art.key)].slice(0,8);
     state.recentDisplayed.add(show.art.key);
     if(emergency)state.emergencySwaps++;
+    if(show.art.offlineAsset)state.offlineUnseenReady=Math.max(0,state.offlineUnseenReady-1);
     if(test&&test.onShow)test.onShow(show.art,show.orient,emergency);
     // Persist in the background: storage latency may not delay a visual transition.
     recordSeen(show).then(async()=>{
@@ -1162,6 +1164,8 @@
     if(!bar||!fill)return;
     if(!s){
       el('cache-photo-count').textContent='태블릿에서 확인';
+      for(const id of ['cache-unshown-count','cache-shown-count','cache-eligible-count','cache-available-days'])
+        if(el(id))el(id).textContent='태블릿에서 확인';
       el('cache-volume').textContent='기기 연결 후 표시';
       el('cache-percent').textContent='—';
       el('cache-detail').textContent='실제 저장된 다운로드 이미지 파일만 집계합니다.';
@@ -1178,6 +1182,21 @@
     el('cache-volume').textContent=gib(bytes)+' / '+gib(limit)+' GiB';
     el('cache-percent').textContent=pct.toFixed(1)+'%';
     el('cache-apk-count').textContent=state.offlineManifestCount.toLocaleString('ko-KR')+'점';
+    const unseenFiles=Math.max(0,Number(s.unshownImageFiles)||0);
+    const shownFiles=Math.max(0,Number(s.shownCachedFiles)||0);
+    // Index entries were individually checked for decoding and eligibility;
+    // native files exclude entries already displayed. The lower count is used.
+    // This is a maximum planning estimate, NOT a 90-day uptime guarantee.
+    const eligibleDownloaded=Math.min(unseenFiles,state.downloadedKeys.size);
+    const possible=eligibleDownloaded+state.offlineUnseenReady;
+    const days=Math.floor(possible/1440),hours=Math.floor((possible%1440)/60);
+    el('cache-unshown-count').textContent=unseenFiles.toLocaleString('ko-KR')+'점';
+    el('cache-shown-count').textContent=shownFiles.toLocaleString('ko-KR')+'점';
+    el('cache-eligible-count').textContent=eligibleDownloaded.toLocaleString('ko-KR')+'점';
+    el('cache-available-days').textContent=days+'일 '+hours+'시간 이하';
+    el('cache-estimate-note').textContent=
+      '이미지 중복·화질·권리 검증과 실제 기기 상태에 따라 예상 기간이 단축될 수 있습니다. '+
+      '내장 미전시 후보 '+state.offlineUnseenReady.toLocaleString('ko-KR')+'점 포함 · 1분당 1점 기준';
     const free=Math.max(0,Number(s.freeBytes)||0);
     const reserve=Math.max(0,Number(s.reservedBytes)||0);
     const limited=free<reserve+8*1024*1024;
