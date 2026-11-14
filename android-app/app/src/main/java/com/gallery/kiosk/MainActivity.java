@@ -287,6 +287,25 @@ public final class MainActivity extends Activity {
             params.put("fields",new JSONArray().put("id").put("title").put("artist_title").put("image_id").put("is_public_domain").put("artwork_type_title").put("medium_display").put("thumbnail").put("style_title").put("style_titles").put("date_display").put("date_start"));
             return "https://api.artic.edu/api/v1/artworks/search?params="+URLEncoder.encode(params.toString(),"UTF-8");
         }
+        if(type.equals("mediaCommons")){
+            String[] parts=p.split(":",-1);
+            if(parts.length!=2)throw new IOException("복합 매체 검색 인자 오류");
+            String[] ids={"photo-nature","photo-landscape","photo-wildlife","photo-street",
+                "photo-portrait","photo-architecture","photo-history",
+                "illus-botanical","illus-science","illus-books","animation-still"};
+            String[] cats={"Nature photography","Landscape photographs","Wildlife photographs",
+                "Street photography","Portrait photographs","Architectural photography",
+                "Historical photographs","Botanical illustrations","Scientific illustrations",
+                "Children's book illustrations","Animation stills"};
+            String category=null;
+            for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))category=cats[i];
+            if(category==null)throw new IOException("허용되지 않은 복합 매체 분류");
+            int offset=bounded(parts[1],0,100000);
+            String query="deepcategory:\""+category+"\"";
+            return "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=50&gsrsearch="+
+                URLEncoder.encode(query,"UTF-8")+"&gsroffset="+offset+
+                "&prop=imageinfo&iiprop=url%7Csize%7Cmime%7Cextmetadata&iiurlwidth=2000&format=json&formatversion=2";
+        }
         if(type.equals("modernCommons")){
             String[] parts=p.split(":",-1);
             if(parts.length!=2)throw new IOException("현대 작품 검색 조건 오류");
