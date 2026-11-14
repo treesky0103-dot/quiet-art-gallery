@@ -1118,6 +1118,7 @@
     });
     const catalogBox=el('catalog-result');
     el('show-movements').addEventListener('click',async()=>{
+      el('source-catalog-links').hidden=true;
       try{
         const r=await fetch('https://appassets.gallery/art-movements.json');
         if(!r.ok)throw Error('데이터를 읽을 수 없습니다.');
@@ -1129,19 +1130,41 @@
       }catch(e){catalogBox.textContent='사조 목록 오류: '+e.message;catalogBox.hidden=false;}
     });
     el('show-providers').addEventListener('click',async()=>{
+      const panel=el('source-catalog-links');
+      panel.replaceChildren();
+      catalogBox.hidden=true;
       try{
-        const r=await fetch('https://appassets.gallery/art-providers.json');
+        const r=await fetch('https://appassets.gallery/art-sources-85.json');
         if(!r.ok)throw Error('데이터를 읽을 수 없습니다.');
         const j=await r.json();
-        catalogBox.textContent=j.requested_source_entries+'개 요청 / '+j.unique_source_names+
-          '곳 중복 제외 · '+j.automatic_search_integrations+
-          '곳 검색 연동 · 나머지는 열람용 목록(자동 수집 불가)\n\n'+
-          j.entries.map(x=>x.request_number+'. '+x.name+' — '+
-            (x.integration_status==='existing_search_api'||x.integration_status==='existing_open_license_search_api'?'검색 연동':
-             x.integration_status==='duplicate_reference'?'중복':'사이트 목록만')+
-            (x.homepage?' · '+x.homepage:'')).join('\n');
-        catalogBox.hidden=false;
-      }catch(e){catalogBox.textContent='공급원 목록 오류: '+e.message;catalogBox.hidden=false;}
+        if(j.entries_total!==85||!Array.isArray(j.entries)||j.entries.length!==85)
+          throw Error('85개 공급원 목록 내용이 손상됐습니다.');
+        const lead=document.createElement('p');
+        lead.textContent='총 85곳: 직접 미술관 API 3곳 · Wikimedia Commons 검색 37곳 · 공식 사이트 열람 45곳. 45곳은 자동 이미지 수집 연동이 아닙니다. 공식 주소가 확인되지 않은 2곳은 열 수 없습니다.';
+        panel.appendChild(lead);
+        for(const item of j.entries){
+          const btn=document.createElement('button');
+          btn.className='wide-btn';
+          const mode=item.status==='official_api'?'[직접 수집 API]':
+             item.status==='commons_category'?'[Commons 분류 검색]':'[공식 사이트 열람]';
+          btn.textContent=item.number+'. '+item.name+' '+mode+(item.link?'':' (주소 미확인)');
+          btn.disabled=!item.link;
+          btn.addEventListener('click',()=>{
+            if(!item.link)return;
+            if(window.GalleryAndroid&&typeof window.GalleryAndroid.openRegisteredSource==='function'){
+              window.GalleryAndroid.openRegisteredSource(item.number-1);
+            }else{
+              const link=new URL(item.link);
+              if(link.protocol==='https:')window.open(link.href,'_blank','noopener,noreferrer');
+            }
+          });
+          panel.appendChild(btn);
+        }
+        panel.hidden=false;
+      }catch(e){
+        catalogBox.textContent='공급원 목록 오류: '+String(e.message||e);
+        catalogBox.hidden=false;panel.hidden=true;
+      }
     });
     el('audit-now').addEventListener('click',()=>runInventoryAudit().catch(e=>{ui.msg.textContent='조사 실패: '+String(e.message||e);state.auditing=false;el('audit-now').disabled=false;}));
     el('refresh-now').addEventListener('click',async()=>{
