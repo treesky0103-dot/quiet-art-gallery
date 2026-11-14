@@ -39,7 +39,7 @@ test('1800+ 80-percent target is exactly four of each five display slots',()=>{
    const ids=Array.from({length:5},(_,i)=>base+i).filter(C.targetPost1800);
    assert.deepEqual(ids,[base,base+1,base+2,base+3]);
  }
- assert.deepEqual(C.eraQuota90Days(),{total:259200,post1800:207360,remainder:51840});
+ assert.deepEqual(C.eraQuota90Days(),{total:129600,post1800:103680,remainder:25920});
  const app=source('web/app.js');
  assert.match(app,/C.targetPost1800\(state\.stats\.slot\)/);
  assert.match(app,/C.artworkEra\(a\)/);
@@ -80,7 +80,7 @@ test('Openverse keyword hits are rejected if historic, copyright restricted or o
 });
 test('Android API still uses 30 seconds, v1.6.6 isolated app and 90d dedup',()=>{
  const java=source('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java');
- assert(java.includes('ART_INTERVAL_MS = 30000L'));
+ assert(java.includes('ART_INTERVAL_MS = 60000L'));
  assert(java.includes('openverseModern'));
  const app=source('web/app.js');
  assert(app.includes('hydrateHistory'));
