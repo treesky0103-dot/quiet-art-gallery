@@ -385,7 +385,7 @@ public final class MainActivity extends Activity {
         if(type.equals("globalCommons")){
             String[] parts=p.split(":",-1);
             if(parts.length!=2)throw new IOException("공개 미술 검색 인자 오류");
-            String[] ids={"p19","p20","p21","d19","d20","d21","r19","r20","r21","british-library","japanese-print","independent"};
+            String[] ids={"p19","p20","p21","d19","d20","d21","r19","r20","r21","illustrations19","japanese-print","independent"};
             String[] cats={"19th-century paintings","20th-century paintings","21st-century paintings",
                 "19th-century drawings","20th-century drawings","21st-century drawings",
                 "19th-century prints","20th-century prints","21st-century prints",
