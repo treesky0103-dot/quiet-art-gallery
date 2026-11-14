@@ -72,6 +72,6 @@ test('26 categories all visited under stride 11, and 90 day repeat protection un
   assert.equal(C.pickCandidate([b], 'portrait', new Map([[a.key,now-24*3600000]]),now),-1);
   assert.equal(C.canReshow(now-89*86400000,now),false);
   assert.equal(C.canReshow(now-90*86400000,now),true);
-  assert.match(app, /intervalMs: 30000/);
+  assert.match(app, /intervalMs: 60000/);
   assert.match(app, /pruneDays: 90/);
 });
