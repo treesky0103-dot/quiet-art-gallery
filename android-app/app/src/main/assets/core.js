@@ -174,8 +174,42 @@
       };
     }).filter(a=>a.modern&&a.rightsOK);
   }
+  // Retained as a legacy helper. The 1800+ gallery uses targetPost1800,
+  // not "modern digital art" as a proxy for artwork creation dates.
   function targetModern(slot){
     return ((Math.max(0,Math.floor(slot))*7+3)%20)<7;
+  }
+  const MODERN_THRESHOLD_YEAR=1800;
+  const RECENT_YEAR_MAX=2026;
+  function artworkEra(a){
+    if(!a)return 'unknown';
+    // Museum numerical creation dates take precedence over words in an art title.
+    // A range crossing the 1800 boundary is unknown, rather than guessed.
+    let start=a.yearStart, end=a.yearEnd;
+    const isYear=v=>v!==null&&v!==undefined&&v!==''&&Number.isInteger(Number(v))
+       &&Number(v)>=-4000&&Number(v)<=RECENT_YEAR_MAX;
+    if(isYear(start)&&isYear(end)){
+      start=Number(start);end=Number(end);
+      if(start>end)return 'unknown';
+      return start>=MODERN_THRESHOLD_YEAR?'post1800':
+        end<MODERN_THRESHOLD_YEAR?'pre1800':'unknown';
+    }
+    // Explicitly identified original contemporary artwork with trustworthy metadata,
+    // not a photograph of a work made before 1800.
+    if(a.modern===true && a.rightsOK===true &&
+       ['year-title','original-digital-title'].includes(a.modernEvidence))return 'post1800';
+    // Commons file upload dates and museum accession years are NOT artwork dates.
+    return 'unknown';
+  }
+  // Four post-1800 goals and one older/unclassified goal per five displays.
+  // This is a demand/scheduling target; missing eligible files can reduce
+  // the ACTUAL share, which must be measured separately.
+  function targetPost1800(slot){
+    const n=Number(slot);
+    return Number.isFinite(n) && (Math.max(0,Math.floor(n))%5)<4;
+  }
+  function eraQuota90Days(){
+    return Object.freeze({total:259200,post1800:207360,remainder:51840});
   }
 
   // 14 verified Oceania/South America Commons categories appended to the original seven.
@@ -378,7 +412,9 @@
       description: '', license: string(item && item.share_license_status),
       rightsOK: (item && item.share_license_status) === 'CC0',
       style: string(item && item.style), styles: Array.isArray(item && item.style_titles) ? item.style_titles : [],
-      date: string(item && item.creation_date), page: string(item && item.url)
+      date: string(item && item.creation_date),
+      yearStart:item && item.creation_date_earliest, yearEnd:item && item.creation_date_latest,
+      page: string(item && item.url)
     };
   }
   function normalizeChicago(item, iiifBase) {
@@ -399,7 +435,9 @@
       description: '', license: 'Public domain',
       rightsOK: !!(item && item.is_public_domain),
       style: string(item && item.style_title), styles: Array.isArray(item && item.style_titles) ? item.style_titles : [],
-      date: string(item && item.date_display), page: item && Number.isInteger(item.id) ? `https://www.artic.edu/artworks/${item.id}` : ''
+      date: string(item && item.date_display),
+      yearStart:item && item.date_start, yearEnd:item && item.date_end,
+      page: item && Number.isInteger(item.id) ? `https://www.artic.edu/artworks/${item.id}` : ''
     };
   }
   function normalizeMet(item) {
@@ -414,6 +452,7 @@
       description: '', license: 'CC0',
       rightsOK: !!(item && item.isPublicDomain),
       style: string(item && item.period), styles: [], date: string(item && item.objectDate),
+      yearStart:item && item.objectBeginDate, yearEnd:item && item.objectEndDate,
       department: string(item && item.department), page: string(item && item.objectURL)
     };
   }
@@ -524,5 +563,6 @@
     kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, SMITHSONIAN_MUSEUMS, normalizeSmithsonianCommons, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
+    artworkEra,targetPost1800,eraQuota90Days,MODERN_THRESHOLD_YEAR,
     portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance };
 });
