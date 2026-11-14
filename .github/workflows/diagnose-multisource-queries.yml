@@ -1,0 +1,40 @@
+name: Diagnose third-party public art query failures and source contribution
+on:
+  push:
+    branches:
+      - feat-multisource-world-openart-20261114
+    paths:
+      - .github/workflows/diagnose-multisource-queries.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get full image evidence and error report from first multisource run
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43569337831
+          name: actual-multisource-global-open-art-JPG-and-evidence
+          path: research-input/initial
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Count each provider's API errors, license/host failure and real image yield
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+          j=json.loads(Path('research-input/initial/report.json').read_text())
+          errors=j.get('errors') or []
+          providers=Counter((x.get('kind') or x.get('source') or '?') for x in errors)
+          print('SOURCE_ERRORS_BY_PROVIDER',dict(providers))
+          print('COLLECTOR_COUNTERS',json.dumps(j.get('counters'),ensure_ascii=False))
+          print('ERROR_SAMPLES',json.dumps(errors[:40],ensure_ascii=False))
+          print('REAL_ART_BY_SOURCE',j['by_source'])
+          print('REAL_ART_YEAR_GROUPS',j['era_counts'])
+          print('ACTUAL_FILE_COUNT',j['saved_actual_images'])
+          PY
