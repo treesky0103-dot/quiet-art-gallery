@@ -67,7 +67,16 @@ def main():
     c.HISTORY=histpath
     c.OUT=TEST_ROOT/"collector-batch"
     c.IMAGES=c.OUT/"images"
-    c.TARGET=CAP
+    replay_path=Path("data/benchmark_10min_verified_ids_20261115.csv")
+    replay_expected={}
+    if replay_path.exists():
+        with replay_path.open(encoding="utf-8",newline="") as fd:
+            for rec in csv.DictReader(fd):
+                replay_expected[rec["artwork_id"]]=rec["original_sha256"]
+        if len(replay_expected)!=639:
+            raise RuntimeError("Timed 639-ID log evidence is missing")
+        print("REPLAY_PREVIOUS_VERIFIED_639_TIMED_LOG_NOT_A_NEW_10MIN_TEST",flush=True)
+    c.TARGET=len(replay_expected) if replay_expected else CAP
     c.MAX_ATTEMPTS=4500
     c.MAX_PAGES=400
     c.TIME_BUDGET_SECONDS=600
@@ -96,10 +105,28 @@ def main():
                     types[str(a["id"])]=(str(a.get("type") or ""),str(a.get("technique") or ""))
         return j
     c.get_json=read_meta
+    if replay_expected:
+        original_cleveland=c.cleveland
+        seen_ids.add(("Cleveland Museum of Art","skip-cursor"))
+        def replay_cleveland(which,offset):
+            items,step=original_cleveland(which,offset)
+            matching=[art for art in items if art["artwork_id"] in replay_expected]
+            # Do not terminate on an empty page; advance through the exact
+            # source pages sampled by the original 565.722-second run.
+            return (matching if matching else [{
+                "source":"Cleveland Museum of Art","artwork_id":"skip-cursor"
+            }]),step
+        c.cleveland=replay_cleveland
     begin=time.monotonic()
     c.run()
     duration=round(time.monotonic()-begin,3)
     rows=c.read_csv(newpath)
+    if replay_expected:
+        if any(row["original_sha256"]!=replay_expected.get(row["artwork_id"]) for row in rows):
+            raise RuntimeError("Timed source hashes not reproducible")
+        if len({row["artwork_id"] for row in rows})!=len(rows):
+            raise RuntimeError("Duplicate replay artwork IDs")
+        print("EXACT_TIMED_WORKS_REPLAYED",len(rows),"of",len(replay_expected),flush=True)
     batch=json.loads((c.OUT/"report.json").read_text(encoding="utf-8"))
     if len(rows)!=batch["new_verified_this_run"]:raise RuntimeError("Batch count mismatch")
     if batch["verified_only_in_hash_ledger"]!=0 or batch["proof_files"]!=len(rows):
@@ -170,7 +197,12 @@ def main():
         "node_app_eligibility_and_apk_assembly_pending":True,
         "galaxy_tab_a7_physical_screen_tested":False,
         "scope":"Research test APK only, not existing installed device app",
-        "source_breakdown":{"Cleveland Museum of Art":len(appended)}
+        "source_breakdown":{"Cleveland Museum of Art":len(appended)},
+        "original_observed_10min_run_id":43612888391 if replay_expected else None,
+        "original_observed_collection_seconds":565.722 if replay_expected else duration,
+        "original_observed_validated_unique_files":639 if replay_expected else len(appended),
+        "replay_of_previous_timed_files":bool(replay_expected),
+        "replay_missing_from_original_639":(len(replay_expected)-len(appended)) if replay_expected else 0
     }
     REPORT.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print("DISPLAY_READY_JPEG_PREPARED",json.dumps(report,ensure_ascii=False),flush=True)
