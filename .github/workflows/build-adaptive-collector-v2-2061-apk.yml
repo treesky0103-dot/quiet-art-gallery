@@ -159,7 +159,6 @@ jobs:
           앱 종료·화면 비활성·절전 중의 수집은 보장하지 않습니다. 60/30m 처리율, 90일 259200점 확보, Galaxy Tab A7에서의 실제 장시간 안정성은 미검증입니다. 무료 기능만 사용합니다.
           v1.8.0과 별도 앱 ID(com.gallery.kiosk.collectorv2)입니다. 기존 앱 감상 기록은 앱의 CSV 내보내기/가져오기로만 이전할 수 있습니다.
           NOTE
-          NOTE
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" QuietArtGallery-CollectorV2-2061-v181.apk verified-release-report.json apk-sha256.txt --clobber
           else
