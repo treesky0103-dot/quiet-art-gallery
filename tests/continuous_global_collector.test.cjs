@@ -8,7 +8,7 @@ const read=p=>fs.readFileSync(path.resolve(__dirname,'..',p),'utf8');
 test('global open art includes non-museum books, independent artists, year collections',()=>{
   const cats=C.GLOBAL_OPEN_ART_CATEGORIES;
   assert.equal(cats.length,12);
-  assert(cats.some(x=>x.id==='british-library'));
+  assert(cats.some(x=>x.id==='illustrations19'));
   assert(cats.some(x=>x.id==='independent'));
   assert(cats.some(x=>x.id==='r19'));
   assert.equal(new Set(cats.map(x=>x.id)).size,cats.length);
