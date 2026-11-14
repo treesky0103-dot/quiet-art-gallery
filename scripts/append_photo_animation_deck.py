@@ -10,6 +10,8 @@ Animation consists of STATIC STILLS only (not motion/video/GIF reproduction).
 from __future__ import annotations
 import collections
 import concurrent.futures
+import threading
+import time
 import hashlib
 import io
 import json
@@ -17,7 +19,7 @@ import re
 from pathlib import Path
 from urllib.parse import urlencode,urlsplit
 from urllib.request import Request,urlopen
-from PIL import Image,ImageOps
+from PIL import Image,ImageOps,ImageFilter
 
 # Import the previously tested, exact same CPU-based portrait transformer
 # without triggering the original painting build's __main__.
@@ -33,7 +35,10 @@ MAX_ANIMATION=110
 MAX_TOTAL_ARTWORK=1800
 MAX_TOTAL_ASSET_BYTES=675*1024*1024
 MAX_SOURCE_BYTES=14*1024*1024
-WORKERS=9
+WORKERS=7
+ANIMATION_WORKERS=2
+_WIKI_LOCK=threading.Lock()
+_WIKI_NEXT=0.0
 USER_AGENT="QuietArtGalleryPersonalViewer/1.0 (+https://github.com/treesky0103-dot/quiet-art-gallery)"
 ALLOW_IMAGE_HOSTS={"openaccess-cdn.clevelandart.org","upload.wikimedia.org"}
 ALLOW_METADATA_HOSTS={"openaccess-api.clevelandart.org","commons.wikimedia.org"}
@@ -60,6 +65,14 @@ def request(url, allowed_hosts, max_bytes=MAX_SOURCE_BYTES, timeout=25):
     p=urlsplit(url)
     if p.scheme!="https" or p.hostname not in allowed_hosts or p.port not in (None,443) or p.username:
         raise ValueError("Non-allowlisted host")
+    # Wikimedia enforces shared-IP bot request limits. Limit all image GETs
+    # globally to <1.2 per second; never circumvent robots or a 429 response.
+    global _WIKI_NEXT
+    if p.hostname=="upload.wikimedia.org":
+        with _WIKI_LOCK:
+            now=time.monotonic()
+            if now<_WIKI_NEXT:time.sleep(_WIKI_NEXT-now)
+            _WIKI_NEXT=time.monotonic()+0.95
     req=Request(url,headers={"User-Agent":USER_AGENT,"Accept":"application/json,image/jpeg,image/png,image/webp,*/*"})
     with urlopen(req,timeout=timeout) as r:
         if r.status!=200:raise ValueError("HTTP "+str(r.status))
@@ -164,6 +177,9 @@ def commons_candidates():
                     or license_code in ("pd","cc0")):continue
             mime=str(info.get("mime") or "").lower()
             if mime not in ("image/jpeg","image/png","image/webp"):continue
+            try: src_width=int(info.get("width") or 0);src_height=int(info.get("height") or 0)
+            except (TypeError,ValueError):continue
+            if kind=="animation" and (src_width<350 or src_height<260):continue
             source=str(info.get("thumburl") or info.get("url") or "")
             if urlsplit(source).hostname!="upload.wikimedia.org":continue
             title=clean_plain(str(p.get("title") or "").removeprefix("File:"))
@@ -181,11 +197,71 @@ def commons_candidates():
                  "license":"CC0" if "cc0" in short or license_code=="cc0" else "Public domain",
                  "rightsOK":True,"page":str(info.get("descriptionurl") or ""),
                  "yearStart":yr,"yearEnd":yr,
-                 "mediaCategory":kind,"source_class":"Commons category: "+q}
+                 "mediaCategory":kind,"source_class":"Commons category: "+q,
+                 "_raw_area":src_width*src_height}
             (out_photo if kind=="photo" else out_anim).append(row);added+=1
         print("COMMONS_DISCOVERY",kind,q,"valid_candidate",added,flush=True)
+    # Highest-quality native animation cels first; CPU resize can still rescue
+    # sufficiently large historical frames without claiming restored detail.
+    out_anim.sort(key=lambda x:x.get("_raw_area",0),reverse=True)
     print("COMMONS_DISCOVERY_TOTAL",len(out_photo),len(out_anim),"errors",len(fail),flush=True)
     return out_photo,out_anim,fail
+
+def adaptive_lowres_animation_still(im):
+    """Portrait crop a small historic animation frame, with honest local upscale.
+
+    Never create AI-imagined detail. Images below 350x260 are intentionally not
+    accepted. Preserve the actual original's SHA and crop box.
+    """
+    im=ImageOps.exif_transpose(im).convert("RGB")
+    w,h=im.size
+    if w<350 or h<260 or w*h>45_000_000:
+        raise ValueError("Animation source too small or too large")
+    cw=min(w,int(h*.60));ch=min(h,int(w/.60))
+    if cw<155 or ch<255:
+        raise ValueError("Animation crop has too few native pixels")
+    if 1000.0/cw>6.7:
+        raise ValueError("Animation enlargement exceeds 6.7x")
+    left=0;top=0
+    if cw<w or ch<h:
+        scale=min(1.0,200/max(w,h))
+        dw=max(24,round(w*scale));dh=max(24,round(h*scale))
+        lo=im.resize((dw,dh),Image.Resampling.BILINEAR)
+        edges=ImageOps.grayscale(lo).filter(ImageFilter.FIND_EDGES)
+        es=list(edges.getdata()); colors=list(lo.getdata())
+        columns=[0.0]*dw;rows=[0.0]*dh
+        for y in range(dh):
+            for x in range(dw):
+                j=y*dw+x
+                rr,gg,bb=colors[j]
+                energy=0.85*es[j]+0.15*(max(rr,gg,bb)-min(rr,gg,bb))
+                columns[x]+=energy;rows[y]+=energy
+        if cw<w:
+            ww=max(1,min(dw,round(cw/w*dw)))
+            p=[0.0]
+            for e in columns:p.append(p[-1]+e)
+            j=max(range(dw-ww+1),key=lambda x:(p[x+ww]-p[x])*(1-.08*abs((x+ww/2)/dw-.5)))
+            left=max(0,min(w-cw,round(j/dw*w)))
+        if ch<h:
+            hh=max(1,min(dh,round(ch/h*dh)))
+            p=[0.0]
+            for e in rows:p.append(p[-1]+e)
+            j=max(range(dh-hh+1),key=lambda y:(p[y+hh]-p[y])*(1-.08*abs((y+hh/2)/dh-.5)))
+            top=max(0,min(h-ch,round(j/dh*h)))
+    box=(left,top,left+cw,top+ch)
+    image=im.crop(box).resize((1000,1667),Image.Resampling.LANCZOS)
+    if 1000/cw>1.1:
+        image=image.filter(ImageFilter.UnsharpMask(radius=1.1,percent=55,threshold=3))
+    mem=io.BytesIO();image.save(mem,"JPEG",quality=72,optimize=True,progressive=True)
+    payload=mem.getvalue()
+    if len(payload)>850_000:
+        mem=io.BytesIO();image.save(mem,"JPEG",quality=59,optimize=True,progressive=True)
+        payload=mem.getvalue()
+    with Image.open(io.BytesIO(payload)) as chk:
+        chk.load()
+        if chk.size!=(1000,1667) or chk.format!="JPEG":
+            raise ValueError("Derived animation JPEG invalid")
+    return payload,box,round(1000/cw,3),(w,h)
 
 def ensure_source_truth(row):
     blob=request(row["url"],ALLOW_IMAGE_HOSTS,MAX_SOURCE_BYTES,25)
@@ -195,7 +271,10 @@ def ensure_source_truth(row):
         if im.format not in ("JPEG","PNG","WEBP"):raise ValueError("Source file is not supported static image")
         image=ImageOps.exif_transpose(im)
         sourcePixels=(image.width,image.height)
-        image,box,factor,original=smart_portrait(image)
+        if row["type"]=="Animation Still":
+            image,box,factor,original=adaptive_lowres_animation_still(image)
+        else:
+            image,box,factor,original=smart_portrait(image)
     dsha=hashlib.sha256(image).hexdigest()
     a={
       "key":row["key"],"source":row["source"],
@@ -220,13 +299,13 @@ def process(row):
     try:return ensure_source_truth(row)
     except Exception as e:return None,None,f"{row['key']} ({row['source']}) {str(e)[:140]}"
 
-def add_many(candidates,group,current,existing_keys,source_shas,derived_shas,size,limit):
+def add_many(candidates,group,current,existing_keys,source_shas,derived_shas,size,limit,workers=WORKERS):
     stats=collections.Counter()
     failed=[]
     if len(current)>=MAX_TOTAL_ARTWORK or limit<=0:return size,stats,failed
     # Bounded concurrency: executor.map yields in source order. All actual
     # extractions occur before counting a work as confirmed.
-    with concurrent.futures.ThreadPoolExecutor(max_workers=WORKERS) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
         for i,(row,res) in enumerate(zip(candidates,pool.map(process,candidates)),1):
             if stats["embedded"]>=limit or len(current)>=MAX_TOTAL_ARTWORK:break
             art,blob,err=res
@@ -282,7 +361,7 @@ def main():
     photos+=cphoto
     # Supplemental animation candidates first so the most scarce category has
     # a fair chance if the final APK size or image count cap is approached.
-    total,animstats,animerrors=add_many(canim,"animation",rows,keys,source_shas,derived_shas,total,MAX_ANIMATION)
+    total,animstats,animerrors=add_many(canim,"animation",rows,keys,source_shas,derived_shas,total,MAX_ANIMATION,workers=ANIMATION_WORKERS)
     total,photostats,photoerrors=add_many(photos,"photo",rows,keys,source_shas,derived_shas,total,MAX_PHOTO)
     if photostats["embedded"]<10:
         raise RuntimeError("Photo acquisition too weak: "+str(dict(photostats))+"; fail closed")
