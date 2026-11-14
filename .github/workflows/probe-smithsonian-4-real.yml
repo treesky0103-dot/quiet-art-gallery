@@ -1,0 +1,59 @@
+name: Smithsonian four additional art museums real 2D artwork image proof
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_smithsonian_4_units_real.py
+      - .github/workflows/probe-smithsonian-4-real.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image decoder
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Load actual 11 museum candidate source inventory
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43561868685
+          name: smithsonian-11-art-museums-176-shard-metadata
+          path: research-input/si
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Download independent paintings and graphics with source and saved file SHA
+        run: |
+          python -m py_compile scripts/probe_smithsonian_4_units_real.py
+          python -u scripts/probe_smithsonian_4_units_real.py
+      - name: Re-open real saved images
+        run: |
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          from PIL import Image
+          r=json.loads(Path('audit-smithsonian-more-actual/report.json').read_text())
+          assert not r['completion_259200']
+          assert len(r['downloads'])==r['downloaded_verified_images']
+          for item in r['downloads']:
+            path=Path(item['saved_file'])
+            assert hashlib.sha256(path.read_bytes()).hexdigest()==item['sha256']
+            with Image.open(path) as im:
+              im.load()
+              assert im.width>=1000 and im.height>=1400 and im.width<im.height
+              assert min((im.width/im.height)/.625,.625/(im.width/im.height))>=.75
+          print('Actual source file count verified:',len(r['downloads']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smithsonian-four-additional-museums-cc0-art-jpeg-files
+          path: audit-smithsonian-more-actual/
+          if-no-files-found: warn
+          retention-days: 3
