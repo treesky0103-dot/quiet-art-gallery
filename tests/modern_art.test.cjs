@@ -86,9 +86,9 @@ test('Android API still uses 30 seconds, v1.6.6 isolated app and 90d dedup',()=>
  assert(app.includes('hydrateHistory'));
  assert(app.includes('visualHashes'));
  const gradle=source('android-app/app/build.gradle');
- assert(gradle.includes("versionName '1.6.6'"));
- assert(gradle.includes("applicationId 'com.gallery.kiosk.v166'"));
+ assert(gradle.includes("versionName '1.7.4-mixed'"));
+ assert(gradle.includes("applicationId 'com.gallery.kiosk.mixedmedia'"));
  const html=source('web/index.html');
- assert(html.includes('1800년 이후 제작 80% · 기타 20%'));
+ assert(html.includes('분야 순서 없이 무작위로 전시'));
  assert(html.includes('id="modern-count"'));
 });
