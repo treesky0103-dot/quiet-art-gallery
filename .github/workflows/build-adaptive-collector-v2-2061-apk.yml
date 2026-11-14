@@ -1,4 +1,4 @@
-name: Build collector v2 2061 unchanged art APK with adaptive queue and 8GiB cache verified scope fix
+name: Build collector v2 2061 unchanged art APK with adaptive queue and 8GiB cache verified scope fix test checks
 on:
   push:
     paths:
