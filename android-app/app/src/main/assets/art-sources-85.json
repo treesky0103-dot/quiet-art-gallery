@@ -1,0 +1,855 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Reference to all 85 requested art/museum source channels. 85 entries do NOT mean 85 independent automated collectors.",
+  "counts": {
+    "total": 85,
+    "direct": 3,
+    "commons": 37,
+    "linkOnly": 45,
+    "clickable": 84
+  },
+  "notes": [
+    "3 official museum APIs, 37 Wikimedia Commons museum-category searches, 45 catalog-only external sites.",
+    "Wikimedia Commons museum categories are discovery queries, not API access to the institutions.",
+    "External platforms require documented API, permission and image license verification before automatic artwork ingestion.",
+    "The user may open external homepages manually; original 90-day no-repeat gallery remains independent."
+  ],
+  "entries": [
+    {
+      "id": "direct-cleveland",
+      "name": "클리블랜드 미술관",
+      "group": "공식 미술관 API",
+      "mode": "direct_api",
+      "homepage": "https://www.clevelandart.org/",
+      "automatic_collection": true
+    },
+    {
+      "id": "direct-artic",
+      "name": "시카고 미술관",
+      "group": "공식 미술관 API",
+      "mode": "direct_api",
+      "homepage": "https://www.artic.edu/",
+      "automatic_collection": true
+    },
+    {
+      "id": "direct-met",
+      "name": "메트로폴리탄 미술관",
+      "group": "공식 미술관 API",
+      "mode": "direct_api",
+      "homepage": "https://www.metmuseum.org/",
+      "automatic_collection": true
+    },
+    {
+      "id": "east_asia-korea",
+      "name": "국립중앙박물관",
+      "group": "아시아 5곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20National%20Museum%20of%20Korea&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the National Museum of Korea",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "east_asia-tokyo",
+      "name": "도쿄국립박물관",
+      "group": "아시아 5곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Japanese%20paintings%20in%20the%20Tokyo%20National%20Museum&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Japanese paintings in the Tokyo National Museum",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "east_asia-kyoto",
+      "name": "교토국립박물관",
+      "group": "아시아 5곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Kyoto%20National%20Museum&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Kyoto National Museum",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "east_asia-nara",
+      "name": "나라국립박물관",
+      "group": "아시아 5곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Nara%20National%20Museum&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Nara National Museum",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "east_asia-taipei",
+      "name": "타이완 국립고궁박물원",
+      "group": "아시아 5곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20National%20Palace%20Museum&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the National Palace Museum",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "africa-iziko",
+      "name": "이지코 남아공 국립미술관",
+      "group": "아프리카 4곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20South%20African%20National%20Gallery&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the South African National Gallery",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "africa-ethiopia",
+      "name": "에티오피아 국립박물관",
+      "group": "아프리카 4곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20National%20Museum%20of%20Ethiopia&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the National Museum of Ethiopia",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "africa-zimbabwe",
+      "name": "짐바브웨 국립미술관",
+      "group": "아프리카 4곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20National%20Gallery%20of%20Zimbabwe&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the National Gallery of Zimbabwe",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "africa-johannesburg",
+      "name": "요하네스버그 미술관",
+      "group": "아프리카 4곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20by%20Paul%20Signac%20in%20the%20Johannesburg%20Art%20Gallery&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings by Paul Signac in the Johannesburg Art Gallery",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-rijks",
+      "name": "암스테르담 국립미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Rijksmuseum%20Amsterdam&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Rijksmuseum Amsterdam",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-nga",
+      "name": "미국 국립미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20National%20Gallery%20of%20Art%20(Washington%2C%20D.C.)&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the National Gallery of Art (Washington, D.C.)",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-getty",
+      "name": "게티 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20The%20J.%20Paul%20Getty%20Museum&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in The J. Paul Getty Museum",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-smk",
+      "name": "덴마크 국립미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20Statens%20Museum%20for%20Kunst&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in Statens Museum for Kunst",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-paris",
+      "name": "파리 시립미술관 연합(카르나발레)",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20Mus%C3%A9e%20Carnavalet&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in Musée Carnavalet",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-london",
+      "name": "런던 내셔널갤러리",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20National%20Gallery%2C%20London&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the National Gallery, London",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-walters",
+      "name": "월터스 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Walters%20Art%20Museum&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Walters Art Museum",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-ngv",
+      "name": "호주 빅토리아 국립미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20National%20Gallery%20of%20Victoria&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the National Gallery of Victoria",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-nsw",
+      "name": "호주 뉴사우스웨일스 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Art%20Gallery%20of%20New%20South%20Wales&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Art Gallery of New South Wales",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-aus-nga",
+      "name": "호주 국립미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20National%20Gallery%20of%20Australia&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the National Gallery of Australia",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-south-aus",
+      "name": "남호주 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Art%20Gallery%20of%20South%20Australia&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Art Gallery of South Australia",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-queensland",
+      "name": "호주 퀸즐랜드 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Queensland%20Art%20Gallery&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Queensland Art Gallery",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-auckland",
+      "name": "뉴질랜드 오클랜드 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Auckland%20Art%20Gallery&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Auckland Art Gallery",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-dunedin",
+      "name": "뉴질랜드 더니든 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Dunedin%20Public%20Art%20Gallery&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Dunedin Public Art Gallery",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-brasil-mnba",
+      "name": "브라질 국립미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Brazilian%20paintings%20in%20the%20Museu%20Nacional%20de%20Belas%20Artes&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Brazilian paintings in the Museu Nacional de Belas Artes",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-argentina-mnba",
+      "name": "아르헨티나 국립미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Museo%20Nacional%20de%20Bellas%20Artes%20(Argentina)&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Museo Nacional de Bellas Artes (Argentina)",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-chile-mnba",
+      "name": "칠레 국립미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Museo%20Nacional%20de%20Bellas%20Artes%20(Chile)&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Museo Nacional de Bellas Artes (Chile)",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-peru-mali",
+      "name": "페루 리마 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Museo%20de%20Arte%20de%20Lima&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Museo de Arte de Lima",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-colombia-mnc",
+      "name": "콜롬비아 국립박물관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Museo%20Nacional%20de%20Colombia&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Museo Nacional de Colombia",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-uruguay-mnav",
+      "name": "우루과이 국립시각예술박물관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Museo%20Nacional%20de%20Artes%20Visuales&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Museo Nacional de Artes Visuales",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-brasil-pina",
+      "name": "브라질 상파울루 피나코테카",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Pinacoteca%20do%20Estado%20de%20S%C3%A3o%20Paulo&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Pinacoteca do Estado de São Paulo",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-louvre",
+      "name": "루브르 박물관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Louvre&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Louvre",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-orsay",
+      "name": "오르세 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Mus%C3%A9e%20d'Orsay&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Musée d'Orsay",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-british",
+      "name": "대영박물관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Prints%20in%20the%20British%20Museum&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Prints in the British Museum",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-prado",
+      "name": "프라도 미술관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Museo%20del%20Prado&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Museo del Prado",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "world_museums-hermitage",
+      "name": "에르미타시 박물관",
+      "group": "세계 미술관 26곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Hermitage&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Hermitage",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "smithsonian-saam",
+      "name": "스미스소니언 미국미술관",
+      "group": "스미스소니언 2곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20in%20the%20Smithsonian%20American%20Art%20Museum&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings in the Smithsonian American Art Museum",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "smithsonian-nmaa",
+      "name": "스미스소니언 국립아시아미술관",
+      "group": "스미스소니언 2곳",
+      "mode": "commons_category",
+      "homepage": "https://commons.wikimedia.org/w/index.php?search=Paintings%20from%20China%20in%20the%20Freer%20Gallery&title=Special%3AMediaSearch&type=image",
+      "automatic_collection": true,
+      "via": "Wikimedia Commons",
+      "category_query": "Paintings from China in the Freer Gallery",
+      "warning": "분류 검색 연결만; 미술관 서버 자체 연동 아님"
+    },
+    {
+      "id": "external-1",
+      "name": "WikiArt",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.wikiart.org/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-2",
+      "name": "Artsy",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artsy.net/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-3",
+      "name": "Google Arts & Culture",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://artsandculture.google.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-4",
+      "name": "DeviantArt",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.deviantart.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-5",
+      "name": "Pixiv",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.pixiv.net/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-6",
+      "name": "Behance",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.behance.net/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-7",
+      "name": "ArtStation",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artstation.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-8",
+      "name": "Artnet",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artnet.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-9",
+      "name": "Saatchi Art",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.saatchiart.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-10",
+      "name": "ArtMajeur",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artmajeur.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-11",
+      "name": "Fine Art America",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://fineartamerica.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-12",
+      "name": "MutualArt",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.mutualart.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-13",
+      "name": "Pinterest",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.pinterest.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-14",
+      "name": "Singulart",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.singulart.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-15",
+      "name": "Artfinder",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artfinder.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-16",
+      "name": "Street Art Cities",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://streetartcities.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-19",
+      "name": "Artvee",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://artvee.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-20",
+      "name": "Rawpixel",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.rawpixel.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-21",
+      "name": "Artron",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artron.net/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-22",
+      "name": "ZCOOL",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.zcool.com.cn/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-23",
+      "name": "Artand",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artand.cn/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-24",
+      "name": "99 Art",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.99ys.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-25",
+      "name": "China Artists",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": null,
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-27",
+      "name": "Piapro",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://piapro.jp/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-28",
+      "name": "Niconico Seiga",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://seiga.nicovideo.jp/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-29",
+      "name": "ART street",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://medibang.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-30",
+      "name": "TINAMI",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.tinami.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-32",
+      "name": "Artsper",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artsper.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-34",
+      "name": "Artprice",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artprice.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-35",
+      "name": "Artactif",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.artactif.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-36",
+      "name": "Flickr",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.flickr.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-37",
+      "name": "Magnum Photos",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.magnumphotos.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-38",
+      "name": "Tuchong",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://tuchong.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-39",
+      "name": "GANREF",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://ganref.jp/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-40",
+      "name": "The Eye of Photography",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://loeildelaphotographie.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-41",
+      "name": "Bilibili",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.bilibili.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-42",
+      "name": "Niconico",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.nicovideo.jp/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-43",
+      "name": "Newgrounds",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.newgrounds.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-44",
+      "name": "AcFun",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.acfun.cn/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-45",
+      "name": "Catsuka",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.catsuka.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-46",
+      "name": "Juxtapoz",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.juxtapoz.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-47",
+      "name": "Colossal",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.thisiscolossal.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-48",
+      "name": "It's Nice That",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.itsnicethat.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-49",
+      "name": "BOOOOOOOM",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://www.booooooom.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    },
+    {
+      "id": "external-50",
+      "name": "Hi-Fructose",
+      "group": "외부 사이트 · 사이트 열람",
+      "mode": "site_link_only",
+      "homepage": "https://hifructose.com/",
+      "automatic_collection": false,
+      "reason": "공식 이미지 API/재사용 권한 확인되지 않아 자동 내장하지 않음"
+    }
+  ]
+}
