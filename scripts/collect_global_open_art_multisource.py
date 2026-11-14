@@ -218,11 +218,16 @@ def main():
     stats=Counter();attempts=0
     state={"seen_sha":set(),"records":[]}
     errors=[];candidates=[];seen_ids=set()
+    blocked_api_providers=set()
+    blocked_media_hosts=set()
     # Search many independent provider collections, not unlimited server scanning.
     tasks=([("commons",x,p) for x in COMMONS_CATS for p in (0,1)]
           +[("openverse",x,p) for x in OPENVERSE_TERMS for p in (1,2)]
           +[("loc",x,p) for x in LOC_TERMS for p in (1,2)])
     for kind,term,page in tasks:
+        if kind in blocked_api_providers:
+            stats["source_requests_safely_skipped_after_401_429"]+=1
+            continue
         try:
             if kind=="commons": found=from_commons(term,page,stats)
             elif kind=="openverse": found=from_openverse(term,page,stats)
@@ -234,8 +239,12 @@ def main():
                 seen_ids.add(ident);candidates.append(obj)
         except Exception as e:
             stats["failed_source_requests"]+=1
+            status=getattr(e,"code",None)
+            if status in (401,429,503):
+                blocked_api_providers.add(kind)
+                stats["provider_access_paused_"+kind]+=1
             if len(errors)<35:errors.append({"kind":kind,"term":term,"page":page,"error":str(e)[:170]})
-        time.sleep(.35)
+        time.sleep(.6)
     stats["qualified_candidate_records"]=len(candidates)
     # Distribute attempts across sources so a single library does not monopolize.
     by_source={"commons":[],"openverse":[],"loc":[]}
@@ -252,6 +261,10 @@ def main():
     for item in schedule:
         if len(state["records"])>=GOAL or attempts>=MAX_DOWNLOAD_ATTEMPTS:break
         if item["image_url"] in attempts_seen:continue
+        media_host=urlsplit(item["image_url"]).hostname
+        if media_host in blocked_media_hosts:
+            stats["media_downloads_skipped_after_429"]+=1
+            continue
         attempts_seen.add(item["image_url"]);attempts+=1
         try:
             result=save_one(item,state)
@@ -262,9 +275,12 @@ def main():
                     ensure_ascii=False),flush=True)
         except Exception as e:
             stats["image_errors"]+=1
+            if getattr(e,"code",None) in (429,503):
+                blocked_media_hosts.add(media_host)
+                stats["media_hosts_paused_due_to_rate_limit"]+=1
             if len(errors)<45:errors.append({"source":item["source"],
                 "id":item["id"],"error":str(e)[:160]})
-        time.sleep(.23)
+        time.sleep(.5)
     stats["actual_download_attempts"]=attempts
     counts=Counter(x["source"].split(" · ")[0] for x in state["records"])
     periods=Counter(x["era"] for x in state["records"])
