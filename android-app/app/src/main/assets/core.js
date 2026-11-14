@@ -116,7 +116,7 @@
     {id:'r19',label:'19세기 판화',category:'19th-century prints',type:'Print'},
     {id:'r20',label:'20세기 판화',category:'20th-century prints',type:'Print'},
     {id:'r21',label:'21세기 판화',category:'21st-century prints',type:'Print'},
-    {id:'british-library',label:'영국도서관 삽화',category:'Illustrations from the British Library',type:'Illustration'},
+    {id:'illustrations19',label:'19세기 공개 삽화',category:'19th-century illustrations',type:'Illustration'},
     {id:'japanese-print',label:'일본 목판화',category:'Japanese woodblock prints',type:'Print'},
     {id:'independent',label:'공개 창작자 작품',category:'Paintings by Wikipedians'}
   ]);
