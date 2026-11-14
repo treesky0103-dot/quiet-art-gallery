@@ -1,0 +1,22 @@
+{
+  "as_of_utc": "2026-11-14T07:12:21.302817+00:00",
+  "prior_full_artwork_year_verified": 675,
+  "additional_byte_verified": 17,
+  "additional_year_verified_1800plus": 0,
+  "additional_year_unknown": 17,
+  "source_record_count": 17,
+  "exact_sha_duplicates_with_past_or_new": [],
+  "near_visual_matches_for_review": [],
+  "combined_distinct_file_sha256_count": 692,
+  "target_259200": 259200,
+  "completed": false,
+  "artwork_year_80percent_verified": false,
+  "files_persist_in_repo": false,
+  "file_storage_note": "Actual JPG files reside in GitHub Actions artifact 43569337831 and expire; repo saves only audit metadata and SHA. Do not mistake repo CSV for durable 17 image copies.",
+  "source_scope": "Commons, Library of Congress, Openverse queried; successful bytes all Commons",
+  "warnings": [
+    "Source category 19th century is not individual artwork production-year proof.",
+    "Per-file image duplicates only; same original artwork rephotographed across archives may remain.",
+    "Legal permission beyond the source's posted terms is not independently established."
+  ]
+}
