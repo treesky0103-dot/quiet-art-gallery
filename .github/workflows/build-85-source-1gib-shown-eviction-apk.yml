@@ -1,0 +1,190 @@
+name: Build 85-source gallery with shown-only 1GiB batch cache eviction
+on:
+  push:
+    paths:
+      - '.github/workflows/build-85-source-1gib-shown-eviction-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: source85-1gib-displayed-eviction-v182
+  cancel-in-progress: false
+jobs:
+  build-portrait30-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout isolated research source (do not mutate existing production APK)
+        uses: actions/checkout@v4
+        with:
+          ref: feat-85source-discovery-shown-first-1gib-evict-20261115
+          persist-credentials: true
+      - name: Install Python 3.12 and image decoder
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Pillow for real images
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Check syntax and portrait30 program invariants
+        run: |
+          python -m py_compile scripts/build_886_adapted_deck.py scripts/append_photo_animation_deck.py scripts/restore_verified_collector_v2_2061.py
+          node --check web/app.js
+          node --check web/core.js
+          cmp web/app.js android-app/app/src/main/assets/app.js
+          cmp web/core.js android-app/app/src/main/assets/core.js
+          cmp web/index.html android-app/app/src/main/assets/index.html
+          cmp web/style.css android-app/app/src/main/assets/style.css
+          grep -q 'const eligible=C.shuffledCopy' web/app.js
+          grep -q 'artworkYearLabel' web/core.js
+          grep -q "collectorEveryMs:1800000" web/app.js
+          grep -q "PortraitAdapter.convert" android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "versionName '1.8.2-sources85'" android-app/app/build.gradle
+          node --test tests/*.test.cjs
+      - name: Install Java 17, SDK 35 and Gradle 8.9
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Pure Java simulated cache eviction, protects unseen art and current display
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cache-policy
+          javac -d /tmp/cache-policy android-app/app/src/main/java/com/gallery/kiosk/ShownFirstEviction.java tests/java/com/gallery/kiosk/ShownFirstEvictionTest.java
+          java -cp /tmp/cache-policy com.gallery.kiosk.ShownFirstEvictionTest
+      - name: Use preinstalled runner Android SDK without obsolete tools package
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager=""
+          if test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; then
+            sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          else
+            sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          fi
+          test -n "$sdkmanager"
+          printf 'yes\n' | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Download exactly published 2061-art v1.8.0 APK (immutable baseline)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-adaptive-collector-v2-2061-20261114 \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --pattern "QuietArtGallery-CollectorV2-2061-v181.apk" --clobber
+          test -s QuietArtGallery-CollectorV2-2061-v181.apk
+      - name: Restore and independently SHA-verify all 2061 JPEGs and catalog metadata
+        timeout-minutes: 14
+        run: python -u scripts/restore_verified_collector_v2_2061.py
+      - name: Reopen every original image, compare original APK bytes and validate persistent cache safety
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json,hashlib,zipfile
+          root=Path('android-app/app/src/main/assets')
+          rows=json.loads((root/'offline-deck.json').read_text(encoding='utf-8'))
+          rep=json.loads(Path('build-source85-eviction-report.json').read_text(encoding='utf-8'))
+          assert len(rows)==rep['total_embedded_artworks']==2061
+          assert rep['images_added_during_this_code_upgrade']==0
+          assert rep['collector_goal_per_30_minutes']==60
+          assert not rep['collector_goals_are_guarantees']
+          assert rep['movement_english_search_aliases']==396
+          assert rep['limits_local_image_cache_bytes']==8*1024**3
+          assert rep['reserves_free_bytes']==1536*1024**2
+          assert rep['source85_catalog_total']==85
+          assert rep['source85_official_api']==3
+          assert rep['source85_museums_via_commons']==37
+          assert rep['source85_external_browse_only']==45
+          assert rep['eviction_threshold_gib']==8
+          assert rep['eviction_batch_gib']==1
+          assert rep['eviction_target_gib']==7
+          assert rep['evict_only_previously_displayed_cache_images']
+          assert rep['undisplayed_images_protected_from_auto_eviction']
+          assert rep['active_artwork_pinned_against_eviction']
+          assert len({x['key'] for x in rows})==2061
+          assert len({x['derivedSHA256'] for x in rows})==2061
+          assert len({x['sourceSHA256'] for x in rows})==2061
+          with zipfile.ZipFile('QuietArtGallery-CollectorV2-2061-v181.apk') as original:
+            old=json.loads(original.read('assets/offline-deck.json'))
+            assert rows==old
+            for i,x in enumerate(rows):
+              path='offline/pack-%04d.jpg'%i
+              fp=root/path
+              raw=fp.read_bytes()
+              assert raw==original.read('assets/'+path),i
+              assert hashlib.sha256(raw).hexdigest()==x['derivedSHA256']
+              with Image.open(fp) as img:
+                img.load()
+                assert img.format=='JPEG' and img.size==(1000,1667)
+          registry=json.loads((root/'art-sources-85.json').read_text())
+          assert registry['entries_total']==85
+          assert len(registry['entries'])==85
+          assert (registry['direct_official_api'],registry['museum_categories_via_wikimedia_commons'],registry['external_site_links_only'])==(3,37,45)
+          assert len(set(x['name'] for x in registry['entries']))==85
+          for path in ('app.js','core.js','index.html'):
+            assert (root/path).read_bytes()==Path('web/'+path).read_bytes()
+          print('V2_EXACT_ALL_2061_PRESERVED_AND_ALL_JPEGS_REOPENED')
+          print('COLLECTOR_V2_CONFIGURATION_POLICY_VERIFIED',rep['collector_goal_per_30_minutes'],
+                'target_per_half_hour',rep['limits_local_image_cache_bytes'],
+                'cache_limit_bytes')
+          PY
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build actual installable debug APK
+        working-directory: android-app
+        timeout-minutes: 15
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Inspect final installable APK ZIP, image count, native code and registers
+        run: |
+          python - <<'PY'
+          import zipfile,hashlib,json
+          from pathlib import Path
+          src=Path('android-app/app/build/outputs/apk/debug/app-debug.apk')
+          assert src.is_file() and src.stat().st_size>500_000_000
+          with zipfile.ZipFile(src) as apk:
+            assert apk.testzip() is None
+            rows=json.loads(apk.read('assets/offline-deck.json'))
+            assert len(rows)==2061
+            assert len(set(x['key'] for x in rows))==2061
+            assert apk.read('assets/app.js')==Path('web/app.js').read_bytes()
+            assert apk.read('assets/index.html')==Path('web/index.html').read_bytes()
+            assert apk.read('assets/art-movements.json')==Path('android-app/app/src/main/assets/art-movements.json').read_bytes()
+            assert apk.read('assets/art-providers.json')==Path('android-app/app/src/main/assets/art-providers.json').read_bytes()
+            assert apk.read('assets/art-sources-85.json')==Path('android-app/app/src/main/assets/art-sources-85.json').read_bytes()
+            names=set(apk.namelist())
+            assert all('assets/'+x['offlineAsset'] in names for x in rows)
+            print('APK_V2_ALL_2061_JPEGS_AND_ADAPTIVE_ENGINE_FILES_PRESENT',src.stat().st_size)
+          dest=Path('QuietArtGallery-85Sources-ShownFirst1GiB-v182.apk')
+          dest.write_bytes(src.read_bytes())
+          sha=hashlib.sha256(dest.read_bytes()).hexdigest()
+          Path('apk-sha256.txt').write_text(sha+'  '+dest.name+'\n')
+          result=json.loads(Path('build-source85-eviction-report.json').read_text(encoding='utf-8'))
+          result.update({'apk_name':dest.name,'apk_sha256':sha,'apk_bytes':dest.stat().st_size})
+          Path('verified-release-report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+      - name: Release APK without metered Actions artifact uploads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="quiet-art-85sources-shown-first-1gib-v182-20261115"
+          cat > /tmp/release-notes.md <<'NOTE'
+          고요한 미술관 v1.8.2. 기존 v1.8.1 APK 2061점의 각 이미지 바이트 및 감상 메타데이터를 그대로 보존합니다. 신규 작품 내장 수는 0점입니다.
+          85개 공급원 디렉터리: 실제 공식 미술관 API 3곳, Wikimedia Commons 경유 미술관 분류 37곳, 공식 사이트 열람 목록 45곳. 뒤의 45곳은 자동 이미지 다운로드가 연동된 것이 아닙니다.
+          이미지 캐시 8GiB 한도에 이르면 실제로 전시된 이미지 파일만 오래된 순으로 약 1GiB씩 삭제해 7GiB 수준으로 낮춥니다. 현재 전시된 작품, 아직 전시하지 않은 파일, 독립된 IndexedDB 90일 감상 이력은 보호합니다. 이전에 전시된 파일이 부족해 공간 확보가 불가능하면 신규 이미지 수집을 보류합니다.
+          확인: 전체 Node.js 회귀, Java 단위 모의 테스트, 2061개 JPEG SHA256 재대조, Android 컴파일 및 APK ZIP 검사. 물리적인 갤럭시 탭 A7에서 8GiB를 채워 실제 삭제하는 장시간 테스트는 미검증입니다.
+          앱 ID com.gallery.kiosk.sources85. 이전 설치 앱과 별도이며 90일 감상 이력은 CSV로 수동 이전해야 합니다.
+          NOTE
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" QuietArtGallery-85Sources-ShownFirst1GiB-v182.apk verified-release-report.json apk-sha256.txt --clobber
+          else
+            gh release create "$TAG" QuietArtGallery-85Sources-ShownFirst1GiB-v182.apk verified-release-report.json apk-sha256.txt \
+              --target feat-85source-discovery-shown-first-1gib-evict-20261115 \
+              --title "고요한 미술관 v1.8.2 · 공급원 85곳 분류 · 1GiB 전시작 순환 정리" \
+              --notes-file /tmp/release-notes.md
+          fi
+          gh release view "$TAG" --json url,assets --jq '{url:.url,assets:[.assets[].name]}'
