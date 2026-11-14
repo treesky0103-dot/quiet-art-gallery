@@ -10,6 +10,8 @@
     pause:el('toggle-pause'),done:el('settings-done'),msg:el('setting-message')};
   const state = {
     collectorStopReason:'', offlineManifestCount:0, cacheSnapshot:null, cacheSnapshotAt:0,
+    downloadedKeys:new Set(),downloadedVisualHashes:new Map(),downloadedURLs:new Set(),
+    inflightVisualHashes:new Map(),offlineUnseenReady:0,inventoryUpdatedAt:0,networkOnline:true,collectorRejectedKeys:new Set(),
     db:null,pool:[],pendingKeys:new Set(), prepared:null,current:null,currentNode:ui.b,
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
@@ -199,9 +201,10 @@
       const all=C.shuffledCopy(items.filter(art=>
         /^(?:offline\/fallback-(?:[0-9]|1[0-5])|offline\/pack-[0-9]{4})\.jpg$/.test(art.offlineAsset||'') &&
         C.eligibleArt(art) && C.metadataResolutionOkay(art)));
+      state.offlineUnseenReady=all.filter(a=>!state.recentKeys.has(a.key)).length;
       const loaded=[];
-      // Preload first 12, then validate others asynchronously, without
-      // blocking the original 30-second rotation.
+      // Load an initial dozen. Pace later decoding in small batches so
+      // background prefetch does not starve low-memory tablets.
       for(const art of all.slice(0,12)){
         art.movement=C.classifyMovement(art)||'additional';
         try{loaded.push(await loadImage(art));}catch(e){state.lastErr='내장 작품: '+e.message;}
@@ -209,16 +212,16 @@
       state.offlineReady=loaded;
       let index=12;
       async function preloadMore(){
-        for(let k=0;k<10 && index<all.length;k++,index++){
+        for(let k=0;k<4 && index<all.length;k++,index++){
           const art=all[index];
           art.movement=C.classifyMovement(art)||'additional';
           try{state.offlineReady.push(await loadImage(art));}
           catch(e){state.lastErr='내장 작품 점검: '+e.message;}
         }
-        if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),350);
+        if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),2000);
         else updateInfo();
       }
-      if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),350);
+      if(index<all.length)setTimeout(()=>preloadMore().catch(()=>{}),2000);
       return loaded.length;
     }catch(e){state.lastErr='비상 작품 준비: '+e.message;return 0;}
   }
@@ -609,7 +612,7 @@
     }catch(e){state.lastErr='수집 대기열 복원 실패: '+String(e.message||e);}
   }
   async function collectorPump(){
-    if(state.collectorRunning||!state.db||document.hidden)return;
+    if(state.collectorRunning||!state.db||document.hidden||!state.networkOnline)return;
     const now=Date.now();
     if(state.collectorLastAt&&now-state.collectorLastAt<CONFIG.collectorTickMs-3000)return;
     state.collectorRunning=true;state.collectorLastAt=now;
@@ -633,7 +636,7 @@
         }
       }
       state.collectorStopReason='';
-      let ready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&
+      let ready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&!state.downloadedKeys.has(a.key)&&!state.collectorRejectedKeys.has(a.key)&&!state.downloadedKeys.has(a.key)&&!state.collectorRejectedKeys.has(a.key)&&
         !seenInMemory(a,null)&&!(state.collectorRetry[a.key]&&state.collectorRetry[a.key].nextAt>now));
       // Keep archived downloaded candidates on disk while allowing discovery
       // to continue if the 7200-item in-memory queue becomes entirely staged.
@@ -653,35 +656,78 @@
           !seenInMemory(a,null)&&!(state.collectorRetry[a.key]&&state.collectorRetry[a.key].nextAt>Date.now()));
       }
       if(!state.prepared&&!state.preparing&&state.pool.length)await prepareNext();
-      let downloaded=0,attempted=0;
-      for(const art of C.shuffledCopy(ready)){
-        if(downloaded>=quota||attempted>=CONFIG.collectorMaxAttemptsPerTick)break;
-        if(state.prefetchedKeys.has(art.key)||seenInMemory(art,null))continue;
+      // JS requests overlap across independent URLs, but Android allows only
+      // three simultaneous native transfers and serializes same-URL writes.
+      // No bypass of source cooldowns, Retry-After or the 1.5GiB free reserve.
+      let downloaded=0,attempted=0,queueIndex=0;
+      const candidates=C.shuffledCopy(ready);
+      async function collectOne(art){
+        if(state.downloadedKeys.has(art.key)||state.collectorRejectedKeys.has(art.key)||
+           state.prefetchedKeys.has(art.key)||seenInMemory(art,null))return;
         const old=state.collectorRetry[art.key];
-        if(old&&old.nextAt>Date.now())continue;
+        if(old&&old.nextAt>Date.now())return;
         attempted++;
+        let reserved=false;
         try{
           const already=await dbGet('downloaded',art.key);
-          if(already){state.prefetchedKeys.add(art.key);continue;}
-          await loadImage(art);
-          // Count a download only after its metadata is durably indexed.
-          await dbPutMany('downloaded',[{key:art.key,art,when:Date.now()}]);
+          if(already){
+            state.downloadedKeys.add(art.key);
+            state.prefetchedKeys.add(art.key);
+            return;
+          }
+          if(state.downloadedURLs.has(art.image)){
+            state.collectorRejectedKeys.add(art.key);
+            state.dedupBlocked++;
+            return;
+          }
+          const loaded=await loadImage(art);
+          if(!cachedArtworkExists(art))throw Error('실제 캐시 파일이 저장되지 않음');
+          if((await seenRecently(art,loaded.visualHash))||
+             similarDownloadedImage(loaded.visualHash,art.key)){
+            state.collectorRejectedKeys.add(art.key);
+            state.dedupBlocked++;
+            if(!state.downloadedURLs.has(art.image))discardRejectedArtwork(art);
+            return;
+          }
+          if(loaded.visualHash){
+            state.inflightVisualHashes.set(art.key,loaded.visualHash);
+            reserved=true;
+          }
+          await dbPutMany('downloaded',[{key:art.key,art,visualHash:loaded.visualHash,when:Date.now()}]);
+          state.downloadedKeys.add(art.key);
+          state.downloadedURLs.add(art.image);
+          if(loaded.visualHash)state.downloadedVisualHashes.set(art.key,loaded.visualHash);
           state.prefetchedKeys.add(art.key);
           delete state.collectorRetry[art.key];
           downloaded++;state.collectorSuccess++;state.collectorWindowSaved++;state.collectorDaySaved++;
         }catch(e){
           const info=collectorErrorInfo(e),attempts=Math.min(10,Number(old&&old.attempts||0)+1);
-          state.collectorRetry[art.key]={attempts,nextAt:Date.now()+collectorDelay(info.status,attempts,info.retryMs)};
+          state.collectorRetry[art.key]={
+            attempts,nextAt:Date.now()+collectorDelay(info.status,attempts,info.retryMs),
+            network:info.status===0
+          };
           state.collectorErrors++;
           if(info.status===429)state.collectorThrottled++;
           state.lastErr='수집 재시도 대기: '+String(e&&e.message||e);
+        }finally{
+          if(reserved)state.inflightVisualHashes.delete(art.key);
         }
       }
+      async function worker(){
+        while(queueIndex<candidates.length &&
+              downloaded<quota&&attempted<CONFIG.collectorMaxAttemptsPerTick){
+          const idx=queueIndex++;
+          await collectOne(candidates[idx]);
+        }
+      }
+      await Promise.all(Array.from({length:Math.min(3,candidates.length)},()=>worker()));
+      if(state.collectorRejectedKeys.size>6000)
+        state.collectorRejectedKeys=new Set([...state.collectorRejectedKeys].slice(-3000));
       if(state.prefetchedKeys.size>1500){
         const live=new Set(state.pool.map(a=>a.key));
         state.prefetchedKeys=new Set([...state.prefetchedKeys].filter(k=>live.has(k)).slice(-1000));
       }
-      const unready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key));
+      const unready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&!state.downloadedKeys.has(a.key));
       const staged=state.pool.filter(a=>state.prefetchedKeys.has(a.key));
       await dbPutMany('settings',[{key:'candidatePool',value:
         unready.slice(0,Math.min(800,CONFIG.savedCandidateLimit))
@@ -697,17 +743,68 @@
   }
   // Read at most a small page of saved unshown artworks, so 8GiB of downloads
   // need not become a single giant settings record or startup JS array.
+  function cachedArtworkExists(art){
+    if(!window.GalleryAndroid||typeof window.GalleryAndroid.cachedArtworkExists!=='function')return true;
+    try{return !!window.GalleryAndroid.cachedArtworkExists(art.image);}
+    catch(_){return false;}
+  }
+  function discardRejectedArtwork(art){
+    if(!window.GalleryAndroid||typeof window.GalleryAndroid.discardUnshownDuplicate!=='function')return;
+    try{window.GalleryAndroid.discardUnshownDuplicate(art.image);}catch(_){}
+  }
+  function similarDownloadedImage(hash,key){
+    if(!hash)return false;
+    for(const [priorKey,priorHash] of state.downloadedVisualHashes){
+      if(priorKey!==key&&priorHash&&C.hashDistance(hash,priorHash)<=2)return true;
+    }
+    for(const [priorKey,priorHash] of state.inflightVisualHashes){
+      if(priorKey!==key&&priorHash&&C.hashDistance(hash,priorHash)<=2)return true;
+    }
+    for(const item of state.offlineReady){
+      if(item.visualHash&&C.hashDistance(hash,item.visualHash)<=2)return true;
+    }
+    return false;
+  }
+  async function hydrateDownloadedIndex(){
+    if(!state.db||!state.db.objectStoreNames.contains('downloaded'))return 0;
+    state.downloadedKeys.clear();state.downloadedVisualHashes.clear();state.downloadedURLs.clear();
+    return new Promise((resolve,reject)=>{
+      let count=0;
+      const tx=state.db.transaction('downloaded','readonly'),req=tx.objectStore('downloaded').openCursor();
+      req.onsuccess=()=>{
+        const cursor=req.result;if(!cursor)return;
+        const row=cursor.value,art=row&&row.art;
+        if(art&&typeof art.key==='string'&&C.eligibleArt(art)){
+          state.downloadedKeys.add(art.key);
+          if(row.visualHash&&/^[0-9a-f]{16}$/.test(row.visualHash))
+            state.downloadedVisualHashes.set(art.key,row.visualHash);
+          if(typeof art.image==='string')state.downloadedURLs.add(art.image);
+          count++;
+        }
+        cursor.continue();
+      };
+      tx.oncomplete=()=>resolve(count);
+      tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+    });
+  }
   async function restoreDownloadedInventory(limit=300){
     if(!state.db||!state.db.objectStoreNames.contains('downloaded'))return 0;
     return new Promise((resolve,reject)=>{
-      let added=0;
+      let added=0;const staleKeys=[];
       const tx=state.db.transaction('downloaded','readonly');
       const req=tx.objectStore('downloaded').openCursor();
       req.onsuccess=()=>{
         const cursor=req.result;
         if(!cursor||added>=limit||state.pool.length>=CONFIG.maxQueue)return;
         const art=cursor.value&&cursor.value.art;
-        if(art&&C.eligibleArt(art)&&C.metadataResolutionOkay(art)&&
+        const exists=art&&cachedArtworkExists(art);
+        if(art&&!exists){
+          state.downloadedKeys.delete(art.key);
+          state.downloadedVisualHashes.delete(art.key);
+          state.downloadedURLs.delete(art.image);
+          staleKeys.push(art.key);
+        }
+        if(art&&exists&&C.eligibleArt(art)&&C.metadataResolutionOkay(art)&&
            !seenInMemory(art,null)&&!state.pendingKeys.has(art.key)){
           state.pendingKeys.add(art.key);state.pool.push(art);
           state.prefetchedKeys.add(art.key);
@@ -715,7 +812,10 @@
         }
         cursor.continue();
       };
-      tx.oncomplete=()=>resolve(added);
+      tx.oncomplete=()=>{
+        Promise.all(staleKeys.map(key=>dbDelete('downloaded',key))).then(
+          ()=>resolve(added),reject);
+      };
       tx.onerror=()=>reject(tx.error);
       tx.onabort=()=>reject(tx.error);
     });
@@ -826,6 +926,17 @@
   function displayLoaded(show,emergency=false){
     if(!show || (state.current&&state.current.art.key===show.art.key))return false;
     if(seenInMemory(show.art,show.visualHash)){state.dedupBlocked++;return false;}
+    // Atomic native journal is committed BEFORE on-screen display. A crash
+    // between the render and IndexedDB's async commit cannot repeat the art.
+    if(window.GalleryAndroid&&typeof window.GalleryAndroid.claimArtworkKeys==='function'){
+      let claimed=false;
+      try{claimed=!!window.GalleryAndroid.claimArtworkKeys(
+        JSON.stringify(rowKeys(show.art,show.visualHash)));}catch(_){}
+      if(!claimed){
+        state.dedupBlocked++;state.lastErr='기기 전시 기록 저장 실패 또는 최근 90일 작품';
+        return false;
+      }
+    }
     markSeen(show); // Reserve identities before asynchronous disk writes.
     const target=state.currentNode===ui.a?ui.b:ui.a;
     target.alt=show.art.title+' — '+show.art.artist;
@@ -842,10 +953,14 @@
     state.recentLoaded=[show,...state.recentLoaded.filter(x=>x.art.key!==show.art.key)].slice(0,8);
     state.recentDisplayed.add(show.art.key);
     if(emergency)state.emergencySwaps++;
+    if(show.art.offlineAsset)state.offlineUnseenReady=Math.max(0,state.offlineUnseenReady-1);
     if(test&&test.onShow)test.onShow(show.art,show.orient,emergency);
     // Persist in the background: storage latency may not delay a visual transition.
     recordSeen(show).then(async()=>{
       await dbDelete('downloaded',show.art.key);
+      state.downloadedKeys.delete(show.art.key);
+      state.downloadedVisualHashes.delete(show.art.key);
+      state.downloadedURLs.delete(show.art.image);
       await dbPutMany('settings',[{key:'lastArtwork',value:show.art}]);
     }).catch(e=>{
       state.lastErr='감상 기록 저장 실패: '+String(e.message||e);
@@ -1049,6 +1164,8 @@
     if(!bar||!fill)return;
     if(!s){
       el('cache-photo-count').textContent='태블릿에서 확인';
+      for(const id of ['cache-unshown-count','cache-shown-count','cache-eligible-count','cache-available-days'])
+        if(el(id))el(id).textContent='태블릿에서 확인';
       el('cache-volume').textContent='기기 연결 후 표시';
       el('cache-percent').textContent='—';
       el('cache-detail').textContent='실제 저장된 다운로드 이미지 파일만 집계합니다.';
@@ -1065,6 +1182,21 @@
     el('cache-volume').textContent=gib(bytes)+' / '+gib(limit)+' GiB';
     el('cache-percent').textContent=pct.toFixed(1)+'%';
     el('cache-apk-count').textContent=state.offlineManifestCount.toLocaleString('ko-KR')+'점';
+    const unseenFiles=Math.max(0,Number(s.unshownImageFiles)||0);
+    const shownFiles=Math.max(0,Number(s.shownCachedFiles)||0);
+    // Index entries were individually checked for decoding and eligibility;
+    // native files exclude entries already displayed. The lower count is used.
+    // This is a maximum planning estimate, NOT a 90-day uptime guarantee.
+    const eligibleDownloaded=Math.min(unseenFiles,state.downloadedKeys.size);
+    const possible=eligibleDownloaded+state.offlineUnseenReady;
+    const days=Math.floor(possible/1440),hours=Math.floor((possible%1440)/60);
+    el('cache-unshown-count').textContent=unseenFiles.toLocaleString('ko-KR')+'점';
+    el('cache-shown-count').textContent=shownFiles.toLocaleString('ko-KR')+'점';
+    el('cache-eligible-count').textContent=eligibleDownloaded.toLocaleString('ko-KR')+'점';
+    el('cache-available-days').textContent=days+'일 '+hours+'시간 이하';
+    el('cache-estimate-note').textContent=
+      '이미지 중복·화질·권리 검증과 실제 기기 상태에 따라 예상 기간이 단축될 수 있습니다. '+
+      '내장 미전시 후보 '+state.offlineUnseenReady.toLocaleString('ko-KR')+'점 포함 · 1분당 1점 기준';
     const free=Math.max(0,Number(s.freeBytes)||0);
     const reserve=Math.max(0,Number(s.reservedBytes)||0);
     const limited=free<reserve+8*1024*1024;
@@ -1295,7 +1427,11 @@
         const ok=window.GalleryAndroid.clearImageCache();
         if(ok){
           state.cacheSnapshotAt=0;
-          try{await dbClear('downloaded');state.prefetchedKeys.clear();}
+          try{
+            await dbClear('downloaded');
+            state.prefetchedKeys.clear();state.downloadedKeys.clear();
+            state.downloadedVisualHashes.clear();state.downloadedURLs.clear();
+          }
           catch(e){state.lastErr='캐시 목록 정리 실패: '+String(e.message||e);}
         }
         ui.msg.textContent=ok?'이미지 캐시와 다운로드 목록을 삭제했습니다. 90일 감상 기록은 보존됩니다.':'캐시 정리에 실패했습니다.';
@@ -1319,6 +1455,20 @@
     });
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings(); if(e.key==='ArrowRight'&&ui.settings.hidden)next(); if(e.key===' '&&ui.settings.hidden){e.preventDefault();el('toggle-pause').click();}});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(state.playing)startClock();refreshForDay().catch(()=>{});collectorPump().catch(()=>{});}});
+    window.addEventListener('offline',()=>{
+      state.networkOnline=false;
+      state.collectorStopReason='인터넷 연결 없음 · 저장된 작품으로 계속 전시';
+      updateInfo();
+    });
+    window.addEventListener('online',()=>{
+      state.networkOnline=true;state.collectorLastAt=0;
+      // Retry connection failures, never shorten a provider's 429/503 cooldown.
+      state.collectorRetry=Object.fromEntries(Object.entries(state.collectorRetry)
+        .filter(([_,entry])=>!entry.network));
+      state.collectorStopReason='';
+      if(!document.hidden){fillPool(CONFIG.targetPool).catch(()=>{});collectorPump().catch(()=>{});}
+      updateInfo();
+    });
   }
   async function init(){
     wire();
@@ -1350,6 +1500,7 @@
       await loadMovementCatalog();
       await restoreCollector();
       await hydrateHistory();
+      await hydrateDownloadedIndex();
       await restoreCandidatePool();
       await restoreDownloadedInventory(300);
       await loadOfflineDeck();
