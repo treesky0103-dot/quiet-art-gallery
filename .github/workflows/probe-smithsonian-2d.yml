@@ -1,0 +1,42 @@
+name: Smithsonian SAAM CHNDM CC0 paintings metadata scan
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_smithsonian_2d.py
+      - .github/workflows/probe-smithsonian-2d.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parse and scan public S3 Smithsonian catalogue fragments
+        run: |
+          python -m py_compile scripts/probe_smithsonian_2d.py
+          python -u scripts/probe_smithsonian_2d.py
+      - name: Confirm metadata cannot be called acquired image files
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          j=json.loads(Path('audit-smithsonian-2d/first_art_metadata.json').read_text())
+          assert j['files_verified']==0
+          assert j['full_259200_complete'] is False
+          assert len(j['shards'])==5
+          print('Smithsonian CC0 2D source metadata sample recorded, image byte downloads remain zero')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smithsonian-2d-cc0-s3-scan-report
+          path: audit-smithsonian-2d/first_art_metadata.json
+          if-no-files-found: warn
+          retention-days: 5
