@@ -55,6 +55,6 @@ test('gallery does not enforce seventeen schools and shows actual achieved fract
  assert(app.includes('post1800Shown'));
  assert(!app.includes('for(let delta=0;delta<C.MOVEMENTS.length;delta++)'));
  assert(html.includes('무작위로 전시합니다'));
- assert(html.includes('장르 고정 순서 없음'));
+ assert(html.includes('회화·사진·일러스트·애니메이션·현대미술'));
  assert(html.includes('30분 간격'));
 });
