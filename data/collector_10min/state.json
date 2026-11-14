@@ -1,0 +1,23 @@
+{
+  "baseline_requested": 736,
+  "verified_manifest_base": 675,
+  "baseline_unmatched_count": 61,
+  "runs": 0,
+  "last_run": null,
+  "new_verified": 0,
+  "claimed_total_with_requested_baseline": 736,
+  "last_download_success": 0,
+  "last_metadata_sources_ok": 0,
+  "cursor": {
+    "cma_modern": 2500,
+    "aic_modern": 16,
+    "cma_older": 2500,
+    "aic_older": 16
+  },
+  "notes": [
+    "736 is a user-specified numerical starting point, not proof that 736 binary files are in this repository.",
+    "675 rows exist in verified_artwork_manifest.csv with original research provenance; their bytes are in expiring Actions artifacts.",
+    "Do not merge the 61 difference into the verified-file ledger until corresponding original evidence is found.",
+    "Only downloaded, decoded, resolution/rights-screened, hashed and artifact-uploaded additions count as new."
+  ]
+}
