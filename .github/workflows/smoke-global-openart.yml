@@ -1,0 +1,43 @@
+name: Live open art registry source feasibility check
+on:
+  push:
+    branches:
+      - feat-continuous-global-openart-collector-20261114
+    paths:
+      - scripts/smoke_global_openart_registry.py
+      - .github/workflows/smoke-global-openart.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  provider:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Syntax-check and query twelve public worldwide art categories
+        run: |
+          python -m py_compile scripts/smoke_global_openart_registry.py
+          python -u scripts/smoke_global_openart_registry.py
+      - name: Verify result is just source metadata, not downloaded images
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('audit-global-openart-registry/registry_smoke.json').read_text())
+          assert r['registered']==12 and r['tested']==12
+          assert r['all_servers_connected'] is False
+          assert r['actually_downloaded_and_decoded']==0
+          assert r['target_artwork_count_complete'] is False
+          print('WORLD SOURCE REGISTRY AUDITED WITHOUT FALSE BYTE COUNTS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: global-12-commons-source-registry-smoke-metadata
+          path: audit-global-openart-registry/
+          if-no-files-found: warn
+          retention-days: 3
