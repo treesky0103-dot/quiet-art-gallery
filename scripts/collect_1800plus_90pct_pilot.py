@@ -28,6 +28,7 @@ EARLIER_GOAL=25920
 assert MODERN_GOAL+EARLIER_GOAL==GOAL
 AGENT="QuietArtGalleryGlobalArtAudit/1.1 (https://github.com/treesky0103-dot/quiet-art-gallery; research)"
 MAX_DOWNLOAD=12
+MAX_IMAGE_ATTEMPTS=25
 MAX_FILE_BYTES=24*1024*1024
 MIN_SHORT=1000
 MIN_LONG=1400
@@ -108,7 +109,7 @@ def cleveland(era):
         web=images.get("web") or {}
         display=images.get("print") or web
         original=images.get("full") or display
-        image_url=(original.get("url") or display.get("url") or web.get("url") or "")
+        image_url=(display.get("url") or web.get("url") or original.get("url") or "")
         if not image_url.startswith("https://"):continue
         image_dim=display
         records.append({"source":"Cleveland Museum of Art","id":art.get("id"),
@@ -166,7 +167,7 @@ def met(era):
     data=request(url)
     objects=data.get("objectIDs") or []
     records=[];tested=0;errors=0
-    for oid in objects[:26]:
+    for oid in objects[:12]:
         try:
             art=request("https://collectionapi.metmuseum.org/public/collection/v1/objects/"+str(oid))
             tested+=1
@@ -204,13 +205,15 @@ def download_verified(candidates):
     errors=[]
     seen_bytes=set();seen_phash=[]
     results=[]
+    attempted=0
     for item in candidates:
         src=item["source"]
         if by_source.get(src,0)>=4 or len(results)>=MAX_DOWNLOAD:continue
         if item["era"] not in ("1800-2026","pre-1800"):continue
-        if len(results)>=MAX_DOWNLOAD:break
+        if len(results)>=MAX_DOWNLOAD or attempted>=MAX_IMAGE_ATTEMPTS:break
+        attempted+=1
         try:
-            blob=request(item["image_url"],binary=True,timeout=35)
+            blob=request(item["image_url"],binary=True,timeout=18)
             im=Image.open(io.BytesIO(blob))
             im.load()
             if im.format not in ("JPEG","PNG","WEBP"):raise ValueError("Not artwork image format")
