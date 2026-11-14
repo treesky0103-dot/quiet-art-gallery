@@ -4,11 +4,11 @@ android {
     namespace 'com.gallery.kiosk'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.gallery.kiosk.worldart'
+        applicationId 'com.gallery.kiosk.collectorv2'
         minSdk 26
         targetSdk 35
-        versionCode 18
-        versionName '1.8.0-worldart'
+        versionCode 19
+        versionName '1.8.1-collectorv2'
     }
     buildTypes {
         release { minifyEnabled false }
