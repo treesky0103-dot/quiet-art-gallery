@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 60000, minPool: 28, targetPool: 350, maxQueue: 7200, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:1800000, collectorTickMs:60000, collectorTargetPerWindow:60, collectorMaxPerTick:4, collectorMaxAttemptsPerTick:16, savedCandidateLimit:1000});
+  const CONFIG = Object.freeze({intervalMs: 60000, minPool: 28, targetPool: 350, maxQueue: 7200, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:1800000, collectorTickMs:15000, collectorMaxPerTick:6, collectorMaxAttemptsPerTick:18, savedCandidateLimit:1000});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -9,6 +9,7 @@
     caption:el('caption'),title:el('art-title'),meta:el('art-meta'),settings:el('settings'), backdrop:el('settings-backdrop'),
     pause:el('toggle-pause'),done:el('settings-done'),msg:el('setting-message')};
   const state = {
+    collectorStopReason:'', offlineManifestCount:0, cacheSnapshot:null, cacheSnapshotAt:0,
     db:null,pool:[],pendingKeys:new Set(), prepared:null,current:null,currentNode:ui.b,
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
@@ -193,6 +194,7 @@
       const r=await fetch('https://appassets.gallery/offline-deck.json',{cache:'no-store'});
       if(!r.ok)throw Error('비상 작품 목록 없음');
       const items=await r.json();
+      if(Array.isArray(items))state.offlineManifestCount=items.length;
       if(!Array.isArray(items)||items.length<2||items.length>2700)throw Error('내장 작품 목록 형식 오류');
       const all=C.shuffledCopy(items.filter(art=>
         /^(?:offline\/fallback-(?:[0-9]|1[0-5])|offline\/pack-[0-9]{4})\.jpg$/.test(art.offlineAsset||'') &&
@@ -540,8 +542,9 @@
     })();
     try{return await state.filling;}finally{state.filling=null; updateInfo();}
   }
-  // The 60/30m rate is an aspirational goal, not a guaranteed download result.
-  // The one-minute slideshow stays independent from this foreground-only queue.
+  // No daily or 30-minute image quota: collect toward the 8GiB device cache.
+  // Per-pass limits protect tablet responsiveness and respect HTTP 429/503 backoff.
+  // The one-minute slideshow remains independent from the collector.
   function collectorDelay(status,attempt,retryMs=0){
     const n=Math.max(1,Math.min(10,Number(attempt)||1));
     const base=status===429?1800000:status===503?480000:45000;
@@ -561,10 +564,8 @@
     }
     const today=new Date(now+9*60*60*1000).toISOString().slice(0,10);
     if(state.collectorDayKey!==today){state.collectorDayKey=today;state.collectorDaySaved=0;}
-    const remaining=Math.max(0,CONFIG.collectorTargetPerWindow-state.collectorWindowSaved);
-    if(!remaining)return 0;
-    const ticks=Math.max(1,Math.ceil((CONFIG.collectorEveryMs-(now-state.collectorWindowStarted))/CONFIG.collectorTickMs));
-    return Math.min(CONFIG.collectorMaxPerTick,Math.max(1,Math.ceil(remaining/ticks)));
+    // Pump limit, not a cap on 30-minute or daily actual downloads.
+    return CONFIG.collectorMaxPerTick;
   }
   async function persistCollector(){
     const now=Date.now();
@@ -586,7 +587,7 @@
       if(!saved||typeof saved!=='object')return;
       const nonnegative=x=>Number.isFinite(Number(x))&&Number(x)>0?Number(x):0;
       state.collectorWindowStarted=nonnegative(saved.windowStarted);
-      state.collectorWindowSaved=Math.min(CONFIG.collectorTargetPerWindow,nonnegative(saved.windowDownloaded));
+      state.collectorWindowSaved=nonnegative(saved.windowDownloaded);
       state.collectorDayKey=typeof saved.dayKey==='string'?saved.dayKey:'';
       state.collectorDaySaved=nonnegative(saved.dayDownloaded);
       state.collectorSuccess=nonnegative(saved.totalDownloaded);
@@ -614,7 +615,24 @@
     state.collectorRunning=true;state.collectorLastAt=now;
     try{
       const quota=collectorQuota(now);
-      if(quota<=0)return;
+      // Read the actual tablet cache, not metadata, search results or APK counts.
+      const storage=nativeCacheStats();
+      if(storage){
+        const bytes=Math.max(0,Number(storage.bytes)||0);
+        const limit=Number(storage.limitBytes)||8*1024**3;
+        const free=Number(storage.freeBytes)||0;
+        const reserve=Number(storage.reservedBytes)||1536*1024**2;
+        const displayed=Number(storage.displayedCacheEntries)||0;
+        if(bytes+8*1024*1024>=limit&&displayed===0){
+          state.collectorStopReason='8GiB 한도 근접 · 미전시 파일 보호';
+          return;
+        }
+        if(free<reserve+8*1024*1024&&displayed===0){
+          state.collectorStopReason='기기 여유 저장 공간 부족';
+          return;
+        }
+      }
+      state.collectorStopReason='';
       let ready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&
         !seenInMemory(a,null)&&!(state.collectorRetry[a.key]&&state.collectorRetry[a.key].nextAt>now));
       // Keep archived downloaded candidates on disk while allowing discovery
@@ -670,7 +688,7 @@
         .concat(staged.slice(-200)).slice(0,CONFIG.savedCandidateLimit)}]);
       await persistCollector();await persist();
     }catch(e){state.collectorErrors++;state.lastErr='수집 대기열 오류: '+String(e.message||e);}
-    finally{state.collectorRunning=false;updateInfo();}
+    finally{state.collectorRunning=false;state.cacheSnapshotAt=0;updateInfo();}
   }
   function startContinuousCollector(){
     if(state.collectorTimer)clearInterval(state.collectorTimer);
@@ -1009,11 +1027,52 @@
     }finally{state.auditing=false;el('audit-now').disabled=false;}
   }
 
+  function nativeCacheStats(force=false){
+    if(!window.GalleryAndroid||typeof window.GalleryAndroid.cacheStats!=='function')return null;
+    if(!force&&state.cacheSnapshot&&Date.now()-state.cacheSnapshotAt<10000)return state.cacheSnapshot;
+    try{
+      const data=JSON.parse(window.GalleryAndroid.cacheStats());
+      if(!data||!Number.isFinite(Number(data.limitBytes))||Number(data.limitBytes)<=0)return null;
+      state.cacheSnapshot=data;
+      state.cacheSnapshotAt=Date.now();
+      return data;
+    }catch(_){return null;}
+  }
   function cacheStatus(){
-    if(window.GalleryAndroid&&window.GalleryAndroid.cacheStats){
-      try{const s=JSON.parse(window.GalleryAndroid.cacheStats());return `${C.prettyBytes(s.bytes||0)} / 8GiB · 실제 저장 ${Number(s.imageFiles||0).toLocaleString('ko-KR')}점 · 전시 후 삭제 ${Number(s.purgedFiles||0)}점 (${C.prettyBytes(s.purgedBytes||0)})`;}catch(_){return '확인할 수 없음';}
+    const s=nativeCacheStats();
+    if(!s)return '태블릿에서만 저장량 확인 가능';
+    return `${C.prettyBytes(s.bytes||0)} / 8GiB · 실제 저장 ${Number(s.imageFiles||0).toLocaleString('ko-KR')}점 · 전시 후 삭제 ${Number(s.purgedFiles||0)}점 (${C.prettyBytes(s.purgedBytes||0)})`;
+  }
+  function renderCacheProgress(){
+    const s=nativeCacheStats();
+    const bar=el('cache-progress'),fill=el('cache-progress-fill');
+    if(!bar||!fill)return;
+    if(!s){
+      el('cache-photo-count').textContent='태블릿에서 확인';
+      el('cache-volume').textContent='기기 연결 후 표시';
+      el('cache-percent').textContent='—';
+      el('cache-detail').textContent='실제 저장된 다운로드 이미지 파일만 집계합니다.';
+      bar.setAttribute('aria-valuenow','0');
+      fill.style.width='0%';
+      return;
     }
-    return '브라우저 관리 (자동 캐시 제한 불가)';
+    const limit=Number(s.limitBytes)||8*1024**3;
+    const bytes=Math.max(0,Number(s.bytes)||0);
+    const count=Math.max(0,Number(s.imageFiles)||0);
+    const pct=Math.min(100,Math.max(0,100*bytes/limit));
+    const gib=n=>(n/1024**3).toFixed(2);
+    el('cache-photo-count').textContent=count.toLocaleString('ko-KR')+'점';
+    el('cache-volume').textContent=gib(bytes)+' / '+gib(limit)+' GiB';
+    el('cache-percent').textContent=pct.toFixed(1)+'%';
+    el('cache-apk-count').textContent=state.offlineManifestCount.toLocaleString('ko-KR')+'점';
+    const free=Math.max(0,Number(s.freeBytes)||0);
+    const reserve=Math.max(0,Number(s.reservedBytes)||0);
+    const limited=free<reserve+8*1024*1024;
+    el('cache-detail').textContent=state.collectorStopReason||
+      (limited?'기기 여유 공간 보호 기준에 도달했습니다.':
+      '태블릿에 실제 저장된 이미지 파일 기준 · 미전시 이미지 보호');
+    bar.setAttribute('aria-valuenow',pct.toFixed(1));
+    fill.style.width=pct.toFixed(2)+'%';
   }
   function updateInfo(){
     el('seen-count').textContent=state.stats.shown.toLocaleString('ko-KR')+'점';
@@ -1026,9 +1085,10 @@
     const count=state.stats.portrait+state.stats.other;
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
+    renderCacheProgress();
     if(el('collector-status'))el('collector-status').textContent=
-      (document.hidden?'화면 비활성':'화면 활성 · 1분마다 보충')+
-      ' · 30분 실적 '+state.collectorWindowSaved+'/'+CONFIG.collectorTargetPerWindow+
+      (document.hidden?'화면 비활성':'화면 활성 · 8GiB 우선 수집')+
+      ' · 최근 30분 '+state.collectorWindowSaved+
       '점 · 오늘 '+state.collectorDaySaved+'점 · 누적 '+state.collectorSuccess+
       '점 · 실패 '+state.collectorErrors+'회 · 제한 '+state.collectorThrottled+'회';
     if(el('dedup-count'))el('dedup-count').textContent=
@@ -1060,7 +1120,7 @@
     if(state.db)await dbPutMany('settings',[{key:'flipped',value:state.flipped}]);
     updateInfo();
   }
-  function showSettings(){ui.settings.hidden=false;ui.backdrop.hidden=false;clearTimeout(state.hideTimer);controlsFor(0);updateInfo();}
+  function showSettings(){ui.settings.hidden=false;ui.backdrop.hidden=false;clearTimeout(state.hideTimer);controlsFor(0);state.cacheSnapshotAt=0;updateInfo();}
   function closeSettings(){ui.settings.hidden=true;ui.backdrop.hidden=true;controlsFor(2500);}
   function exportHistory(){
     const native=window.GalleryAndroid&&typeof window.GalleryAndroid.beginHistoryExport==='function';
@@ -1234,6 +1294,7 @@
       if(window.GalleryAndroid&&window.GalleryAndroid.clearImageCache){
         const ok=window.GalleryAndroid.clearImageCache();
         if(ok){
+          state.cacheSnapshotAt=0;
           try{await dbClear('downloaded');state.prefetchedKeys.clear();}
           catch(e){state.lastErr='캐시 목록 정리 실패: '+String(e.message||e);}
         }
@@ -1328,7 +1389,7 @@
     flipped:state.flipped,caption:[ui.title.textContent,ui.meta.textContent],
     dedupBlocked:state.dedupBlocked,exhaustedTicks:state.exhaustedTicks,recentKeys:state.recentKeys.size,
     visualHashes:state.visualHashes.size,sourceCount:3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length+C.SMITHSONIAN_MUSEUMS.length+C.GLOBAL_OPEN_ART_CATEGORIES.length,
-    collector:{running:state.collectorRunning,lastAt:state.collectorLastAt,validatedPrefetch:state.collectorSuccess,errors:state.collectorErrors,categoryIndex:state.globalCategoryIndex,windowDownloaded:state.collectorWindowSaved,windowGoal:CONFIG.collectorTargetPerWindow,dayDownloaded:state.collectorDaySaved,throttled:state.collectorThrottled,retryEntries:Object.keys(state.collectorRetry).length},
+    collector:{running:state.collectorRunning,lastAt:state.collectorLastAt,validatedPrefetch:state.collectorSuccess,errors:state.collectorErrors,categoryIndex:state.globalCategoryIndex,windowDownloaded:state.collectorWindowSaved,windowGoal:null,dayDownloaded:state.collectorDaySaved,throttled:state.collectorThrottled,retryEntries:Object.keys(state.collectorRetry).length,stopReason:state.collectorStopReason,cacheStats:nativeCacheStats()},
     modernShown:state.stats.modernShown,modernFetched:state.modernFetched,modernPool:state.pool.filter(a=>a.modern).length,modernTargetNext:C.targetModern(state.stats.slot),
     lastSwapAt:state.lastSwapAt,tickCount:state.tickCount,emergencySwaps:state.emergencySwaps,
     offlineReady:state.offlineReady.length,nativeClock:state.nativeClock,nextDueAt:state.nextDueAt});
