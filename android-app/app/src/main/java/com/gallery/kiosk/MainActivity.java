@@ -158,7 +158,7 @@ public final class MainActivity extends Activity {
                 }
                 String assetPath = (path == null || path.equals("/")) ? "index.html" : path.substring(1);
                 boolean offlineImage=assetPath.matches("(?:offline/fallback-(?:[0-9]|1[0-5])|offline/pack-[0-9]{4})\\.jpg");
-                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json", "art-movements.json", "art-providers.json").contains(assetPath))
+                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json", "art-movements.json", "art-providers.json", "art-sources-85.json").contains(assetPath))
                     return response(404, "text/plain", new byte[0]);
                 try {
                     InputStream in = getAssets().open(assetPath);
@@ -287,6 +287,42 @@ public final class MainActivity extends Activity {
             long n=f.length();
             if(f.delete())sum-=n;
         }
+    }
+    // Only a downloaded image in app-private cache can be removed. APK assets
+    // are immutable and cannot be deleted without uninstalling the APK.
+    // This method is invoked AFTER IndexedDB confirms 90-day history commit
+    // and AFTER the next slide replaces the former image.
+    private synchronized int deleteAlreadyShownCachedImage(String originalUrl){
+        if(originalUrl==null || originalUrl.length()>4096 || !safeImageUrl(originalUrl))return -1;
+        try{
+            File file=new File(imageDir,hashUrl(originalUrl)+".img");
+            if(!file.isFile())return 0;
+            return file.delete()?1:-1;
+        }catch(Exception ignored){return -1;}
+    }
+    // Only permit outbound browsing destinations present in the immutable
+    // packaged registry. An arbitrary JS URL cannot open another app.
+    private boolean registeredArtSourcePage(String address){
+        if(address==null || address.length()>2048)return false;
+        try{
+            Uri uri=Uri.parse(address);
+            if(!"https".equals(uri.getScheme()) || uri.getHost()==null ||
+               uri.getUserInfo()!=null || uri.getPort()!=-1)return false;
+            try(InputStream in=getAssets().open("art-sources-85.json")){
+                ByteArrayOutputStream buffer=new ByteArrayOutputStream();
+                byte[] chunk=new byte[8192];int n;
+                while((n=in.read(chunk))!=-1){
+                    buffer.write(chunk,0,n);
+                    if(buffer.size()>180000)return false;
+                }
+                JSONArray entries=new JSONObject(buffer.toString("UTF-8")).getJSONArray("entries");
+                if(entries.length()!=85)return false;
+                for(int i=0;i<entries.length();i++)
+                    if(address.equals(entries.getJSONObject(i).optString("homepage","")))
+                        return true;
+            }
+        }catch(Exception ignored){}
+        return false;
     }
     private synchronized boolean clearImages(){File[] files=imageDir.listFiles();if(files==null)return true;boolean ok=true;for(File f:files)if(f.isFile()&&!f.delete())ok=false;return ok;}
 
@@ -582,6 +618,21 @@ public final class MainActivity extends Activity {
         }
         @JavascriptInterface public String cacheStats(){try{return new JSONObject().put("bytes",cacheBytes()).put("limitBytes",MAX_IMAGE_CACHE).put("cleanupBytes",CLEAN_TO).put("freeBytes",imageDir.getUsableSpace()).put("reservedBytes",FREE_RESERVE).toString();}catch(Exception e){return "{}";}}
         @JavascriptInterface public boolean clearImageCache(){return clearImages();}
+        @JavascriptInterface public int discardDisplayedImage(String sourceUrl){
+            return deleteAlreadyShownCachedImage(sourceUrl);
+        }
+        @JavascriptInterface public boolean openProviderPage(String url){
+            if(!registeredArtSourcePage(url))return false;
+            runOnUiThread(()->{
+                try{
+                    Intent view=new Intent(Intent.ACTION_VIEW,Uri.parse(url));
+                    startActivity(view);
+                }catch(Exception ignored){
+                    // No browser installed or request blocked. Do not alter slideshow state.
+                }
+            });
+            return true;
+        }
         @JavascriptInterface public void beginHistoryExport(){
             try{exportFile=new File(getCacheDir(),"gallery-export.csv");try(FileOutputStream out=new FileOutputStream(exportFile,false)){out.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});}}
             catch(Exception e){exportFile=null;}
