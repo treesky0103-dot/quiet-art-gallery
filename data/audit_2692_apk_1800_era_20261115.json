@@ -1,0 +1,192 @@
+{
+  "apk": "QuietArtGallery-2061-plus-10min-Test.apk",
+  "apk_sha256": "0a3830217bebf9590e11ed3f2f4fa7258e6fcf5ca347826531244b4ebb69c12b",
+  "classification": "Exact GalleryCore.artworkEra() rules applied to per-artwork yearStart and yearEnd inside the published APK",
+  "total": {
+    "post1800": 2463,
+    "pre1800": 189,
+    "unknown": 40,
+    "total": 2692,
+    "post1800_percent_of_total": 91.4933,
+    "pre1800_percent_of_total": 7.0208,
+    "unknown_percent_of_total": 1.4859,
+    "post1800_percent_of_known": 92.8733,
+    "unknown_examples": [
+      {
+        "key": "cma:135382",
+        "title": "The Red Kerchief",
+        "yearStart": "1868",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:137259",
+        "title": "Mme L . . . (Laure Borreau)",
+        "yearStart": "1863",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:149410",
+        "title": "In the Waves (Dans les Vagues)",
+        "yearStart": "1889",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:135214",
+        "title": "The Troubadour",
+        "yearStart": "1868",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:149665",
+        "title": "Ruin by the Sea",
+        "yearStart": "1881",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:155860",
+        "title": "The Young Eastern Woman",
+        "yearStart": "1838",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:160289",
+        "title": "Portrait of Lisa Colt Curtis",
+        "yearStart": "1898",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:135310",
+        "title": "Two Poplars in the Alpilles near Saint-Rémy",
+        "yearStart": "1889",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:121188",
+        "title": "Romaine Lacaux",
+        "yearStart": "1864",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:123168",
+        "title": "The Call",
+        "yearStart": "1902",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:141935",
+        "title": "Samuel Williams",
+        "yearStart": "1812",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:108544",
+        "title": "Orpheus",
+        "yearStart": "1898",
+        "yearEnd": null
+      }
+    ],
+    "cross_1800_examples": []
+  },
+  "original_2061": {
+    "post1800": 1832,
+    "pre1800": 189,
+    "unknown": 40,
+    "total": 2061,
+    "post1800_percent_of_total": 88.8889,
+    "pre1800_percent_of_total": 9.1703,
+    "unknown_percent_of_total": 1.9408,
+    "post1800_percent_of_known": 90.6482,
+    "unknown_examples": [
+      {
+        "key": "cma:135382",
+        "title": "The Red Kerchief",
+        "yearStart": "1868",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:137259",
+        "title": "Mme L . . . (Laure Borreau)",
+        "yearStart": "1863",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:149410",
+        "title": "In the Waves (Dans les Vagues)",
+        "yearStart": "1889",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:135214",
+        "title": "The Troubadour",
+        "yearStart": "1868",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:149665",
+        "title": "Ruin by the Sea",
+        "yearStart": "1881",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:155860",
+        "title": "The Young Eastern Woman",
+        "yearStart": "1838",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:160289",
+        "title": "Portrait of Lisa Colt Curtis",
+        "yearStart": "1898",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:135310",
+        "title": "Two Poplars in the Alpilles near Saint-Rémy",
+        "yearStart": "1889",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:121188",
+        "title": "Romaine Lacaux",
+        "yearStart": "1864",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:123168",
+        "title": "The Call",
+        "yearStart": "1902",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:141935",
+        "title": "Samuel Williams",
+        "yearStart": "1812",
+        "yearEnd": null
+      },
+      {
+        "key": "cma:108544",
+        "title": "Orpheus",
+        "yearStart": "1898",
+        "yearEnd": null
+      }
+    ],
+    "cross_1800_examples": []
+  },
+  "new_631": {
+    "post1800": 631,
+    "pre1800": 0,
+    "unknown": 0,
+    "total": 631,
+    "post1800_percent_of_total": 100,
+    "pre1800_percent_of_total": 0,
+    "unknown_percent_of_total": 0,
+    "post1800_percent_of_known": 100,
+    "unknown_examples": [],
+    "cross_1800_examples": []
+  },
+  "required_post1800_for_80_percent": 2154,
+  "actual_post1800": 2463,
+  "needed_additional_post1800_for_80_percent": 0,
+  "meets_80_percent_of_total": true,
+  "physical_tablet_tested": false
+}
