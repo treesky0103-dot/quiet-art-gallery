@@ -723,6 +723,16 @@
     return -1;
   }
 
+  // A cached image can be dropped only after the 90-day seen ledger was
+  // durably committed, the next slide is visible, and no active/prepared slide
+  // needs the same URL. APK-bundled images are immutable and never deleted.
+  function canDiscardDisplayedCache(previous,current,prepared,historyCommitted){
+    if(!historyCommitted||!previous||!previous.art||!current||!current.art)return false;
+    const p=previous.art,c=current.art,next=prepared&&prepared.art;
+    if(p.offlineAsset||!safeURL(p.image)||p.key===c.key||
+       p.image===c.image||(next&&p.image===next.image))return false;
+    return true;
+  }
   function prettyBytes(bytes) {
     const v = Number(bytes) || 0;
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
@@ -733,5 +743,5 @@
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
     artworkEra,targetPost1800,eraQuota90Days,MODERN_THRESHOLD_YEAR,
     GLOBAL_OPEN_ART_CATEGORIES,normalizeGlobalCommons,MIXED_MEDIA_CATEGORIES,normalizeMixedMediaCommons,normalizeMovementCommons,shuffledCopy,artworkYearLabel,
-    portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance };
+    portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance, canDiscardDisplayedCache };
 });
