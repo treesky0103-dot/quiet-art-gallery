@@ -1,0 +1,57 @@
+name: Actual Commons museum painting bytes pilot
+on:
+  push:
+    branches:
+      - collect-paintings-259200-pilot-20261114
+    paths:
+      - scripts/download_commons_paintings_pilot.py
+      - .github/workflows/actual-commons-paintings.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Parse and validate scripts
+        run: python -m py_compile scripts/audit_29_fields_90day.py scripts/download_commons_paintings_pilot.py
+      - name: Download decode and hash unique portrait artworks
+        env:
+          MAX_IMAGES: "70"
+          MAX_CATEGORIES: "42"
+        run: python -u scripts/download_commons_paintings_pilot.py
+      - name: Verify bytes independent of main downloader
+        run: |
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from PIL import Image
+          p=Path('downloaded-commons-paintings/manifest_verified.json')
+          m=json.loads(p.read_text())
+          seen=set()
+          for x in m['proof_files']:
+              content=Path(x['path']).read_bytes()
+              sha=hashlib.sha256(content).hexdigest()
+              assert sha==x['sha256'] and sha not in seen
+              seen.add(sha)
+              with Image.open(x['path']) as img:
+                  img.load()
+                  assert img.size==(x['width'],x['height'])
+                  assert x['fill']>=.75
+          assert len(seen)==m['actual_verified_downloads']
+          print('Downloaded and independently decoded',len(seen),'real files')
+          print('Not 90-day complete')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-open-museum-paintings-real-files
+          path: downloaded-commons-paintings/
+          if-no-files-found: warn
+          retention-days: 14
