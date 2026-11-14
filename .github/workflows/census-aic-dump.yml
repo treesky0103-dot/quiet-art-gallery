@@ -1,0 +1,48 @@
+name: Art Institute Chicago entire weekly art dump portrait era census
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/census_aic_weekly_dump.py
+      - .github/workflows/census-aic-dump.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download official Art Institute of Chicago artwork data and census flat art
+        run: |
+          python -m py_compile scripts/census_aic_weekly_dump.py
+          python -u scripts/census_aic_weekly_dump.py
+      - name: Check row/era counts and zero acquired image claims
+        run: |
+          python - <<'PY'
+          import csv,gzip,json
+          from pathlib import Path
+          p=Path('audit-aic-dump-census')
+          j=json.loads((p/'summary.json').read_text())
+          with gzip.open(p/'aic_flat_art_portrait_era_CANDIDATE_NOT_ACQUIRED.csv.gz','rt',encoding='utf-8') as f:
+              rows=list(csv.DictReader(f))
+          assert j['actually_downloaded_decoded_image_files_this_run']==0
+          assert j['verified_259200'] is False
+          assert len(rows)==j['unique_candidate_ids']
+          assert len({r['id'] for r in rows})==len(rows)
+          print('Chicago complete metadata census verified',len(rows),'candidate IDs')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chicago-all-130k-artworks-date-portrait-metadata-census
+          path: |
+            audit-aic-dump-census/summary.json
+            audit-aic-dump-census/aic_flat_art_portrait_era_CANDIDATE_NOT_ACQUIRED.csv.gz
+          if-no-files-found: warn
+          retention-days: 7
