@@ -16,7 +16,7 @@ test('three distinct user-requested styles are searchable and may be displayed a
    assert.equal(C.eligibleArt({...painting,rightsOK:false}),false);
  }
  const source=file('web/app.js');
- assert.match(source,/items\.length>2110/);
+ assert.match(source,/items\.length>2700/);
  assert.match(source,/C\.shuffledCopy/);
  assert.match(source,/C\.artworkYearLabel/);
 });
