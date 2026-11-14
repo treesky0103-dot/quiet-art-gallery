@@ -1,0 +1,31 @@
+name: Validate 80-percent year-based gallery prototype
+on:
+  push:
+    branches:
+      - feat-1800plus-80pct-global-archives-20261114
+    paths:
+      - web/core.js
+      - web/app.js
+      - web/index.html
+      - tests/modern_art.test.cjs
+      - tests/era_evidence_80.test.cjs
+      - .github/workflows/validate-80pct-gallery.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show runtime
+        run: node --version
+      - name: Parse web and test sources
+        run: |
+          node --check web/core.js
+          node --check web/app.js
+          node --check tests/modern_art.test.cjs
+          node --check tests/era_evidence_80.test.cjs
+      - name: Execute complete built-in Node suite
+        run: node --test tests/*.test.cjs
