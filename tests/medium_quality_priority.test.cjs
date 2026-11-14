@@ -39,7 +39,7 @@ test('new thresholds are consistent across WebView and Android image-cache decod
  assert.match(java,/MIN_IMAGE_LONG_SIDE = 1400/);
  assert.match(java,/PortraitAdapter\.convert\(tmp,transformed\)/);
  assert.match(java,/acceptableResolution\(f\)/);
- assert.match(java,/ART_INTERVAL_MS = 30000L/);
+ assert.match(java,/ART_INTERVAL_MS = 60000L/);
 });
 test('75 percent applies only to unlocked portrait and does not weaken 90 day rule',()=>{
  const now=Date.parse('2026-11-13T00:00:00Z');
