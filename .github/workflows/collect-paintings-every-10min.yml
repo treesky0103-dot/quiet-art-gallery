@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   issues: write
+  actions: read
 concurrency:
   group: quiet-art-gallery-collector-10min
   cancel-in-progress: false
@@ -36,6 +37,7 @@ jobs:
           python -m py_compile scripts/collect_every_10min.py
           python scripts/collect_every_10min.py --self-test
           python -m py_compile scripts/notify_collection_cycle.py
+          python -m py_compile scripts/check_artifact_budget.py
           python scripts/notify_collection_cycle.py --self-test
       - name: Discover, download and validate real artwork files
         id: collect
@@ -51,10 +53,13 @@ jobs:
           root=Path('collector-10min-batch')
           report=json.loads((root/'report.json').read_text())
           files=list((root/'images').glob('*.jpg'))
-          assert len(files)==report['new_verified_this_run']==report['proof_files']
+          assert len(files)==report['proof_files']
+          assert 0<=len(files)<=report['new_verified_this_run']
+          assert report['verified_only_in_hash_ledger']==report['new_verified_this_run']-len(files)
+          assert report['proof_bytes']<=1024*1024
           ledger=list(csv.DictReader(open('data/collector_10min/new_verified.csv',encoding='utf-8')))
           current=[r for r in ledger if r['artifact_run']==report['github_run_id']]
-          assert len(current)==len(files)
+          assert len(current)==report['new_verified_this_run']
           hashes={r['file_sha256'] for r in current}
           for path in files:
               blob=path.read_bytes();sha=hashlib.sha256(blob).hexdigest()
@@ -70,8 +75,14 @@ jobs:
           assert state['claimed_total_with_requested_baseline']==736+len(ledger)
           print('INDEPENDENT_ARTIFACT_PROOF_PASS',len(files))
           PY
-      - name: Preserve image proof in expiring archive (never count URLs alone)
-        if: steps.collect.outputs.count != '0'
+      - name: Check current repository artifacts before any paid storage risk
+        id: budget
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/check_artifact_budget.py
+      - name: Preserve only a small proof sample under free storage ceiling
+        id: preserve
+        if: steps.collect.outputs.count != '0' && steps.budget.outputs.allow_upload == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: quiet-art-real-images-${{ github.run_id }}
@@ -108,5 +119,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GALLERY_JOB_STATUS: ${{ job.status }}
+          PROOF_UPLOAD_OUTCOME: ${{ steps.preserve.outcome }}
         run: |
           python scripts/notify_collection_cycle.py
