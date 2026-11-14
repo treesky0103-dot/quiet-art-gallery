@@ -1,4 +1,4 @@
-name: Build 1510 preserved artworks plus Contemporary Street Graffiti APK
+name: Build 1510 preserved artworks plus Contemporary Street Graffiti APK verified seeds
 on:
   push:
     paths:
