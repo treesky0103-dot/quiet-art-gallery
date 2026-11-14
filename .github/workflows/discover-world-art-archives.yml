@@ -1,0 +1,44 @@
+name: Discover global art archives (80-percent 1800+)
+on:
+  push:
+    branches:
+      - feat-1800plus-80pct-global-archives-20261114
+    paths:
+      - scripts/discover_world_art_archives.py
+      - .github/workflows/discover-world-art-archives.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check syntax
+        run: python -m py_compile scripts/discover_world_art_archives.py
+      - name: Discover worldwide museums via Commons and Wikidata
+        run: python -u scripts/discover_world_art_archives.py
+      - name: Check source counts and no false image possession
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('audit-global-archive-discovery/discovery_report.json').read_text())
+          assert a['goal_post1800']==207360
+          assert a['goal_other']==51840
+          assert a['number_existing_source_categories']>=40
+          assert a['guarantee_every_archive_in_world'] is False
+          assert a['actual_259200_images_acquired'] is False
+          print('Discovery report verified; no acquired-image claims')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: worldwide-museum-archive-discovery-directory
+          path: audit-global-archive-discovery/
+          if-no-files-found: warn
+          retention-days: 30
