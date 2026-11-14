@@ -30,7 +30,7 @@ OUT = Path("collector-10min-batch")
 IMAGES = OUT / "images"
 MAX_BYTES = 15 * 1024 * 1024
 TARGET = 3
-MAX_ATTEMPTS = 12
+MAX_ATTEMPTS = 70
 YEAR = 2026
 ASPECT = 0.625
 HEADERS = {"User-Agent": "QuietArtGalleryResearch/1.0 (+https://github.com/treesky0103-dot/quiet-art-gallery)", "Accept": "*/*"}
@@ -126,6 +126,8 @@ def cleveland(which,offset):
         pic=ims.get("print") or ims.get("web") or {}
         src=pic.get("url")
         if not isinstance(src,str) or not src.startswith("https://"):continue
+        # Prefer high-confidence portrait pixels before spending network bandwidth.
+        if pic.get("width") and pic.get("height") and not screen_ok(pic["width"],pic["height"]):continue
         out.append({"source":"Cleveland Museum of Art","artwork_id":str(art.get("id") or ""),
           "title":str(art.get("title") or ""),"artist":", ".join(p.get("description","") for p in art.get("creators") or [] if isinstance(p,dict)),
           "era":which,"year_start":art.get("creation_date_earliest"),
@@ -182,12 +184,14 @@ def run():
     assert state["baseline_requested"]==736 and state["verified_manifest_base"]==675
     base,rows,ids,hashes,visual=load_provenance()
     cursors=state.get("cursor") or {}
-    sources=[("cma_modern","1800-2026",cleveland),("aic_modern","1800-2026",chicago),
-             ("cma_older","pre-1800",cleveland),("aic_older","pre-1800",chicago)]
+    # AIC returned HTTP 403 from the GitHub-hosted runner; do not hammer that API
+    # every ten minutes. The verified Cleveland source handles both eras here.
+    sources=[("cma_modern","1800-2026",cleveland),
+             ("cma_older","pre-1800",cleveland)]
     # Rotate source priority across runs; make modern artworks the default.
     turn=int(state.get("runs",0))
-    if turn%2:sources=[sources[1],sources[0],sources[3],sources[2]]
-    attempts=0;found=[];probes=[];ok_sources=0
+    if turn%5==4:sources=[sources[1],sources[0]]
+    attempts=0;found=[];probes=[];ok_sources=0;rejects={}
     for key,which,source in sources:
         if len(found)>=TARGET or attempts>=MAX_ATTEMPTS:break
         offset=int(cursors.get(key,2500 if key.startswith("cma") else 16))
@@ -208,28 +212,40 @@ def run():
                 im=Image.open(io.BytesIO(raw));im.load()
                 if im.format not in ("JPEG","PNG","WEBP"):continue
                 w,h=im.size
-                if not screen_ok(w,h):continue
+                if not screen_ok(w,h):
+                    rejects["decoded_dimensions"]=rejects.get("decoded_dimensions",0)+1
+                    continue
                 source_hash=hashlib.sha256(raw).hexdigest()
-                if source_hash in hashes:continue
+                if source_hash in hashes:
+                    rejects["existing_sha"]=rejects.get("existing_sha",0)+1
+                    continue
                 visual_hash=dhash(im)
                 n=int(visual_hash,16)
-                if any((n ^ old).bit_count()<=2 for old in visual):continue
+                if any((n ^ old).bit_count()<=2 for old in visual):
+                    rejects["existing_visual"]=rejects.get("existing_visual",0)+1
+                    continue
                 # Keep a display-ready, uncropped JPEG as proof; source bytes are
                 # decoded/hashed but not retained to avoid unlimited artifact bills.
                 scale=max(1000/w,1400/h)
                 if scale>1:continue
                 if scale<1:
                     im=im.resize((round(w*scale),round(h*scale)),Image.Resampling.LANCZOS)
-                if not screen_ok(*im.size):continue
+                if not screen_ok(*im.size):
+                    rejects["optimized_dimensions"]=rejects.get("optimized_dimensions",0)+1
+                    continue
                 retained=None
                 for quality in (84,78,72,66,60):
                     buffer=io.BytesIO()
                     im.convert("RGB").save(buffer,format="JPEG",quality=quality,optimize=True,progressive=True)
                     if buffer.tell()<=600_000:
                         retained=buffer.getvalue();break
-                if not retained:continue
+                if not retained:
+                    rejects["optimized_file_over_600kb"]=rejects.get("optimized_file_over_600kb",0)+1
+                    continue
                 file_hash=hashlib.sha256(retained).hexdigest()
-                if file_hash in hashes:continue
+                if file_hash in hashes:
+                    rejects["optimized_duplicate_sha"]=rejects.get("optimized_duplicate_sha",0)+1
+                    continue
                 fn=IMAGES/(file_hash[:24]+".jpg")
                 fn.write_bytes(retained)
                 decoded=Image.open(fn);decoded.load()
@@ -243,14 +259,15 @@ def run():
                 ids.add(identifier);hashes.update((source_hash,file_hash));visual.append(n)
                 print("VERIFIED "+art["source"]+" "+art["artwork_id"]+" "+source_hash,flush=True)
             except Exception as ex:
-                probes.append({"source":key,"artwork_id":art["artwork_id"],"error":str(ex)[:170]})
+                rejects["download_decode_error"]=rejects.get("download_decode_error",0)+1
+                if len(probes)<30:probes.append({"source":key,"artwork_id":art["artwork_id"],"error":str(ex)[:170]})
     now=datetime.now(timezone.utc).isoformat()
     report={"run_utc":now,"github_run_id":os.getenv("GITHUB_RUN_ID","local"),
             "baseline_requested":736,"baseline_with_independent_hash_records":675,
             "new_verified_this_run":len(found),"increment_verified_unique":len(rows),
             "user_baseline_plus_new":736+len(rows),
             "metadata_source_ok":ok_sources,"download_attempts":attempts,
-            "proof_files":len(list(IMAGES.glob("*.jpg"))),"details":probes,
+            "proof_files":len(list(IMAGES.glob("*.jpg"))),"details":probes,"rejection_summary":rejects,
             "limitations":["736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
             "Original JPEG/PNG/WebP proof files live in expiring GitHub Actions artifacts, not tablet",
             "Server-side scheduled run does not update the existing v1.7.2 APK"]}
