@@ -52,3 +52,63 @@ body.upside-down:not(.native-rotation) #caption{
 #source-catalog-links[hidden]{display:none!important}
 #source-catalog-links .wide-btn{width:100%;flex-shrink:0;text-align:left;white-space:normal}
 #source-catalog-links .wide-btn:disabled{opacity:.48;cursor:default}
+
+
+/* v1.8.4: quiet, faint 24-hour orbit; visually independent of the wall label. */
+.ambient-orbit{
+ position:absolute;right:clamp(16px,3vw,24px);bottom:clamp(15px,3vh,24px);
+ width:27px;height:27px;z-index:2;pointer-events:none;opacity:.26;
+ filter:drop-shadow(0 0 4px rgba(240,220,181,.14))
+}
+.ambient-orbit::before,.ambient-orbit::after{
+ content:"";position:absolute;inset:0;border-radius:50%;
+}
+.ambient-orbit::before{
+ border:1px solid rgba(244,229,204,.32);
+ border-top-color:rgba(255,237,206,.72);
+ border-right-color:rgba(255,237,206,.10);
+ animation:quiet-orbit-turn 10s linear infinite;
+}
+.ambient-orbit::after{
+ inset:7px;border:1px solid rgba(242,231,211,.20);
+ animation:quiet-orbit-breathe 5.5s ease-in-out infinite;
+}
+@keyframes quiet-orbit-turn{to{transform:rotate(360deg)}}
+@keyframes quiet-orbit-breathe{
+ 0%,100%{opacity:.23;transform:scale(.9)}
+ 50%{opacity:.72;transform:scale(1.07)}
+}
+
+/* The progress values come only from Android's actual downloaded JPEG files.
+   APK-bundled artwork is shown separately, never counted toward 8GiB. */
+.cache-dashboard{
+ background:linear-gradient(145deg,#322d27,#24211e);
+ border:1px solid rgba(223,205,171,.23);
+ border-radius:16px;padding:16px 15px 13px;margin:13px 0 19px;
+ box-shadow:0 8px 24px rgba(0,0,0,.13);
+}
+.cache-dashboard-header{display:flex;justify-content:space-between;align-items:end;gap:8px;flex-wrap:wrap}
+.cache-dashboard-header strong{font-size:13px;color:#f1e9dc;letter-spacing:.01em}
+.cache-dashboard-eyebrow{color:#ae9b80;font-size:9px;letter-spacing:.17em;font-weight:600}
+.cache-dashboard-data{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:17px}
+.cache-dashboard-data>div{min-width:0}
+.cache-dashboard-data strong{font-size:25px;line-height:1.1;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.035em}
+.cache-dashboard-data small{display:block;font-size:10px;color:#bcb2a3;line-height:1.5;margin-top:5px}
+.cache-storage-number{text-align:right;white-space:nowrap}
+.cache-storage-number strong{font-size:23px;color:#ddc5a0}
+.cache-progress-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:19px;margin-bottom:9px;font-size:11px;color:#cbc1b4}
+.cache-progress-meta strong{color:#f2e9d9;font-size:12px;font-variant-numeric:tabular-nums}
+.cache-progress-track{position:relative;height:12px;width:100%;border-radius:20px;background:#171715;overflow:hidden;border:1px solid rgba(226,215,192,.11)}
+.cache-progress-fill{height:100%;width:0%;border-radius:20px;
+ background:linear-gradient(90deg,#8a7a64,#c8ae82,#dcc39c);
+ box-shadow:0 0 14px rgba(224,192,135,.25);
+ transition:width .7s ease;will-change:width}
+.cache-progress-ends{display:flex;justify-content:space-between;color:#a89f91;font-size:10px;margin-top:7px;font-variant-numeric:tabular-nums}
+.cache-detail{font-size:10px;line-height:1.5;color:#b6ab9c;margin:11px 0 10px}
+.cache-embedded{padding-top:9px;border-top:1px solid rgba(224,210,183,.15);font-size:10px;color:#cfc5b4}
+.cache-embedded strong{font-size:11px;color:#eee4d4}
+.cache-embedded span{color:#a79a87}
+@media (prefers-reduced-motion:reduce){
+ .ambient-orbit::before,.ambient-orbit::after{animation:none}
+ .cache-progress-fill{transition:none}
+}
