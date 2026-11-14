@@ -11,25 +11,22 @@ function policy(){
  const a=s.indexOf('  function collectorDelay('),b=s.indexOf('  async function persistCollector(){',a);
  assert.ok(a>0&&b>a);
  const state={collectorWindowStarted:0,collectorWindowSaved:0,collectorDayKey:'',collectorDaySaved:0};
- const CONFIG={collectorEveryMs:1800000,collectorTickMs:60000,
-   collectorTargetPerWindow:60,collectorMaxPerTick:4};
+ const CONFIG={collectorEveryMs:1800000,collectorTickMs:15000,collectorMaxPerTick:6};
  const box={state,CONFIG};
  vm.runInNewContext(s.slice(a,b)+'\nthis.policy={collectorDelay,collectorErrorInfo,collectorQuota};',box);
  return {state,CONFIG,...box.policy};
 }
 
-test('adaptive quota is 2/min when 60 images are required per 30-minute window',()=>{
+test('prefill uses a safe six-per-pump budget with no 30m/day total cap',()=>{
  const x=policy(),now=Date.parse('2026-11-14T14:00:00Z');
- assert.equal(x.collectorQuota(now),2);
- assert.equal(x.state.collectorDayKey,'2026-11-14','KST calendar day is used');
- x.state.collectorWindowSaved=10;
- assert.equal(x.collectorQuota(now+5*60000),2);
- x.state.collectorWindowSaved=55;
- assert.equal(x.collectorQuota(now+29*60000),4,'late backlog is bounded at four per tick');
- x.state.collectorWindowSaved=60;
- assert.equal(x.collectorQuota(now+29*60000),0);
- assert.equal(x.collectorQuota(now+30*60000),2,'next 30-minute window resets only its quota');
- assert.equal(x.state.collectorWindowSaved,0);
+ assert.equal(x.collectorQuota(now),6);
+ assert.equal(x.state.collectorDayKey,'2026-11-14');
+ x.state.collectorWindowSaved=400;
+ assert.equal(x.collectorQuota(now+5*60000),6,'no 30-minute numerical cap');
+ x.state.collectorWindowSaved=6000;
+ assert.equal(x.collectorQuota(now+29*60000),6,'no daily numerical cap');
+ assert.equal(x.collectorQuota(now+30*60000),6);
+ assert.equal(x.state.collectorWindowSaved,0,'window is for actual metrics only');
 });
 
 test('rate limits use strict source cooldown, exponential backoff and server Retry-After',()=>{
@@ -69,7 +66,7 @@ test('disks preserve 8 GiB max, 7 GiB cleanup, 1.5 GiB reserve and 90-day viewin
  assert.match(s,/pruneDays: 90/);
  assert.match(s,/store\.put\(entry\)/);
  assert.match(s,/dbPutMany\('seen'/);
- assert.match(s,/collectorMaxPerTick:4/);
+ assert.match(s,/collectorMaxPerTick:6/);
 });
 
 test('CMA photograph indexing uses the same official CC0 API as other flat art',()=>{
