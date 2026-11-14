@@ -1,37 +1,43 @@
 {
-  "run_utc": "2026-11-14T20:06:07.504391+00:00",
-  "github_run_id": "43635551400",
+  "run_utc": "2026-11-14T23:52:36.761765+00:00",
+  "github_run_id": "43655343543",
   "baseline_requested": 736,
   "baseline_with_independent_hash_records": 675,
   "new_verified_this_run": 80,
-  "increment_verified_unique": 310,
-  "user_baseline_plus_new": 1046,
-  "metadata_source_ok": 2,
+  "increment_verified_unique": 390,
+  "user_baseline_plus_new": 1126,
+  "metadata_source_ok": 3,
   "download_attempts": 80,
-  "proof_files": 5,
+  "proof_files": 4,
   "details": [
     {
       "source": "cma_modern",
-      "cursor": 4600,
-      "candidates": 36,
+      "cursor": 4800,
+      "candidates": 27,
       "ok": true
     },
     {
       "source": "cma_modern",
-      "cursor": 4700,
-      "candidates": 45,
+      "cursor": 4900,
+      "candidates": 24,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 5000,
+      "candidates": 46,
       "ok": true
     }
   ],
   "rejection_summary": {
-    "validated_but_not_archived": 75
+    "validated_but_not_archived": 76
   },
-  "scan_pages": 2,
-  "elapsed_sec": 63.6,
-  "proof_bytes": 1018461,
+  "scan_pages": 3,
+  "elapsed_sec": 31.2,
+  "proof_bytes": 1023265,
   "target_cap": 80,
   "max_output_bytes": 1048576,
-  "verified_only_in_hash_ledger": 75,
+  "verified_only_in_hash_ledger": 76,
   "limitations": [
     "736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
     "Only a small sample of proof JPEGs is uploaded for one day; other accepted images were downloaded and verified on the runner then discarded, preserving SHA/URL metadata only",
