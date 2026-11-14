@@ -1,0 +1,70 @@
+{
+  "baseline_count": 2061,
+  "new_display_ready_files": 631,
+  "total_offline_deck": 2692,
+  "collector_elapsed_seconds": 370.148,
+  "collector_limit_seconds": 600,
+  "reached_manifest_cap": true,
+  "new_verified_file_bytes_preserved": 187364420,
+  "fully_preserved_test_jpegs": 631,
+  "duplicate_screen_against_all_baseline_jpeg_visual_hashes": true,
+  "duplicate_screen_against_baseline_cleveland_ids": true,
+  "node_app_eligibility_and_apk_assembly_pending": false,
+  "galaxy_tab_a7_physical_screen_tested": false,
+  "scope": "Research test APK only, not existing installed device app",
+  "source_breakdown": {
+    "Cleveland Museum of Art": 639
+  },
+  "original_observed_10min_run_id": 43612888391,
+  "original_observed_collection_seconds": 565.722,
+  "original_observed_validated_unique_files": 639,
+  "replay_of_previous_timed_files": true,
+  "replay_missing_from_original_639": 0,
+  "rejected_by_actual_gallery_js_rules": 8,
+  "rejected_gallery_examples": [
+    {
+      "key": "cma:123414",
+      "type": "Portrait Miniature",
+      "medium": "watercolor on paper in a gilt metal mount and burr wood frame"
+    },
+    {
+      "key": "cma:119037",
+      "type": "Portrait Miniature",
+      "medium": "watercolor on vellum in a later gilt-wood frame"
+    },
+    {
+      "key": "cma:121275",
+      "type": "Portrait Miniature",
+      "medium": "watercolor on card on a gilt metal mount in a pale wood frame"
+    },
+    {
+      "key": "cma:123412",
+      "type": "Portrait Miniature",
+      "medium": "watercolor on ivory in a silver gilt mount and wooden frame"
+    },
+    {
+      "key": "cma:119016",
+      "type": "Portrait Miniature",
+      "medium": "watercolor on ivory in a gilt metal frame"
+    },
+    {
+      "key": "cma:121276",
+      "type": "Portrait Miniature",
+      "medium": "watercolor on card in an ormolu frame"
+    },
+    {
+      "key": "cma:119032",
+      "type": "Portrait Miniature",
+      "medium": "watercolor on ivory in a gilt metal and enamel frame with silver backing"
+    },
+    {
+      "key": "cma:130709",
+      "type": "Portrait Miniature",
+      "medium": "watercolor on ivory in a gilt metal and enamel frame"
+    }
+  ],
+  "actual_gallery_js_eligibility_checked": true,
+  "actual_apk_verified": true,
+  "final_apk_bytes": 706810077,
+  "final_apk_sha256": "0a3830217bebf9590e11ed3f2f4fa7258e6fcf5ca347826531244b4ebb69c12b"
+}
