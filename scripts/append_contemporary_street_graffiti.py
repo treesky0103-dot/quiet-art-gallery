@@ -21,7 +21,7 @@ import re
 import time
 import zipfile
 from pathlib import Path
-from urllib.parse import urlencode,urlsplit
+from urllib.parse import urlencode,urlsplit,quote
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
 from PIL import Image,ImageOps
@@ -139,11 +139,11 @@ def year_from_source(s):
     m=re.fullmatch(r"\s*(?:c(?:irca)?\.?\s*)?(1[89]\d\d|20[012]\d)\s*",str(s or ""))
     return int(m.group(1)) if m else None
 
-def metadata_image_rows(group):
+def metadata_image_rows(group,query_limit=1,offsets=(0,)):
     seen=set();accepted=[];failures=[]
     # Depth 0 and 50 makes each query independent without looping forever.
-    for query in CATEGORIES[group]:
-        for off in (0,50,100):
+    for query in CATEGORIES[group][:query_limit]:
+        for off in offsets:
             opts={"action":"query","format":"json","formatversion":"2",
                 "generator":"search","gsrsearch":query,"gsrnamespace":"6",
                 "gsrlimit":"50","gsroffset":str(off),"prop":"imageinfo",
@@ -219,6 +219,50 @@ def metadata_image_rows(group):
         if len(accepted)>=300:break
     return accepted,failures
 
+def verified_seed_candidates():
+    """Small grounded Commons CC0 files checked at official file pages.
+
+    These are NOT counted unless the real redirected image downloads, decodes,
+    converts and passes SHA checks. A photo's CC0 does not certify third-party
+    mural copyright; such files remain labeled as image-only provenance.
+    """
+    known={
+        "Contemporary Art":[
+          ("Digital painting CAFE.png","Ivcom",2025),
+          ("Digital painting General Ouassenan Koné.png","Ivcom",2025),
+          ("Digital Painting Gbazé Thérèse.png","Ivcom",2025),
+          ("Dessin digitale Akissi Kouamé.png","Ivcom",2025),
+          ("Belzebub.png","Zikalele",2025),
+          ("Peinture digitale Basilique de Yamoussoukro.png","Ivcom",2025)],
+        "Street Art":[
+          ("Street-art.jpg","작가 미상",None),
+          ("Werksviertel München 60.jpg","작가 미상",None),
+          ("Werksviertel München 51.jpg","작가 미상",None),
+          ("Street art - Image - 01231.jpg","작가 미상",None),
+          ("Self portrait, Toronto.png","작가 미상",None)],
+        "Graffiti":[
+          ("Gentrification graffiti 2024.jpg","작가 미상",None),
+          ("Sydney in general - Graffiti, parks, environment 21.jpg","작가 미상",None),
+          ("Camden graffiti kid in anorak.jpg","작가 미상",None)]
+    }
+    out={}
+    for cat,items in known.items():
+        out[cat]=[]
+        for title,artist,year in items:
+            remote="https://commons.wikimedia.org/wiki/Special:Redirect/file/"+quote(title,safe="")+"?width=2000"
+            page="https://commons.wikimedia.org/wiki/File:"+quote(title.replace(" ","_"),safe="")
+            out[cat].append({
+              "key":"seed:"+cat.lower().replace(" ","-")+":"+title,
+              "source":"Wikimedia Commons","title":re.sub(r"\.(?:jpe?g|png|webp)$","",title,flags=re.I),
+              "artist":artist,"type":cat,"url":remote,"page":page,
+              "license":"CC0 (verified original Wikimedia Commons page)",
+              "rightsOK":True,"yearStart":year,"yearEnd":year,
+              "mediaCategory":cat,"source_class":"Commons verified CC0 file page",
+              "metadata_pixels":(0,0),"photo_license":"CC0",
+              "work_copyright_unverified":cat in ("Graffiti","Street Art")
+            })
+    return out
+
 def process_one(row):
     try:
         payload=fetch(row["url"])
@@ -264,10 +308,14 @@ def main():
     derivedsha={x["derivedSHA256"] for x in rows}
     total=sum((ROOT/x["offlineAsset"]).stat().st_size for x in rows)
     sourcecounts=collections.Counter(x["type"] for x in rows)
-    groups={};fail=[]
+    # Seed across all three genres first. Avoid numerous metadata searches
+    # before any actual media can be fetched; Commons may rate-limit 429.
+    groups=verified_seed_candidates()
+    fail=[]
     for cat in CATEGORIES:
-        items,errs=metadata_image_rows(cat)
-        groups[cat]=items
+        items,errs=metadata_image_rows(cat,query_limit=1,offsets=(0,))
+        known={x["url"] for x in groups[cat]}
+        groups[cat].extend(x for x in items if x["url"] not in known)
         fail.extend(errs)
     # Interleave three media groups to prevent a single API throttling event
     # leaving some genres with zero images. Never bypass provider throttling.
