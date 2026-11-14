@@ -28,8 +28,8 @@ test('native request bridge exposes only the three known art categories',()=>{
  assert.match(java,/PortraitAdapter\.convert/);
  assert.match(java,/ART_INTERVAL_MS = 30000L/);
  const gradle=file('android-app/app/build.gradle');
- assert.match(gradle,/versionName '1\.8\.1-collectorv2'/);
- assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.collectorv2'/);
+ assert.match(gradle,/versionName '1\.8\.2-sources85'/);
+ assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.sources85'/);
 });
 
 test('require PD/CC0 static rights and keep unknown creation dates explicitly unknown',()=>{
