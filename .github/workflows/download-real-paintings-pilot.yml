@@ -1,0 +1,59 @@
+name: Download and validate real painting image pilot
+on:
+  push:
+    branches:
+      - collect-paintings-259200-pilot-20261114
+    paths:
+      - scripts/download_verified_paintings_pilot.py
+      - .github/workflows/download-real-paintings-pilot.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  painting-download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Compile and check downloader
+        run: python -m py_compile scripts/download_verified_paintings_pilot.py
+      - name: Download and actually decode paintings from open museums
+        env:
+          MAX_IMAGES: "120"
+          MAX_PAGES: "20"
+        run: python -u scripts/download_verified_paintings_pilot.py
+      - name: Independently verify all saved bytes and declared 90-day quotas
+        run: |
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from PIL import Image
+          m=json.loads(Path('downloaded-paintings-audit/manifest_verified.json').read_text())
+          assert len(m['by_category'])==17
+          assert sum(x['required_90days'] for x in m['by_category'])==259200
+          assert sum(x['actually_downloaded'] for x in m['by_category'])==len(m['actual_files'])
+          checks=[]
+          for item in m['actual_files']:
+              data=Path(item['path']).read_bytes()
+              assert hashlib.sha256(data).hexdigest()==item['sha256']
+              with Image.open(item['path']) as im:
+                  im.load()
+                  assert list(im.size)==[item['width'],item['height']]
+              checks.append(item['sha256'])
+          assert len(checks)==len(set(checks))
+          assert len(checks)==m['downloaded_decoded_sha_verified']
+          print(f'Actual verified unique image files: {len(checks)}')
+          print('90-day 259200 target complete:',m['met_259200_goal'])
+          PY
+      - name: Upload actual decoded art files and proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: actual-paintings-17-fields-open-access-pilot
+          path: downloaded-paintings-audit/
+          if-no-files-found: warn
+          retention-days: 14
