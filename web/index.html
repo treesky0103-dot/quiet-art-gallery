@@ -38,8 +38,9 @@
   <div class="rule"><span>화질 선택</span><strong>고화질 우선 · 중화질 허용</strong></div>
   <div class="rule"><span>전시 구성 목표</span><strong>1800년 이후 제작 80% · 기타 20% (후보 부족 시 실제 비율 변동)</strong></div>
   <div class="rule"><span>1800년 이후 실제 전시 비중</span><strong id="modern-count">0점</strong></div>
-  <div class="rule"><span>작품 수집</span><strong>GitHub 엔진 기존 엔진 총 40곳의 소장기관(스미스소니언 미국미술관·스미스소니언 국립아시아미술관 포함, 전 세계 확장 연구 별도)</strong></div>
-  <div class="rule"><span>이미지 캐시 최대</span><strong>100MB (초과 시 80MB까지 정리)</strong></div>
+  <div class="rule"><span>작품 수집</span><strong>미술관 기존 40곳 + 공개 도서관·독립 작가·시대별 세계 미술 분류 12개 (모든 서버 수집은 아님)</strong></div>
+  <div class="rule"><span>이미지 캐시 최대</span><strong>Android 연구용: 최대 8GB, 7GB까지 정리 · 여유 공간 1.5GB 보호</strong></div>
+  <div class="rule"><span>상시 수집 상태</span><strong id="collector-status">준비 중</strong></div>
   <div class="rule"><span>전시한 작품</span><strong id="seen-count">0점</strong></div>
   <div class="rule"><span>현재 방향 비율</span><strong id="ratio-count">–</strong></div>
   <div class="rule"><span>중복 방지 작동</span><strong id="dedup-count">확인 중</strong></div>
@@ -60,11 +61,11 @@
   </div>
   <div class="rule"><span>작품 수 조사</span><strong>표본·미확정</strong></div>
   <p id="audit-summary" class="small-note" style="white-space:pre-wrap;max-height:36vh;overflow:auto">조사 전 · 전체 수 미확인</p>
-  <p id="setting-message" class="small-note">10GB 이상 남은 태블릿도 용량 증가를 막도록 관리합니다. 이미지 캐시와 감상 기록은 별도로 보관합니다.</p>
+  <p id="setting-message" class="small-note">태블릿에서 앱을 화면에 계속 표시할 때만 2분 간격의 수집을 반복합니다. 절전·앱 종료·네트워크 장애 중에는 수집이 중단될 수 있으며, 자동 복귀와 저장 용량은 실기기 검증이 필요합니다.</p>
   <p class="small-note">추가된 5곳은 공식 미술관 API가 아니라 Wikimedia Commons의 작품 분류에서 조회합니다. 대영박물관은 판화를, 나머지 4곳은 회화를 수집합니다. 퍼블릭 도메인 또는 CC0 작품만 후보로 삼습니다.</p>
    <p class="small-note">스미스소니언 작품은 미술관 자체 API가 아닌 Wikimedia Commons의 소장품별 분류를 통해 검색합니다. 작품마다 퍼블릭 도메인 또는 CC0 표기를 확인하며, 개별 이미지가 부족하거나 권리가 제한된 경우 전시하지 않습니다. 국립아시아미술관(NMAA)의 프리어 미술관은 중국·일본·인도 회화 세 분류를 번갈아 검색합니다.</p>
   <p class="small-note">1800년 이후 비중 80%는 작품 제작 연도가 확인되는 경우를 기준으로 합니다. 메타데이터 검색과 실제 다운로드·디코딩·작품 연대 확인은 구분합니다. 원본 디지털 회화는 별도 근거가 있어야 합니다. 후보가 부족해도 임의 제작 연도를 부여하지 않으며 실제 달성률을 표시합니다.</p>
-  <p class="small-note">새 그림을 준비하지 못할 때에는 APK에 내장된 공개 회화를 미전시 작품부터 사용합니다. 일반 작품과 비상 작품 모두 최근 90일 내 중복 전시하지 않습니다. 새 작품이 모두 소진되면 그림을 반복하지 않고 현재 그림을 유지합니다. 따라서 새 후보가 없는 동안에는 30초 전환이 불가능합니다. 24시간 90일 무중복을 위해서는 259,200개 작품이 필요하며 현재 확보 수량은 미확인입니다. Android 절전·중단 시에도 전환 시각이 지연될 수 있습니다.</p>
+  <p class="small-note">새 그림을 준비하지 못할 때에는 APK에 내장된 공개 회화를 미전시 작품부터 사용합니다. 일반 작품과 비상 작품 모두 최근 90일 내 중복 전시하지 않습니다. 새 작품이 모두 소진되면 그림을 반복하지 않고 현재 그림을 유지합니다. 따라서 새 후보가 없는 동안에는 30초 전환이 불가능합니다. 24시간 90일 무중복을 위해서는 259,200개 작품이 필요하며 GitHub에서 별도로 검증한 작품이 태블릿에 자동 저장되는 것은 아닙니다. Android 절전·중단 시에는 전환 및 수집이 지연될 수 있습니다.</p>
   <button class="done" id="settings-done">그림으로 돌아가기</button>
 </section>
 <script src="core.js"></script>
