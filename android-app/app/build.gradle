@@ -4,11 +4,11 @@ android {
     namespace 'com.gallery.kiosk'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.gallery.kiosk.tablet60'
+        applicationId 'com.gallery.kiosk.fast8g'
         minSdk 26
         targetSdk 35
-        versionCode 21
-        versionName '1.8.3-tablet60'
+        versionCode 22
+        versionName '1.8.4-fast8g'
     }
     buildTypes {
         release { minifyEnabled false }
