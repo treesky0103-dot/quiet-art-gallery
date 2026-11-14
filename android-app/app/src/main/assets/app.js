@@ -14,15 +14,15 @@
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
     recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
-    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{}},
-    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
+    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},worldOpenverse:{}},
+    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, worldOpenverseOrder:0,asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
     modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
-    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0},backoff:{},
+    failures:{worldOpenverse:0,global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
+  const sourceNames={worldOpenverse:'Openverse · 외부 공개 창작자',global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -260,6 +260,14 @@
         iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',format:'json',
         formatversion:'2',origin:'*'});
       url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
+    }else if(kind==='worldOpenverse'){
+      const [indexText,pageText]=String(param).split(':');
+      const index=Number(indexText),page=Number(pageText);
+      if(!Number.isInteger(index)||index<0||index>=C.GLOBAL_OPENVERSE_TERMS.length
+         ||!Number.isInteger(page)||page<1||page>4)throw Error('세계 오픈 이미지 검색 범위 오류');
+      const qs=new URLSearchParams({q:C.GLOBAL_OPENVERSE_TERMS[index],
+        license:'cc0,pdm,by,by-sa',page:String(page),page_size:'40',filter_dead:'true'});
+      url='https://api.openverse.org/v1/images/?'+qs.toString();
     }else if(kind==='openverseModern'){
       const [termIndexText,pageText]=String(param).split(':');
       const termIndex=Number(termIndexText),page=Number(pageText);
@@ -300,6 +308,14 @@
         addCandidates(normalizeBatch(source,res).filter(C.eligibleArt));
         const totalPages=Number(res.pagination&&res.pagination.total_pages)||999999;
         state.cursors.chicago=page>=totalPages?1:page+1;
+      }else if(source==='worldOpenverse'){
+        const index=state.worldOpenverseOrder++%C.GLOBAL_OPENVERSE_TERMS.length;
+        const page=Number(state.cursors.worldOpenverse[index])||1;
+        const response=await request('worldOpenverse',index+':'+page);
+        const sourceItems=C.normalizeGlobalOpenverse(response).filter(C.eligibleArt);
+        addCandidates(sourceItems);
+        const received=Array.isArray(response.results)?response.results.length:0;
+        state.cursors.worldOpenverse[index]=(received>=40&&page<4)?page+1:1;
       }else if(source==='global'){
         const category=C.GLOBAL_OPEN_ART_CATEGORIES[state.globalCategoryIndex++%C.GLOBAL_OPEN_ART_CATEGORIES.length];
         const offset=Number(state.cursors.global&&state.cursors.global[category.id])||0;
@@ -308,6 +324,7 @@
         const received=Array.isArray(response.query&&response.query.pages)?response.query.pages.length:0;
         const total=Number(response.query&&response.query.searchinfo&&response.query.searchinfo.totalhits)||0;
         state.cursors.global=state.cursors.global||{};
+      state.cursors.worldOpenverse=state.cursors.worldOpenverse||{};
         state.cursors.global[category.id]=(received===0||received<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
       }else if(source==='asian'){
         const museum=C.ASIAN_MUSEUMS[state.asianOrder++%C.ASIAN_MUSEUMS.length];
@@ -436,7 +453,7 @@
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<14){
         // Give year-dated museum APIs greater weight than undated Commons filenames.
-        const sources=['cleveland','chicago','met','cleveland','global','chicago','asian','african','additional','global','additional','smithsonian','modern'];
+        const sources=['cleveland','chicago','met','worldOpenverse','cleveland','global','chicago','asian','african','worldOpenverse','additional','global','additional','smithsonian','modern'];
         const source=sources[state.sourceOrder++%sources.length];
         attempts++;
         progress+=await fetchSource(source);
