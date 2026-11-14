@@ -1,20 +1,20 @@
 {
-  "as_of_utc": "2026-11-14T05:32:32.414222+00:00",
+  "as_of_utc": "2026-11-14T05:48:36.006387+00:00",
   "target": {
     "modern": 207360,
     "older": 51840,
     "all": 259200
   },
-  "reported_input_files": 499,
+  "reported_input_files": 658,
   "exact_duplicate_source_ids_removed": 1,
   "exact_duplicate_image_hashes_removed": 0,
-  "unique_verified_file_and_source_id_count": 498,
-  "verified_1800plus": 385,
-  "verified_older": 113,
-  "actual_modern_share_percent": 77.3092,
-  "missing_1800plus": 206975,
-  "missing_older": 51727,
-  "missing_total": 258702,
+  "unique_verified_file_and_source_id_count": 657,
+  "verified_1800plus": 504,
+  "verified_older": 153,
+  "actual_modern_share_percent": 76.7123,
+  "missing_1800plus": 206856,
+  "missing_older": 51687,
+  "missing_total": 258543,
   "suspected_visual_duplicate_pairs_requiring_review": 0,
   "visual_pairs_first_30": [],
   "duplicate_ids_sample": [
@@ -43,5 +43,21 @@
     "Perceptual similarity flags are not a conclusive same-work identity test.",
     "All 259200 durable local image files have NOT been acquired.",
     "Tablet APK unchanged; 90-day gap-free 30-sec playback NOT verified."
-  ]
+  ],
+  "new_verified_unique_images_v3": {
+    "met": 20,
+    "si_extra": 16,
+    "rijks_more": 60,
+    "nga_more": 63
+  },
+  "new_validated_actual_files_this_run": 159,
+  "v3_provenance": {
+    "old_498_provenance": "Previously rechecked 498 actual artifact files (GitHub Actions 43561972183); only hashes/manifests inherited this run",
+    "met_real_images": "43562238337",
+    "additional_smithsonian": "43562565266",
+    "rijks_larger": "43562429102",
+    "NGA_second": "43562704467",
+    "AIC_new": "43562852917"
+  },
+  "new_image_crosscheck_note": "New source files were actually opened, decoded, size verified and SHA-256 checked. Old previously verified files have only durable SHA/provenance in Git."
 }
