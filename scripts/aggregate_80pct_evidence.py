@@ -57,7 +57,7 @@ def read_nga(path,records,inputs):
     for row in actual:
         fp=path/"samples"/Path(row["image_path"]).name
         assert fp.exists(),str(fp)
-        add_to(records,inputs,"nga","nga-rijks-1800-era-census-and-byte-proof",
+        add_to(records,inputs,"nga",
           row["source"],str(row["object_id"]),row["era"],
           row.get("title",""),row.get("begin_year",""),row.get("end_year",""),fp,
           row["saved_sha256"],row.get("source_sha256",""),None,
