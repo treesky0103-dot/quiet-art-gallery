@@ -1,0 +1,460 @@
+{
+  "schema_version": 1,
+  "requested_source_entries": 50,
+  "unique_source_names": 47,
+  "automatic_search_integrations": 2,
+  "reference_only_excluding_duplicates": 45,
+  "readme": "Requested supply sources, not verified counts. Others may be opened for public browsing only; no scraping or image rights inference.",
+  "entries": [
+    {
+      "request_number": 1,
+      "name": "WikiArt",
+      "homepage": "https://www.wikiart.org/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 2,
+      "name": "Artsy",
+      "homepage": "https://www.artsy.net/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 3,
+      "name": "Google Arts & Culture",
+      "homepage": "https://artsandculture.google.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 4,
+      "name": "DeviantArt",
+      "homepage": "https://www.deviantart.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 5,
+      "name": "Pixiv",
+      "homepage": "https://www.pixiv.net/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 6,
+      "name": "Behance",
+      "homepage": "https://www.behance.net/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 7,
+      "name": "ArtStation",
+      "homepage": "https://www.artstation.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 8,
+      "name": "Artnet",
+      "homepage": "https://www.artnet.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 9,
+      "name": "Saatchi Art",
+      "homepage": "https://www.saatchiart.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 10,
+      "name": "ArtMajeur",
+      "homepage": "https://www.artmajeur.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 11,
+      "name": "Fine Art America",
+      "homepage": "https://fineartamerica.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 12,
+      "name": "MutualArt",
+      "homepage": "https://www.mutualart.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 13,
+      "name": "Pinterest",
+      "homepage": "https://www.pinterest.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 14,
+      "name": "Singulart",
+      "homepage": "https://www.singulart.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 15,
+      "name": "Artfinder",
+      "homepage": "https://www.artfinder.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 16,
+      "name": "Street Art Cities",
+      "homepage": "https://streetartcities.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 17,
+      "name": "Wikimedia Commons",
+      "homepage": "https://commons.wikimedia.org/",
+      "integration_status": "existing_search_api",
+      "content_download_enabled": true,
+      "reason": "Official API already integrated with source license and pixels checks",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 18,
+      "name": "Openverse",
+      "homepage": "https://openverse.org/",
+      "integration_status": "existing_open_license_search_api",
+      "content_download_enabled": true,
+      "reason": "Existing open-license media search, not unrestricted bulk download",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 19,
+      "name": "Artvee",
+      "homepage": "https://artvee.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 20,
+      "name": "Rawpixel",
+      "homepage": "https://www.rawpixel.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 21,
+      "name": "Artron",
+      "homepage": "https://www.artron.net/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 22,
+      "name": "ZCOOL",
+      "homepage": "https://www.zcool.com.cn/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 23,
+      "name": "Artand",
+      "homepage": "https://www.artand.cn/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 24,
+      "name": "99 Art",
+      "homepage": null,
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 25,
+      "name": "China Artists",
+      "homepage": null,
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 26,
+      "name": "Pixiv",
+      "homepage": "https://www.pixiv.net/",
+      "integration_status": "duplicate_reference",
+      "content_download_enabled": false,
+      "reason": "Duplicate of an earlier requested site",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 27,
+      "name": "Piapro",
+      "homepage": "https://piapro.jp/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 28,
+      "name": "Niconico Seiga",
+      "homepage": "https://seiga.nicovideo.jp/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 29,
+      "name": "ART street",
+      "homepage": "https://medibang.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 30,
+      "name": "TINAMI",
+      "homepage": "https://www.tinami.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 31,
+      "name": "ArtMajeur",
+      "homepage": "https://www.artmajeur.com/",
+      "integration_status": "duplicate_reference",
+      "content_download_enabled": false,
+      "reason": "Duplicate of an earlier requested site",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 32,
+      "name": "Artsper",
+      "homepage": "https://www.artsper.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 33,
+      "name": "Singulart",
+      "homepage": "https://www.singulart.com/",
+      "integration_status": "duplicate_reference",
+      "content_download_enabled": false,
+      "reason": "Duplicate of an earlier requested site",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 34,
+      "name": "Artprice",
+      "homepage": "https://www.artprice.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 35,
+      "name": "Artactif",
+      "homepage": "https://www.artactif.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 36,
+      "name": "Flickr",
+      "homepage": "https://www.flickr.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 37,
+      "name": "Magnum Photos",
+      "homepage": "https://www.magnumphotos.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 38,
+      "name": "Tuchong",
+      "homepage": "https://tuchong.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 39,
+      "name": "GANREF",
+      "homepage": "https://ganref.jp/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 40,
+      "name": "The Eye of Photography",
+      "homepage": "https://loeildelaphotographie.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 41,
+      "name": "Bilibili",
+      "homepage": "https://www.bilibili.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 42,
+      "name": "Niconico",
+      "homepage": "https://www.nicovideo.jp/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 43,
+      "name": "Newgrounds",
+      "homepage": "https://www.newgrounds.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 44,
+      "name": "AcFun",
+      "homepage": "https://www.acfun.cn/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 45,
+      "name": "Catsuka",
+      "homepage": "https://www.catsuka.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 46,
+      "name": "Juxtapoz",
+      "homepage": "https://www.juxtapoz.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 47,
+      "name": "Colossal",
+      "homepage": "https://www.thisiscolossal.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 48,
+      "name": "It's Nice That",
+      "homepage": "https://www.itsnicethat.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 49,
+      "name": "BOOOOOOOM",
+      "homepage": "https://www.booooooom.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    },
+    {
+      "request_number": 50,
+      "name": "Hi-Fructose",
+      "homepage": "https://hifructose.com/",
+      "integration_status": "catalog_reference_only_not_automated",
+      "content_download_enabled": false,
+      "reason": "No verified unrestricted image-download API or rights for this installation",
+      "thumbnail_or_result_is_not_a_verified_embedded_asset": true
+    }
+  ]
+}
