@@ -96,8 +96,8 @@
       state.recentKeys.set(key,when);
       if(key.startsWith('vis:'))state.visualHashes.set(key.slice(4),when);
     }
-    // Reserve the next style quota slot synchronously BEFORE prefetch begins.
-    // IndexedDB writes must not cause 65/35 scheduling drift.
+    // Reserve the next 1800+ quota slot synchronously BEFORE prefetch begins.
+    // IndexedDB writes must not cause 80/20 scheduling drift.
     state.stats.slot++;state.stats.shown++;
     if(C.artworkEra(show.art)==='post1800')state.stats.post1800Shown=(Number(state.stats.post1800Shown)||0)+1;
     if(show.art.modern===true)state.stats.modernShown=(Number(state.stats.modernShown)||0)+1;
@@ -416,8 +416,7 @@
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<14){
         // Give year-dated museum APIs greater weight than undated Commons filenames.
-        const sources=['cleveland','chicago','met','cleveland','chicago',
-          'asian','african','additional','additional','smithsonian','modern'];
+        const sources=['cleveland','chicago','met','cleveland','chicago','asian','african','additional','additional','smithsonian','modern'];
         const source=sources[state.sourceOrder++%sources.length];
         attempts++;
         progress+=await fetchSource(source);
