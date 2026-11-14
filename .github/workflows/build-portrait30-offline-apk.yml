@@ -1,4 +1,4 @@
-name: Build bundled smart-portrait gallery APK (30m collector verified)
+name: Build bundled smart-portrait gallery APK (30m collector v1.7.3)
 on:
   push:
     paths:
