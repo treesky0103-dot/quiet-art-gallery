@@ -33,6 +33,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ConcurrentHashMap;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -64,6 +67,35 @@ public final class MainActivity extends Activity {
     private static final long MAX_IMAGE_CACHE = 8L * 1024 * 1024 * 1024;
     private static final long CLEAN_TO = 7L * 1024 * 1024 * 1024;
     private static final long FREE_RESERVE = 1536L * 1024 * 1024;
+    // A 429/503 from a host disables all metadata/image requests to that host
+    // until its cooldown expires. We never rotate IPs or bypass a server ban.
+    private static final ConcurrentHashMap<String,Long> HOST_WAIT_UNTIL=new ConcurrentHashMap<>();
+    private static void checkHostCooldown(String hostname) throws IOException {
+        Long until=HOST_WAIT_UNTIL.get(hostname);
+        if(until!=null && until>System.currentTimeMillis()){
+            long sec=Math.max(1L,(until-System.currentTimeMillis()+999L)/1000L);
+            throw new IOException("HTTP 429 Retry-After:"+sec);
+        }
+    }
+    private static long retryAfterSeconds(HttpURLConnection con,int status){
+        long defaultSec=status==429?1800L:480L;
+        String value=con.getHeaderField("Retry-After");
+        if(value==null)return defaultSec;
+        try{return Math.max(defaultSec,Math.min(86400L,Long.parseLong(value.trim())));}
+        catch(Exception ignored){
+            try{
+                long until=ZonedDateTime.parse(value.trim(),DateTimeFormatter.RFC_1123_DATE_TIME)
+                  .toInstant().toEpochMilli();
+                return Math.max(defaultSec,Math.min(86400L,(until-System.currentTimeMillis()+999L)/1000L));
+            }catch(Exception invalid){return defaultSec;}
+        }
+    }
+    private static void recordHostThrottle(HttpURLConnection con,int status){
+        if(status!=429&&status!=503)return;
+        String hostname=con.getURL().getHost().toLowerCase(java.util.Locale.ROOT);
+        long delay=retryAfterSeconds(con,status)*1000L;
+        HOST_WAIT_UNTIL.put(hostname,System.currentTimeMillis()+delay);
+    }
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private WebView web;
     private File imageDir;
@@ -195,11 +227,13 @@ public final class MainActivity extends Activity {
                 if(acceptableResolution(f)){f.setLastModified(System.currentTimeMillis());return new WebResourceResponse(sniffMime(f),null,200,"OK",Collections.singletonMap("Cache-Control","no-store"),new FileInputStream(f));}
                 f.delete(); // Purge low-resolution cached files.
             }
+            checkHostCooldown(new URL(src).getHost().toLowerCase(java.util.Locale.ROOT));
             HttpURLConnection con=(HttpURLConnection)new URL(src).openConnection();
             con.setConnectTimeout(10000);con.setReadTimeout(18000);con.setInstanceFollowRedirects(false);
             con.setRequestProperty("Accept","image/jpeg,image/png,image/webp");
             try {
-                if(con.getResponseCode()!=200)return response(502,"text/plain",new byte[0]);
+                int httpStatus=con.getResponseCode();
+                if(httpStatus!=200){recordHostThrottle(con,httpStatus);return response(httpStatus==429?429:503,"text/plain",new byte[0]);}
                 String mime=con.getContentType();
                 if(mime==null||!(mime.toLowerCase().startsWith("image/jpeg")||mime.toLowerCase().startsWith("image/png")||mime.toLowerCase().startsWith("image/webp")))return response(415,"text/plain",new byte[0]);
                 if(con.getContentLengthLong()>MAX_IMAGE_BYTES)return response(413,"text/plain",new byte[0]);
@@ -258,7 +292,7 @@ public final class MainActivity extends Activity {
 
     private String apiUrl(String type,String p) throws Exception {
         if (type.equals("cleveland")) {
-            String[] parts=p.split(":",-1);if(parts.length!=2 || !Arrays.asList("Painting","Drawing","Print").contains(parts[0]))throw new IOException("유효하지 않은 작품 종류");
+            String[] parts=p.split(":",-1);if(parts.length!=2 || !Arrays.asList("Painting","Drawing","Print","Photograph").contains(parts[0]))throw new IOException("유효하지 않은 작품 종류");
             int off=bounded(parts[1],0,1000000);
             return "https://openaccess-api.clevelandart.org/api/artworks/?cc0&has_image=1&type="+parts[0]+"&limit=100&skip="+off;
         }
@@ -493,13 +527,20 @@ public final class MainActivity extends Activity {
         try{int n=Integer.parseInt(value);if(n>=min&&n<=max)return n;}catch(Exception ignored){}throw new IOException("범위를 벗어난 요청");
     }
     private static String fetchJson(String url) throws Exception {
-        HttpURLConnection conn=(HttpURLConnection)new URL(url).openConnection();
+        URL target=new URL(url);
+        checkHostCooldown(target.getHost().toLowerCase(java.util.Locale.ROOT));
+        HttpURLConnection conn=(HttpURLConnection)target.openConnection();
         conn.setConnectTimeout(10000);conn.setReadTimeout(16000);conn.setInstanceFollowRedirects(false);
         conn.setRequestProperty("Accept","application/json");
         conn.setRequestProperty("User-Agent","QuietArtGallery/1.6.6 (https://github.com/treesky0103-dot/quiet-art-gallery; personal art display)");
         conn.setRequestProperty("AIC-User-Agent","Quiet-Art-Gallery (local personal project)");
         try{
-            if(conn.getResponseCode()!=200)throw new IOException("HTTP "+conn.getResponseCode());
+            int code=conn.getResponseCode();
+            if(code!=200){
+                recordHostThrottle(conn,code);
+                String retry=(code==429||code==503)?" Retry-After:"+retryAfterSeconds(conn,code):"";
+                throw new IOException("HTTP "+code+retry);
+            }
             ByteArrayOutputStream out=new ByteArrayOutputStream();try(InputStream in=conn.getInputStream()){
                 byte[] buf=new byte[16384];int count,total=0;
                 while((count=in.read(buf))!=-1){total+=count;if(total>MAX_JSON_BYTES)throw new IOException("응답 크기 제한 초과");out.write(buf,0,count);}
@@ -539,7 +580,7 @@ public final class MainActivity extends Activity {
                 runOnUiThread(()->{if(web!=null){String js="window.__galleryResolve("+JSONObject.quote(rid)+","+success+","+JSONObject.quote(payload)+");";web.evaluateJavascript(js,null);}});
             });
         }
-        @JavascriptInterface public String cacheStats(){try{return new JSONObject().put("bytes",cacheBytes()).toString();}catch(Exception e){return "{}";}}
+        @JavascriptInterface public String cacheStats(){try{return new JSONObject().put("bytes",cacheBytes()).put("limitBytes",MAX_IMAGE_CACHE).put("cleanupBytes",CLEAN_TO).put("freeBytes",imageDir.getUsableSpace()).put("reservedBytes",FREE_RESERVE).toString();}catch(Exception e){return "{}";}}
         @JavascriptInterface public boolean clearImageCache(){return clearImages();}
         @JavascriptInterface public void beginHistoryExport(){
             try{exportFile=new File(getCacheDir(),"gallery-export.csv");try(FileOutputStream out=new FileOutputStream(exportFile,false)){out.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});}}
