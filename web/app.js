@@ -14,7 +14,7 @@
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
     recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
-    cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{},movement:{}},
+    cursors:{cleveland:{Painting:0,Drawing:0,Print:0,Photograph:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{},movement:{}},
     sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
     modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,mediaCategoryIndex:0,movementTermIndex:0,movementQueries:[],modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),collectorWindowStarted:0,collectorWindowSaved:0,collectorDayKey:'',collectorDaySaved:0,collectorLastIndexAt:0,collectorRetry:{},collectorThrottled:0,
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
@@ -344,7 +344,7 @@
     const before=state.pool.length;
     try{
       if(source==='cleveland'){
-        const types=['Painting','Drawing','Print'];const t=types[(state.cmaType++)%3];let offset=state.cursors.cleveland[t]||0;
+        const types=['Painting','Drawing','Print','Photograph'];const t=types[(state.cmaType++)%types.length];let offset=state.cursors.cleveland[t]||0;
         const res=await request('cleveland',t+':'+offset);
         const total=Number(res.info&&res.info.total)||0;
         const arr=normalizeBatch(source,res).filter(C.eligibleArt);
@@ -460,8 +460,10 @@
       await persist();
       return state.pool.length-before;
     }catch(e){
-      state.failures[source]=(state.failures[source]||0)+1;
-      state.backoff[source]=Date.now()+Math.min(10*60*1000,10000*Math.pow(2,state.failures[source]));
+      state.failures[source]=Math.min(10,(state.failures[source]||0)+1);
+      const info=collectorErrorInfo(e);
+      state.backoff[source]=Date.now()+collectorDelay(info.status,state.failures[source],info.retryMs);
+      if(info.status===429)state.collectorThrottled++;
       state.lastErr=`${sourceNames[source]}: ${e.message}`;
       return 0;
     }
@@ -542,7 +544,7 @@
         now<state.collectorWindowStarted||now-state.collectorWindowStarted>=CONFIG.collectorEveryMs){
       state.collectorWindowStarted=now;state.collectorWindowSaved=0;
     }
-    const today=new Date(now).toISOString().slice(0,10);
+    const today=new Date(now+9*60*60*1000).toISOString().slice(0,10);
     if(state.collectorDayKey!==today){state.collectorDayKey=today;state.collectorDaySaved=0;}
     const remaining=Math.max(0,CONFIG.collectorTargetPerWindow-state.collectorWindowSaved);
     if(!remaining)return 0;
@@ -632,7 +634,11 @@
         const live=new Set(state.pool.map(a=>a.key));
         state.prefetchedKeys=new Set([...state.prefetchedKeys].filter(k=>live.has(k)).slice(-1000));
       }
-      await dbPutMany('settings',[{key:'candidatePool',value:state.pool.slice(0,CONFIG.savedCandidateLimit)}]);
+      const unready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key));
+      const ready=state.pool.filter(a=>state.prefetchedKeys.has(a.key));
+      await dbPutMany('settings',[{key:'candidatePool',value:
+        unready.slice(0,Math.min(800,CONFIG.savedCandidateLimit))
+        .concat(ready.slice(-200)).slice(0,CONFIG.savedCandidateLimit)}]);
       await persistCollector();await persist();
     }catch(e){state.collectorErrors++;state.lastErr='수집 대기열 오류: '+String(e.message||e);}
     finally{state.collectorRunning=false;updateInfo();}
