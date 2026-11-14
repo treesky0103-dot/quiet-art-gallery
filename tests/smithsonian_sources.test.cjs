@@ -93,9 +93,9 @@ test('new user-visible info, independent APK ID and original 75 percent policy r
  assert(html.includes('고화질 우선'));
  assert(html.includes('스미스소니언 미국미술관'));
  assert(html.includes('스미스소니언 국립아시아미술관'));
- assert(gradle.includes("applicationId 'com.gallery.kiosk.mediafull'"));
- assert(gradle.includes("versionName '1.7.5-mediafull'"));
- assert(gradle.includes('versionCode 16'));
+ assert(gradle.includes("applicationId 'com.gallery.kiosk.urbanart'"));
+ assert(gradle.includes("versionName '1.7.6-urbanart'"));
+ assert(gradle.includes('versionCode 17'));
  const app=read('web/app.js');
  assert.match(app,/pruneDays: 90/);
  assert.match(app,/intervalMs: 30000/);
