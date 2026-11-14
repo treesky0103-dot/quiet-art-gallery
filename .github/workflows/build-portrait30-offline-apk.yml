@@ -1,4 +1,4 @@
-name: Build bundled smart-portrait gallery APK (30m collector v1.7.3)
+name: Build bundled smart-portrait gallery APK (30m collector expanded)
 on:
   push:
     paths:
@@ -70,7 +70,10 @@ jobs:
           rep=json.loads(Path('build-art-report.json').read_text())
           files=sorted((root/'offline').glob('pack-*.jpg'))
           assert len(rows)==len(files)==rep['embedded_verified_jpegs']
-          assert 8<=len(files)<=825
+          assert 754<len(files)<=886
+          assert rep['new_adapted_originals_embedded']>0
+          assert rep['landscape_to_portrait_count']>0
+          assert rep['actually_upscaled_count']>=0
           assert len(set(x['key'] for x in rows))==len(rows)
           assert len(set(x['sourceSHA256'] for x in rows))==len(rows)
           assert len(set(x['derivedSHA256'] for x in rows))==len(rows)
@@ -111,7 +114,7 @@ jobs:
               for art in rows:
                   assert 'assets/'+art['offlineAsset'] in names
               print('APK_REAL_ART_BYTES_PRESENT',len(rows),'TOTAL_APK_BYTES',src.stat().st_size)
-          dest=Path('QuietArtGallery-Portrait30min-debug.apk')
+          dest=Path('QuietArtGallery-Portrait30min-Expanded-debug.apk')
           dest.write_bytes(src.read_bytes())
           sha=hashlib.sha256(dest.read_bytes()).hexdigest()
           Path('apk-sha256.txt').write_text(sha+'  '+dest.name+'\n')
@@ -124,20 +127,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="quiet-art-portrait-30m-20261114"
+          TAG="quiet-art-portrait-30m-expanded-20261114"
           cat > /tmp/release-notes.md <<'NOTE'
           《고요한 미술관》 연구용 Android APK — 30분 수집, 가로 원작 CPU 스마트 크롭·저해상도 업스케일, 30초 전시·90일 재전시 제한.
-          작업 결과는 첨부 release-art-report.json의 실제 검증 이미지 수 및 SHA256을 우선하며, 886점을 전부 확보했다고 추정하지 않습니다. 61점의 기존 기준 차이는 미해결입니다.
+          추가로 클리블랜드 미술관의 CC0 가로형·저해상도 2D 작품을 실제 다운로드/디코딩하고 세로 화면에 맞춰 크롭했습니다. 수집된 실제 작품 수와 크롭/업스케일 별도 수량은 release-art-report.json으로 확인하세요. 기존 61점 검증 근거 차이는 미해결입니다.
           Android 앱이 포그라운드일 때의 주기적 수집이며 화면 꺼짐/재부팅 후 무중단 실행을 보장하지 않습니다.
           앱 ID는 기존 설치 앱을 덮어쓰지 않는 별도 com.gallery.kiosk.portrait30 입니다.
           APK는 GitHub Actions의 자동 생성 debug 서명으로 빌드되었습니다.
           NOTE
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" QuietArtGallery-Portrait30min-debug.apk release-art-report.json apk-sha256.txt --clobber
+            gh release upload "$TAG" QuietArtGallery-Portrait30min-Expanded-debug.apk release-art-report.json apk-sha256.txt --clobber
           else
-            gh release create "$TAG" QuietArtGallery-Portrait30min-debug.apk release-art-report.json apk-sha256.txt \
+            gh release create "$TAG" QuietArtGallery-Portrait30min-Expanded-debug.apk release-art-report.json apk-sha256.txt \
               --target feat-continuous-global-openart-collector-20261114 \
-              --title "고요한 미술관 · 내장 작품 + 30분 자동 수집 APK" \
+              --title "고요한 미술관 · 가로형 추가·자동 세로화 + 30분 수집 APK" \
               --notes-file /tmp/release-notes.md
           fi
           gh release view "$TAG" --json url,assets --jq '{url:.url,assets:[.assets[].name]}'
