@@ -18,11 +18,11 @@
     sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
     modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
-    failures:{cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0},backoff:{},
+    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
+  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -459,15 +459,16 @@
     try{
       if(state.pool.length<CONFIG.targetPool)await fillPool(CONFIG.targetPool);
       if(!state.prepared&&!state.preparing)await prepareNext();
-      let downloaded=0;
+      let downloaded=0,attempted=0;
       for(const art of state.pool){
-        if(downloaded>=CONFIG.maxPrefetchPerPump)break;
+        if(downloaded>=CONFIG.maxPrefetchPerPump||attempted>=5)break;
         if(state.prefetchedKeys.has(art.key)||seenInMemory(art,null))continue;
         state.prefetchedKeys.add(art.key);
+        attempted++;
         try{
           await loadImage(art); // On Android, /art-image writes decoded-validated file cache.
           state.collectorSuccess++;downloaded++;
-        }catch(e){state.collectorErrors++;state.lastErr='수집 재시도 대상: '+String(e.message||e);}
+        }catch(e){state.prefetchedKeys.delete(art.key);state.collectorErrors++;state.lastErr='수집 재시도 대상: '+String(e.message||e);}
       }
       if(state.prefetchedKeys.size>400){
         const live=new Set(state.pool.map(x=>x.key));
