@@ -715,6 +715,15 @@
     })();
     try{return await state.preparing;}finally{state.preparing=null;}
   }
+  function tellNativeArtworkWasActuallyDisplayed(art){
+    if(!window.GalleryAndroid||
+       typeof window.GalleryAndroid.markArtworkDisplayed!=='function')return;
+    // Bundled APK images are not the 8GiB downloaded-image cache.
+    // Passing an empty string unpins the last downloaded image.
+    const url=art&&!art.offlineAsset&&C.safeURL(art.image)?art.image:'';
+    try{window.GalleryAndroid.markArtworkDisplayed(url);}
+    catch(e){state.lastErr='전시 이력(캐시 정리용) 기록 실패: '+String(e.message||e);}
+  }
   async function restoreLastShown(){
     try{
       const saved=await dbGet('settings','lastArtwork');
@@ -723,6 +732,7 @@
       ui.a.src=last.src;ui.a.alt=last.art.title+' — '+last.art.artist;
       ui.a.classList.add('visible');ui.b.classList.remove('visible');
       state.current=last;state.currentNode=ui.a;
+      tellNativeArtworkWasActuallyDisplayed(last.art);
       ui.title.textContent=C.tidyLabel(last.art.title,'제목 미상');
       ui.meta.textContent=C.tidyLabel(last.art.artist,'작가 미상')+' · '+C.artworkYearLabel(last.art);
       ui.placeholder.hidden=true;
@@ -751,6 +761,7 @@
     state.currentNode.classList.remove('visible');
     ui.placeholder.hidden=true;
     state.currentNode=target;state.current=show;
+    tellNativeArtworkWasActuallyDisplayed(show.art);
     state.lastSwapAt=Date.now();
     ui.title.textContent=C.tidyLabel(show.art.title,'제목 미상');
     ui.meta.textContent=C.tidyLabel(show.art.artist,'작가 미상')+' · '+C.artworkYearLabel(show.art);
@@ -944,7 +955,7 @@
 
   function cacheStatus(){
     if(window.GalleryAndroid&&window.GalleryAndroid.cacheStats){
-      try{const s=JSON.parse(window.GalleryAndroid.cacheStats());return `${C.prettyBytes(s.bytes||0)} / 8GiB`;}catch(_){return '확인할 수 없음';}
+      try{const s=JSON.parse(window.GalleryAndroid.cacheStats());return `${C.prettyBytes(s.bytes||0)} / 8GiB · 전시 후 삭제 ${Number(s.purgedFiles||0)}점 (${C.prettyBytes(s.purgedBytes||0)})`;}catch(_){return '확인할 수 없음';}
     }
     return '브라우저 관리 (자동 캐시 제한 불가)';
   }
