@@ -38,7 +38,7 @@ test('museum adapter retains actual artwork creation dates, not digitization dat
      objectEndDate:1810,isPublicDomain:true});
  assert.equal(C.artworkEra(met),'unknown');
 });
-test('original new art year evidence is separate from old painting's photograph date',()=>{
+test("original new art year evidence is separate from old painting's photograph date",()=>{
  assert.equal(C.artworkEra({modern:true,rightsOK:true,modernEvidence:'year-title'}),
     'post1800');
  assert.equal(C.artworkEra({modern:true,rightsOK:true,modernEvidence:'original-digital-title'}),
