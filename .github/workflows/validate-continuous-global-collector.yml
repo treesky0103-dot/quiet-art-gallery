@@ -1,0 +1,55 @@
+name: Validate continuous global art collector (research only)
+on:
+  push:
+    branches:
+      - feat-continuous-global-openart-collector-20261114
+    paths:
+      - web/**
+      - android-app/app/src/main/assets/**
+      - android-app/app/src/main/java/**
+      - tests/**
+      - .github/workflows/validate-continuous-global-collector.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check source syntax, global collector rules and complete existing regression
+        run: |
+          node --check web/core.js
+          node --check web/app.js
+          node --check tests/continuous_global_collector.test.cjs
+          node --test tests/*.test.cjs
+      - name: Assert mirrored web assets are byte identical
+        run: |
+          cmp web/core.js android-app/app/src/main/assets/core.js
+          cmp web/app.js android-app/app/src/main/assets/app.js
+      - name: Prepare offline fallback art
+        run: python3 scripts/build_emergency_deck.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install public Android SDK 35 tools
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile Android research prototype only
+        working-directory: android-app
+        run: gradle :app:assembleDebug --no-daemon
+      - name: SHA-256 compiled debug APK
+        run: |
+          test -s android-app/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum android-app/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Continuous-Global-Collector-RESEARCH-APK-NOT-v172
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 3
