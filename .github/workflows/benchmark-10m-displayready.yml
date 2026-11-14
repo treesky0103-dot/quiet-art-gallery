@@ -1,0 +1,134 @@
+name: Benchmark 2061 plus ten-minute display-ready expansion
+on:
+  push:
+    branches: [test-10min-displayready-2061-20261115]
+    paths: ['.github/workflows/benchmark-10m-displayready.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: isolated-displayready-10m-20261115
+  cancel-in-progress: false
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout isolated testing branch
+        uses: actions/checkout@v4
+        with:
+          ref: test-10min-displayready-2061-20261115
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check trial code and install image decoder
+        run: |
+          python -m py_compile scripts/benchmark_10min_displayready.py scripts/collect_every_10min.py
+          python -m pip install --disable-pip-version-check Pillow==11.3.0
+          node --check web/core.js
+      - name: Download immutable 2061 artwork production baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-85sources-shown-first-1gib-v182-20261115 \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --pattern 'QuietArtGallery-85Sources-ShownFirst1GiB-v182.apk' --clobber
+          test -s QuietArtGallery-85Sources-ShownFirst1GiB-v182.apk
+      - name: Time live 10-minute artwork collection and prepare persistent gallery files
+        timeout-minutes: 18
+        run: python -u scripts/benchmark_10min_displayready.py
+      - name: Verify gallery JS accepts each added image
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),assert=require('node:assert/strict');
+          global.window={};require('./web/core.js');
+          const C=window.GalleryCore;
+          const all=JSON.parse(fs.readFileSync('android-app/app/src/main/assets/offline-deck.json','utf8'));
+          const rep=JSON.parse(fs.readFileSync('benchmark-10min-result.json','utf8'));
+          assert.equal(all.length,2061+rep.new_display_ready_files);
+          assert.ok(all.length<=2700);
+          assert.equal(new Set(all.map(x=>x.key)).size,all.length);
+          assert.equal(new Set(all.map(x=>x.derivedSHA256)).size,all.length);
+          for(const art of all.slice(2061)){
+            assert.ok(C.eligibleArt(art),'not eligible: '+art.key);
+            assert.ok(C.metadataResolutionOkay(art),'bad resolution: '+art.key);
+            assert.ok(C.fillsPortraitScreen(art.width,art.height,600,960,.75),'not portrait 75%: '+art.key);
+            assert.ok(['post1800','pre1800'].includes(C.artworkEra(art)));
+            assert.match(art.offlineAsset,/^offline\/pack-[0-9]{4}\.jpg$/);
+            assert.equal(art.image,'https://appassets.gallery/'+art.offlineAsset);
+            assert.ok(fs.existsSync('android-app/app/src/main/assets/'+art.offlineAsset));
+          }
+          console.log('GALLERY_JS_DISPLAY_READY_PASS',rep.new_display_ready_files);
+          NODE
+      - name: Setup Java 17 for Android
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Check Android SDK
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          test -n "$sdkmanager"
+          printf 'yes\n' | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Keep trial installation separate from existing gallery
+        run: |
+          sed -i "s/applicationId 'com.gallery.kiosk.sources85'/applicationId 'com.gallery.kiosk.benchmark10m'/" android-app/app/build.gradle
+          sed -i "s/versionName '1.8.2-sources85'/versionName '1.8.2-10min-test'/" android-app/app/build.gradle
+          grep -q "applicationId 'com.gallery.kiosk.benchmark10m'" android-app/app/build.gradle
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile installable trial APK with 2061 plus added JPEGs
+        working-directory: android-app
+        timeout-minutes: 15
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Reopen compiled APK and audit each embedded JPEG SHA256
+        run: |
+          python - <<'PY'
+          import hashlib,json,zipfile
+          from pathlib import Path
+          apk=Path('android-app/app/build/outputs/apk/debug/app-debug.apk')
+          report=Path('benchmark-10min-result.json')
+          rep=json.loads(report.read_text())
+          assert apk.is_file() and apk.stat().st_size>500_000_000
+          with zipfile.ZipFile(apk) as z:
+              assert z.testzip() is None
+              rows=json.loads(z.read('assets/offline-deck.json'))
+              assert len(rows)==2061+rep['new_display_ready_files']<=2700
+              assert len({a['key'] for a in rows})==len(rows)
+              for a in rows:
+                  assert hashlib.sha256(z.read('assets/'+a['offlineAsset'])).hexdigest()==a['derivedSHA256']
+          output=Path('QuietArtGallery-2061-plus-10min-Test.apk')
+          output.write_bytes(apk.read_bytes())
+          rep['actual_apk_verified']=True
+          rep['final_apk_bytes']=output.stat().st_size
+          rep['final_apk_sha256']=hashlib.sha256(output.read_bytes()).hexdigest()
+          rep['node_app_eligibility_and_apk_assembly_pending']=False
+          report.write_text(json.dumps(rep,ensure_ascii=False,indent=2)+'\n')
+          print('REAL_APK_ALL_JPEGS_VERIFIED',len(rows),flush=True)
+          PY
+      - name: Publish separate no-artifact test APK release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create quiet-art-2061-plus-10m-display-test-20261115 \
+            QuietArtGallery-2061-plus-10min-Test.apk benchmark-10min-result.json \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --target test-10min-displayready-2061-20261115 \
+            --title '고요한 미술관 2061점 + 10분 전시 가능 시험판' \
+            --notes '기존 설치 APK 불변. 시험용 패키지 ID를 별도로 사용함. 실제 파일 디코딩·원본 2061점 비교·화면 조건 검사·APK 빌드 검증. 물리적 태블릿 전수 재생은 미검증.'
+      - name: Preserve count report on isolated test branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add benchmark-10min-result.json
+          git commit -m 'Measured 10-minute display-ready collection against 2061' || true
+          git push origin HEAD:refs/heads/test-10min-displayready-2061-20261115
