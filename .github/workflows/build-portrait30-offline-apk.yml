@@ -44,7 +44,7 @@ jobs:
       - name: Use preinstalled runner Android SDK without obsolete tools package
         run: |
           set -euo pipefail
-          export ANDROID_HOME="\${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
           sdkmanager=""
@@ -121,7 +121,7 @@ jobs:
           PY
       - name: Release APK without metered Actions artifact uploads
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           TAG="quiet-art-portrait-30m-20261114"
