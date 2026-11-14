@@ -1,0 +1,100 @@
+name: Collect new verified paintings every 10 minutes (736 reference)
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/collect-paintings-every-10min.yml'
+permissions:
+  contents: write
+concurrency:
+  group: quiet-art-gallery-collector-10min
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Check out isolated collector branch (do not change production APK)
+        uses: actions/checkout@v4
+        with:
+          ref: feat-continuous-global-openart-collector-20261114
+          fetch-depth: 1
+          persist-credentials: true
+      - name: Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install fixed image decoder
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Validate collector code and independent baseline
+        run: |
+          python -m py_compile scripts/collect_every_10min.py
+          python scripts/collect_every_10min.py --self-test
+      - name: Discover, download and validate real artwork files
+        id: collect
+        run: |
+          python -u scripts/collect_every_10min.py
+          echo "count=$(python -c 'import json;print(json.load(open("collector-10min-batch/report.json"))["new_verified_this_run"])')" >> "$GITHUB_OUTPUT"
+      - name: Independently re-open all retained proof JPEGs
+        run: |
+          python - <<'PY'
+          import csv, hashlib, io, json
+          from pathlib import Path
+          from PIL import Image
+          root=Path('collector-10min-batch')
+          report=json.loads((root/'report.json').read_text())
+          files=list((root/'images').glob('*.jpg'))
+          assert len(files)==report['new_verified_this_run']==report['proof_files']
+          ledger=list(csv.DictReader(open('data/collector_10min/new_verified.csv',encoding='utf-8')))
+          current=[r for r in ledger if r['artifact_run']==report['github_run_id']]
+          assert len(current)==len(files)
+          hashes={r['file_sha256'] for r in current}
+          for path in files:
+              blob=path.read_bytes();sha=hashlib.sha256(blob).hexdigest()
+              assert sha in hashes and path.stem==sha[:24] and len(blob)<=600000
+              with Image.open(io.BytesIO(blob)) as im:
+                  im.load();w,h=im.size
+                  assert im.format=='JPEG' and 1000<=w<h and h>=1400
+                  ratio=(w/h)/0.625
+                  assert min(ratio,1/ratio)>=0.75
+          state=json.loads(Path('data/collector_10min/state.json').read_text())
+          assert state['baseline_requested']==736
+          assert state['new_verified']==len(ledger)
+          assert state['claimed_total_with_requested_baseline']==736+len(ledger)
+          print('INDEPENDENT_ARTIFACT_PROOF_PASS',len(files))
+          PY
+      - name: Preserve image proof in expiring archive (never count URLs alone)
+        if: steps.collect.outputs.count != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiet-art-real-images-${{ github.run_id }}
+          path: |
+            collector-10min-batch/images/
+            collector-10min-batch/report.json
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+      - name: Persist distinct verified hashes and next pagination cursors
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/collector_10min/state.json data/collector_10min/new_verified.csv
+          if git diff --cached --quiet; then
+            echo 'No ledger changes to commit'
+          else
+            git commit -m "Collector: verified artwork ledger and cursors for run $GITHUB_RUN_ID"
+            git push origin HEAD:refs/heads/feat-continuous-global-openart-collector-20261114
+          fi
+      - name: Print collection accountability
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('data/collector_10min/state.json'))
+          print('User-provided baseline:',x['baseline_requested'])
+          print('Independently verified starting hash rows:',x['verified_manifest_base'])
+          print('New file-validated and archived since baseline:',x['new_verified'])
+          print('Requested 736 + verified increments:',x['claimed_total_with_requested_baseline'])
+          print('This does not mean the tablet has acquired these images')
+          PY
