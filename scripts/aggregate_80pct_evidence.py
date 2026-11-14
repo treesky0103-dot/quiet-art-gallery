@@ -106,6 +106,26 @@ def read_new_work(path,kind,records,inputs):
         if not fp.exists():raise FileNotFoundError(fp)
         add_to(records,inputs,kind,source,str(item[id_key]),era,title,
            y1,y2,fp,sha,source_sha,None,rights,surl,artifact)
+def read_iiif_art(path,kind,records,inputs):
+    cfg={
+        "yale":("Yale Center for British Art","saved_sha256","artwork_id","yale-cc0-2d-actual-iiif-byte-proof"),
+        "rijks":("Rijksmuseum","sha256","object_id","rijks-cc0-iiif-actual-portrait-art-proof")
+    }
+    source,sha_key,id_key,artifact=cfg[kind]
+    report=json.loads((path/"report.json").read_text(encoding="utf-8"))
+    items=report["actual_downloaded"]
+    if kind=="yale":assert len(items)==report["real_files_verified"]
+    else:assert len(items)==report["actual_downloaded_count"]
+    for item in items:
+        fp=path/"samples"/Path(item["saved_file"]).name
+        if not fp.exists():raise FileNotFoundError(str(fp))
+        add_to(records,inputs,kind,source,str(item[id_key]),
+               item["era"],item.get("title") or "",
+               item.get("year_start"),item.get("year_end"),fp,
+               item[sha_key],item.get("source_sha256") or "",None,
+               item.get("license") or "",
+               item.get("image_url") or item.get("source_image_url") or "",
+               artifact)
 def main():
     records=[];inputlog=[]
     read_batch(BASE/"baseline","baseline40","verified-1800plus-80pct-paintings-sample",records,inputlog)
@@ -115,6 +135,8 @@ def main():
     read_nga(BASE/"nga",records,inputlog)
     for source in ("wellcome","smk","smithsonian"):
         read_new_work(BASE/source,source,records,inputlog)
+    for source in ("yale","rijks"):
+        read_iiif_art(BASE/source,source,records,inputlog)
     unique=[];duplicate_id=[];duplicate_sha=[];near_pairs=[]
     source_ids={};file_hashes={};previous_dhash=[]
     for r in records:
@@ -164,7 +186,9 @@ def main():
                     "national_gallery_of_art":"GitHub Actions 43557443707",
                     "wellcome":"GitHub Actions 43558532875",
                     "smk":"GitHub Actions 43559855032",
-                    "smithsonian":"GitHub Actions 43560141359"},
+                    "smithsonian":"GitHub Actions 43560141359",
+                    "yale":"GitHub Actions 43561581690",
+                    "rijks":"GitHub Actions 43561741983"},
         "limitations":[
             "Actual JPEG bytes remain in expiring GitHub Actions artifacts, not in this repository manifest.",
             "NGA museum creation-year ranges can use artist lifespans; independent per-artwork era audit incomplete.",
