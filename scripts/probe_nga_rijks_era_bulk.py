@@ -76,15 +76,16 @@ def nga_census():
         rd=csv.DictReader(f)
         print("NGA_OBJECT_COLUMNS "+json.dumps(rd.fieldnames),flush=True)
         for row in rd:
-            kind=row.get("classification") or row.get("classificationName") or ""
+            row={str(k).lower():v for k,v in row.items() if k is not None}
+            kind=row.get("classification") or row.get("classificationname") or ""
             medium=row.get("medium") or ""
             if not is_flat(kind,medium):continue
-            e=era(row.get("beginYear"),row.get("endYear"))
+            e=era(row.get("beginyear"),row.get("endyear"))
             if e=="unknown":totals["flat_date_unknown"]+=1;continue
-            oid=row.get("objectID")
+            oid=row.get("objectid")
             if not oid:continue
             refs[str(oid)]={"era":e,"title":row.get("title") or "",
-                            "begin_year":row.get("beginYear"),"end_year":row.get("endYear"),
+                            "begin_year":row.get("beginyear"),"end_year":row.get("endyear"),
                             "type":kind,"medium":medium}
             totals["flat_date_qualified_"+e]+=1
     eligible={"1800plus":0,"older":0};samples={"1800plus":[],"older":[]}
