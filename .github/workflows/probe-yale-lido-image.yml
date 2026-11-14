@@ -1,0 +1,42 @@
+name: Yale OAI real LIDO image-rights sample
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_yale_lido_image_details.py
+      - .github/workflows/probe-yale-lido-image.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Probe Yale LIDO image rights and dates
+        run: |
+          python -m py_compile scripts/probe_yale_lido_image_details.py
+          python -u scripts/probe_yale_lido_image_details.py
+      - name: Validate YAML output
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          j=json.loads(Path('audit-yale-lido-image-links/sample_lido_image_rights.json').read_text())
+          assert j['actual_image_files_downloaded']==0
+          assert j['artwork_259200_complete'] is False
+          assert len(j['sample_ids'])==10
+          print('Yale source LIDO sample details:',len(j['records']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: yale-public-lido-work-production-and-image-rights-sample
+          path: audit-yale-lido-image-links/
+          if-no-files-found: warn
+          retention-days: 5
