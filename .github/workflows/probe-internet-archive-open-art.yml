@@ -1,0 +1,55 @@
+name: Probe Internet Archive open art actual image bytes
+on:
+  push:
+    branches:
+      - feat-multisource-world-openart-20261114
+    paths:
+      - scripts/probe_internet_archive_open_art.py
+      - .github/workflows/probe-internet-archive-open-art.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Compile and run public API art verification
+        run: |
+          python -m py_compile scripts/probe_internet_archive_open_art.py
+          python -u scripts/probe_internet_archive_open_art.py
+      - name: Confirm actual byte counts vs image metadata
+        run: |
+          python - <<'PY'
+          import json,hashlib,io
+          from pathlib import Path
+          from PIL import Image
+          p=Path('audit-internet-archive-art')
+          r=json.loads((p/'report.json').read_text())
+          assert not r['artwork_90days_ready']
+          assert r['year_1800_verified']==0
+          assert r['rights_unknown_records_are_discovery_only']
+          assert len(r['actual_images'])==r['images_downloaded_decoded']
+          assert len(r['actual_images'])==len({x['sha256'] for x in r['actual_images']})
+          for x in r['actual_images']:
+            b=Path(x['file']).read_bytes()
+            assert hashlib.sha256(b).hexdigest()==x['sha256']
+            with Image.open(io.BytesIO(b)) as im:
+              im.load()
+              assert im.width>=1000 and im.height>=1400 and im.width<im.height
+              assert min((im.width/im.height)/.625,.625/(im.width/im.height))>=.75
+          print('Internet Archive actual JPEG bytes audited:',len(r['actual_images']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: internet-archive-open-art-actual-byte-audit
+          path: audit-internet-archive-art/
+          if-no-files-found: warn
+          retention-days: 2
