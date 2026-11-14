@@ -204,6 +204,48 @@
       };
     });
   }
+  // A search result is not automatically a movement attribution.
+  // Admit it only when the source explicitly describes a still 2D medium,
+  // and avoid 3D objects and photographed exhibition interiors.
+  function normalizeMovementCommons(data,school){
+    if(!school || !school.name_ko)return [];
+    const pages=(data&&data.query&&data.query.pages)||[];
+    if(!Array.isArray(pages))return [];
+    const forbidden=/(?:\b(?:sculpture|installation|vase|t-shirt|ceramic|pottery|jewelry|jewellery|3d|statue|exhibition|gallery interior|museum interior|photo of gallery|architecture model|poster of movie)\b)/i;
+    const mediumRules=[
+      ['Animation Still',/\b(?:animation frame|animated film still|cartoon still|animation cel)\b/i],
+      ['Photograph',/\b(?:photograph|photography|photo print|photo artwork)\b/i],
+      ['Illustration',/\b(?:illustration|illustrated|ink drawing)\b/i],
+      ['Drawing',/\b(?:drawing|sketch|pastel on paper)\b/i],
+      ['Print',/\b(?:printmaking|lithograph|etching|woodblock|engraving|silkscreen|linocut)\b/i],
+      ['Painting',/\b(?:painting|oil on canvas|watercolor|watercolour|gouache|acrylic painting|tempera)\b/i]
+    ];
+    return pages.map(page=>{
+      const info=page&&Array.isArray(page.imageinfo)?page.imageinfo[0]:null;
+      const meta=info&&info.extmetadata||{};
+      const raw=string(page&&page.title).replace(/^File:/i,'').replace(/_/g,' ');
+      const filename=raw.replace(/\.(?:jpe?g|png|webp)$/i,'');
+      const detail=wikimediaText(meta.ImageDescription&&meta.ImageDescription.value);
+      const sample=(filename+' '+detail).slice(0,550);
+      const medium=forbidden.test(sample)?null:mediumRules.find(([kind,pattern])=>pattern.test(sample));
+      if(!medium)return null;
+      const mime=string(info&&info.mime).toLowerCase();
+      return {
+        key:'commons:'+String(page&&page.pageid),
+        source:'Wikimedia Commons · 사조 검색',
+        title:wikimediaText(filename)||'제목 미상',
+        artist:wikimediaText(meta.Artist&&meta.Artist.value)||'작가 미상',
+        image:string(info&&(info.thumburl||info.url)),
+        width:Number(info&&info.width)||0,height:Number(info&&info.height)||0,
+        type:medium[0],classification:medium[0],medium:'',
+        description:'',license:wikimediaText(meta.LicenseShortName&&meta.LicenseShortName.value),
+        rightsOK:commonsPublicDomain(meta)&&/^image\/(?:jpeg|png|webp)$/.test(mime),
+        museumRegion:'mixedMedia',style:'',styles:[],
+        schoolSearchTerm:school.name_ko,schoolSearchIsAttribution:false,
+        date:'',yearStart:null,yearEnd:null,page:string(info&&info.descriptionurl)
+      };
+    }).filter(Boolean);
+  }
   function shuffledCopy(items,rng=Math.random){
     const result=Array.isArray(items)?items.slice():[];
     for(let i=result.length-1;i>0;i--){
@@ -690,6 +732,6 @@
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
     artworkEra,targetPost1800,eraQuota90Days,MODERN_THRESHOLD_YEAR,
-    GLOBAL_OPEN_ART_CATEGORIES,normalizeGlobalCommons,MIXED_MEDIA_CATEGORIES,normalizeMixedMediaCommons,shuffledCopy,artworkYearLabel,
+    GLOBAL_OPEN_ART_CATEGORIES,normalizeGlobalCommons,MIXED_MEDIA_CATEGORIES,normalizeMixedMediaCommons,normalizeMovementCommons,shuffledCopy,artworkYearLabel,
     portraitScreenFill, fillsPortraitScreen, imageIdentity, identityKeys, hashDistance };
 });
