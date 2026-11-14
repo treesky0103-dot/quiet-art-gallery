@@ -28,7 +28,8 @@ EARLIER_GOAL=25920
 assert MODERN_GOAL+EARLIER_GOAL==GOAL
 AGENT="QuietArtGalleryGlobalArtAudit/1.1 (https://github.com/treesky0103-dot/quiet-art-gallery; research)"
 MAX_DOWNLOAD=30
-MAX_IMAGE_ATTEMPTS=75
+MAX_IMAGE_ATTEMPTS=105
+ERA_SAMPLE_QUOTA={"1800-2026":27,"pre-1800":3}
 MAX_FILE_BYTES=24*1024*1024
 MIN_SHORT=1000
 MIN_LONG=1400
@@ -205,11 +206,13 @@ def download_verified(candidates):
     errors=[]
     seen_bytes=set();seen_phash=[]
     results=[]
+    per_era={"1800-2026":0,"pre-1800":0}
     attempted=0
     for item in candidates:
         src=item["source"]
         if by_source.get(src,0)>=30 or len(results)>=MAX_DOWNLOAD:continue
-        if item["era"] not in ("1800-2026","pre-1800"):continue
+        if item["era"] not in ERA_SAMPLE_QUOTA:continue
+        if per_era[item["era"]]>=ERA_SAMPLE_QUOTA[item["era"]]:continue
         if len(results)>=MAX_DOWNLOAD or attempted>=MAX_IMAGE_ATTEMPTS:break
         attempted+=1
         try:
@@ -234,6 +237,7 @@ def download_verified(candidates):
                 "source_url":item["source_url"]})
             seen_bytes.add(sha);seen_phash.append(dh)
             by_source[src]=by_source.get(src,0)+1
+            per_era[item["era"]]+=1
             print("VERIFIED "+json.dumps({"source":src,"era":item["era"],"width":w,"height":h,
                 "sha256":sha[:16],"files":len(results)},ensure_ascii=False),flush=True)
         except Exception as e:
