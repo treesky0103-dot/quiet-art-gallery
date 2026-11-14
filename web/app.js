@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:1800000, maxPrefetchPerPump:6, savedCandidateLimit:180});
+  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 350, maxQueue: 7200, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:1800000, collectorTickMs:60000, collectorTargetPerWindow:60, collectorMaxPerTick:4, collectorMaxAttemptsPerTick:16, savedCandidateLimit:1000});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -16,7 +16,7 @@
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
     cursors:{cleveland:{Painting:0,Drawing:0,Print:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{},movement:{}},
     sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
-    modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,mediaCategoryIndex:0,movementTermIndex:0,movementQueries:[],modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),
+    modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,mediaCategoryIndex:0,movementTermIndex:0,movementQueries:[],modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),collectorWindowStarted:0,collectorWindowSaved:0,collectorDayKey:'',collectorDaySaved:0,collectorLastIndexAt:0,collectorRetry:{},collectorThrottled:0,
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
     failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0,media:0,movement:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
@@ -523,41 +523,123 @@
     })();
     try{return await state.filling;}finally{state.filling=null; updateInfo();}
   }
-  // Foreground-only best-effort collector: independently requests worldwide public
-  // source metadata and predecodes a few eligible images WITHOUT marking them seen.
-  // Android may suspend JS when app goes to background; this is not a 24/7 daemon.
+  // The 60/30m rate is an aspirational goal, not a guaranteed download result.
+  // The 30s slideshow stays independent from this foreground-only queue.
+  function collectorDelay(status,attempt,retryMs=0){
+    const n=Math.max(1,Math.min(10,Number(attempt)||1));
+    const base=status===429?1800000:status===503?480000:45000;
+    const cap=status===429?86400000:status===503?14400000:2700000;
+    return Math.max(Math.min(cap,base*Math.pow(2,n-1)),Math.min(86400000,Math.max(0,Number(retryMs)||0)));
+  }
+  function collectorErrorInfo(err){
+    const message=String(err&&err.message||err||'');
+    const status=message.match(/\bHTTP\s*(429|503|500|502|403)\b/i);
+    const retry=message.match(/\bRetry-After:\s*(\d+)\b/i);
+    return {status:status?Number(status[1]):0,retryMs:retry?Math.min(86400000,Number(retry[1])*1000):0};
+  }
+  function collectorQuota(now=Date.now()){
+    if(!Number.isFinite(state.collectorWindowStarted)||state.collectorWindowStarted<1||
+        now<state.collectorWindowStarted||now-state.collectorWindowStarted>=CONFIG.collectorEveryMs){
+      state.collectorWindowStarted=now;state.collectorWindowSaved=0;
+    }
+    const today=new Date(now).toISOString().slice(0,10);
+    if(state.collectorDayKey!==today){state.collectorDayKey=today;state.collectorDaySaved=0;}
+    const remaining=Math.max(0,CONFIG.collectorTargetPerWindow-state.collectorWindowSaved);
+    if(!remaining)return 0;
+    const ticks=Math.max(1,Math.ceil((CONFIG.collectorEveryMs-(now-state.collectorWindowStarted))/CONFIG.collectorTickMs));
+    return Math.min(CONFIG.collectorMaxPerTick,Math.max(1,Math.ceil(remaining/ticks)));
+  }
+  async function persistCollector(){
+    const now=Date.now();
+    state.collectorRetry=Object.fromEntries(Object.entries(state.collectorRetry)
+      .filter(([key,item])=>key.length<220&&item&&Number.isFinite(item.nextAt)&&item.nextAt>now-86400000)
+      .sort((a,b)=>a[1].nextAt-b[1].nextAt).slice(0,500));
+    await dbPutMany('settings',[{key:'collectorV2State',value:{
+      windowStarted:state.collectorWindowStarted,windowDownloaded:state.collectorWindowSaved,
+      dayKey:state.collectorDayKey,dayDownloaded:state.collectorDaySaved,
+      totalDownloaded:state.collectorSuccess,totalErrors:state.collectorErrors,
+      sourceBackoff:state.backoff,sourceFailures:state.failures,
+      retry:state.collectorRetry,ready:[...state.prefetchedKeys].slice(-1000),
+      lastIndexAt:state.collectorLastIndexAt,throttled:state.collectorThrottled
+    }}]);
+  }
+  async function restoreCollector(){
+    try{
+      const row=await dbGet('settings','collectorV2State'),saved=row&&row.value;
+      if(!saved||typeof saved!=='object')return;
+      const nonnegative=x=>Number.isFinite(Number(x))&&Number(x)>0?Number(x):0;
+      state.collectorWindowStarted=nonnegative(saved.windowStarted);
+      state.collectorWindowSaved=Math.min(CONFIG.collectorTargetPerWindow,nonnegative(saved.windowDownloaded));
+      state.collectorDayKey=typeof saved.dayKey==='string'?saved.dayKey:'';
+      state.collectorDaySaved=nonnegative(saved.dayDownloaded);
+      state.collectorSuccess=nonnegative(saved.totalDownloaded);
+      state.collectorErrors=nonnegative(saved.totalErrors);
+      state.collectorThrottled=nonnegative(saved.throttled);
+      state.collectorLastIndexAt=nonnegative(saved.lastIndexAt);
+      if(saved.retry&&typeof saved.retry==='object'&&!Array.isArray(saved.retry))
+        state.collectorRetry=Object.fromEntries(Object.entries(saved.retry).filter(([key,item])=>
+          key.length<220&&item&&Number.isFinite(Number(item.nextAt))&&
+          Number(item.nextAt)>Date.now()-86400000).slice(0,500));
+      if(Array.isArray(saved.ready))
+        state.prefetchedKeys=new Set(saved.ready.filter(key=>typeof key==='string'&&key.length<220).slice(-1000));
+      if(saved.sourceBackoff&&typeof saved.sourceBackoff==='object'&&!Array.isArray(saved.sourceBackoff))
+        state.backoff=Object.fromEntries(Object.entries(saved.sourceBackoff).filter(([key,until])=>
+          Object.prototype.hasOwnProperty.call(sourceNames,key)&&Number.isFinite(Number(until))&&
+          Number(until)>Date.now()));
+      if(saved.sourceFailures&&typeof saved.sourceFailures==='object'&&!Array.isArray(saved.sourceFailures))
+        for(const key of Object.keys(sourceNames))state.failures[key]=Math.max(0,Math.min(10,Number(saved.sourceFailures[key])||0));
+    }catch(e){state.lastErr='수집 대기열 복원 실패: '+String(e.message||e);}
+  }
   async function collectorPump(){
     if(state.collectorRunning||!state.db||document.hidden)return;
-    if(state.collectorLastAt && Date.now()-state.collectorLastAt<CONFIG.collectorEveryMs-5000)return;
-    state.collectorRunning=true;state.collectorLastAt=Date.now();
+    const now=Date.now();
+    if(state.collectorLastAt&&now-state.collectorLastAt<CONFIG.collectorTickMs-3000)return;
+    state.collectorRunning=true;state.collectorLastAt=now;
     try{
-      if(state.pool.length<CONFIG.targetPool)await fillPool(CONFIG.targetPool);
-      if(!state.prepared&&!state.preparing)await prepareNext();
+      const quota=collectorQuota(now);
+      if(quota<=0)return;
+      let ready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&
+        !seenInMemory(a,null)&&!(state.collectorRetry[a.key]&&state.collectorRetry[a.key].nextAt>now));
+      if(ready.length<Math.max(12,quota*4)&&state.pool.length<CONFIG.maxQueue&&
+         (!state.collectorLastIndexAt||now-state.collectorLastIndexAt>CONFIG.collectorTickMs-3000)){
+        state.collectorLastIndexAt=now;
+        await fillPool(Math.min(CONFIG.maxQueue,Math.max(CONFIG.targetPool,state.pool.length+80)));
+        ready=state.pool.filter(a=>!state.prefetchedKeys.has(a.key)&&
+          !seenInMemory(a,null)&&!(state.collectorRetry[a.key]&&state.collectorRetry[a.key].nextAt>Date.now()));
+      }
+      if(!state.prepared&&!state.preparing&&state.pool.length)await prepareNext();
       let downloaded=0,attempted=0;
-      for(const art of state.pool){
-        if(downloaded>=CONFIG.maxPrefetchPerPump||attempted>=12)break;
+      for(const art of C.shuffledCopy(ready)){
+        if(downloaded>=quota||attempted>=CONFIG.collectorMaxAttemptsPerTick)break;
         if(state.prefetchedKeys.has(art.key)||seenInMemory(art,null))continue;
-        state.prefetchedKeys.add(art.key);
+        const old=state.collectorRetry[art.key];
+        if(old&&old.nextAt>Date.now())continue;
         attempted++;
         try{
-          await loadImage(art); // On Android, /art-image writes decoded-validated file cache.
-          state.collectorSuccess++;downloaded++;
-        }catch(e){state.prefetchedKeys.delete(art.key);state.collectorErrors++;state.lastErr='수집 재시도 대상: '+String(e.message||e);}
+          await loadImage(art);
+          state.prefetchedKeys.add(art.key);
+          delete state.collectorRetry[art.key];
+          downloaded++;state.collectorSuccess++;state.collectorWindowSaved++;state.collectorDaySaved++;
+        }catch(e){
+          const info=collectorErrorInfo(e),attempts=Math.min(10,Number(old&&old.attempts||0)+1);
+          state.collectorRetry[art.key]={attempts,nextAt:Date.now()+collectorDelay(info.status,attempts,info.retryMs)};
+          state.collectorErrors++;
+          if(info.status===429)state.collectorThrottled++;
+          state.lastErr='수집 재시도 대기: '+String(e&&e.message||e);
+        }
       }
-      if(state.prefetchedKeys.size>400){
-        const live=new Set(state.pool.map(x=>x.key));
-        state.prefetchedKeys=new Set([...state.prefetchedKeys].filter(k=>live.has(k)));
+      if(state.prefetchedKeys.size>1500){
+        const live=new Set(state.pool.map(a=>a.key));
+        state.prefetchedKeys=new Set([...state.prefetchedKeys].filter(k=>live.has(k)).slice(-1000));
       }
-      // Save a modest manifest of verified metadata; image bytes remain in native
-      // bounded disk cache and 90-day shown identities remain in IndexedDB.
       await dbPutMany('settings',[{key:'candidatePool',value:state.pool.slice(0,CONFIG.savedCandidateLimit)}]);
-      await persist();
-    }catch(e){state.collectorErrors++;state.lastErr='백그라운드 수집: '+String(e.message||e);}
+      await persistCollector();await persist();
+    }catch(e){state.collectorErrors++;state.lastErr='수집 대기열 오류: '+String(e.message||e);}
     finally{state.collectorRunning=false;updateInfo();}
   }
   function startContinuousCollector(){
     if(state.collectorTimer)clearInterval(state.collectorTimer);
-    state.collectorTimer=setInterval(()=>{collectorPump().catch(()=>{});},CONFIG.collectorEveryMs);
+    state.collectorTimer=setInterval(()=>{collectorPump().catch(()=>{});},CONFIG.collectorTickMs);
     collectorPump().catch(()=>{});
   }
   async function restoreCandidatePool(){
@@ -872,8 +954,10 @@
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
     if(el('collector-status'))el('collector-status').textContent=
-      (document.hidden?'화면 비활성':'화면 활성 · 30분 주기')+
-      ' · 사전 검증 '+state.collectorSuccess+'점 · 재시도 '+state.collectorErrors+'회';
+      (document.hidden?'화면 비활성':'화면 활성 · 1분마다 보충')+
+      ' · 30분 실적 '+state.collectorWindowSaved+'/'+CONFIG.collectorTargetPerWindow+
+      '점 · 오늘 '+state.collectorDaySaved+'점 · 누적 '+state.collectorSuccess+
+      '점 · 실패 '+state.collectorErrors+'회 · 제한 '+state.collectorThrottled+'회';
     if(el('dedup-count'))el('dedup-count').textContent=
       '중복 차단 '+state.dedupBlocked+'건 · 후보 부족 '+state.exhaustedTicks+'회';
     const backup=el('fallback-status');
@@ -1100,6 +1184,7 @@
       // APK ships four true paintings. Load before starting the clock so a
       // transient outage or slow museum search cannot freeze a displayed work.
       await loadMovementCatalog();
+      await restoreCollector();
       await hydrateHistory();
       await restoreCandidatePool();
       await loadOfflineDeck();
@@ -1139,7 +1224,7 @@
     flipped:state.flipped,caption:[ui.title.textContent,ui.meta.textContent],
     dedupBlocked:state.dedupBlocked,exhaustedTicks:state.exhaustedTicks,recentKeys:state.recentKeys.size,
     visualHashes:state.visualHashes.size,sourceCount:3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length+C.SMITHSONIAN_MUSEUMS.length+C.GLOBAL_OPEN_ART_CATEGORIES.length,
-    collector:{running:state.collectorRunning,lastAt:state.collectorLastAt,validatedPrefetch:state.collectorSuccess,errors:state.collectorErrors,categoryIndex:state.globalCategoryIndex},
+    collector:{running:state.collectorRunning,lastAt:state.collectorLastAt,validatedPrefetch:state.collectorSuccess,errors:state.collectorErrors,categoryIndex:state.globalCategoryIndex,windowDownloaded:state.collectorWindowSaved,windowGoal:CONFIG.collectorTargetPerWindow,dayDownloaded:state.collectorDaySaved,throttled:state.collectorThrottled,retryEntries:Object.keys(state.collectorRetry).length},
     modernShown:state.stats.modernShown,modernFetched:state.modernFetched,modernPool:state.pool.filter(a=>a.modern).length,modernTargetNext:C.targetModern(state.stats.slot),
     lastSwapAt:state.lastSwapAt,tickCount:state.tickCount,emergencySwaps:state.emergencySwaps,
     offlineReady:state.offlineReady.length,nativeClock:state.nativeClock,nextDueAt:state.nextDueAt});
