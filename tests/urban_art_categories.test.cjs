@@ -26,7 +26,7 @@ test('native request bridge exposes only the three known art categories',()=>{
  assert.match(java,/"contemporary-art","street-art","graffiti"/);
  assert.match(java,/"Contemporary art","Street art","Graffiti"/);
  assert.match(java,/PortraitAdapter\.convert/);
- assert.match(java,/ART_INTERVAL_MS = 30000L/);
+ assert.match(java,/ART_INTERVAL_MS = 60000L/);
  const gradle=file('android-app/app/build.gradle');
  assert.match(gradle,/versionName '1\.8\.2-sources85'/);
  assert.match(gradle,/applicationId 'com\.gallery\.kiosk\.sources85'/);
