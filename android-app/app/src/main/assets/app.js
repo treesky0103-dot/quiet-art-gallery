@@ -13,7 +13,7 @@
     playing:true,busy:false,filling:null,preparing:null,timer:null,hideTimer:null,lastRendered:null,
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
     recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
-    lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
+    lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,currentSeenWrite:null,discardedCount:0,discardErrors:0,
     cursors:{cleveland:{Painting:0,Drawing:0,Print:0,Photograph:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{},movement:{}},
     sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
     modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,mediaCategoryIndex:0,movementTermIndex:0,movementQueries:[],modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),collectorWindowStarted:0,collectorWindowSaved:0,collectorDayKey:'',collectorDaySaved:0,collectorLastIndexAt:0,collectorRetry:{},collectorThrottled:0,
@@ -562,7 +562,8 @@
       totalDownloaded:state.collectorSuccess,totalErrors:state.collectorErrors,
       sourceBackoff:state.backoff,sourceFailures:state.failures,
       retry:state.collectorRetry,ready:[...state.prefetchedKeys].slice(-1000),
-      lastIndexAt:state.collectorLastIndexAt,throttled:state.collectorThrottled
+      lastIndexAt:state.collectorLastIndexAt,throttled:state.collectorThrottled,
+      displayedCacheDeleted:state.discardedCount,displayedCacheDeleteErrors:state.discardErrors
     }}]);
   }
   async function restoreCollector(){
@@ -577,6 +578,8 @@
       state.collectorSuccess=nonnegative(saved.totalDownloaded);
       state.collectorErrors=nonnegative(saved.totalErrors);
       state.collectorThrottled=nonnegative(saved.throttled);
+      state.discardedCount=nonnegative(saved.displayedCacheDeleted);
+      state.discardErrors=nonnegative(saved.displayedCacheDeleteErrors);
       state.collectorLastIndexAt=nonnegative(saved.lastIndexAt);
       if(saved.retry&&typeof saved.retry==='object'&&!Array.isArray(saved.retry))
         state.collectorRetry=Object.fromEntries(Object.entries(saved.retry).filter(([key,item])=>
@@ -743,6 +746,10 @@
   function displayLoaded(show,emergency=false){
     if(!show || (state.current&&state.current.art.key===show.art.key))return false;
     if(seenInMemory(show.art,show.visualHash)){state.dedupBlocked++;return false;}
+    // Keep the currently visible image until the next one is successfully
+    // presented. Evict only downloaded native cache files after the prior
+    // artwork's 90-day identity has actually committed to IndexedDB.
+    const previous=state.current,previousSeenWrite=state.currentSeenWrite;
     markSeen(show); // Reserve identities before asynchronous disk writes.
     const target=state.currentNode===ui.a?ui.b:ui.a;
     target.alt=show.art.title+' — '+show.art.artist;
@@ -760,13 +767,34 @@
     if(emergency)state.emergencySwaps++;
     if(test&&test.onShow)test.onShow(show.art,show.orient,emergency);
     // Persist in the background: storage latency may not delay a visual transition.
-    recordSeen(show).then(()=>
+    const written=recordSeen(show).then(()=>
       dbPutMany('settings',[{key:'lastArtwork',value:show.art}])
-    ).catch(e=>{
+    ).then(()=>true).catch(e=>{
       state.lastErr='감상 기록 저장 실패: '+String(e.message||e);
-      // Keep the artwork clock running, but disclose that 90-day records
-      // may be incomplete until storage recovers.
+      // Do NOT delete a downloaded image if the 90-day log commit failed.
+      return false;
     });
+    state.currentSeenWrite=written;
+    if(previous && previousSeenWrite && window.GalleryAndroid &&
+       typeof window.GalleryAndroid.discardDisplayedImage==='function' &&
+       !previous.art.offlineAsset){
+      Promise.resolve(previousSeenWrite).then(persisted=>{
+        if(!persisted)return;
+        // Old artwork is no longer visible and cannot be the prefetched next.
+        if(state.current && (state.current.art.key===previous.art.key ||
+           state.current.art.image===previous.art.image))return;
+        if(state.prepared && state.prepared.art.image===previous.art.image)return;
+        const removed=window.GalleryAndroid.discardDisplayedImage(previous.art.image);
+        if(removed===1){
+          state.discardedCount++;
+          state.prefetchedKeys.delete(previous.art.key);
+          updateInfo();
+          persistCollector().catch(()=>{});
+        }else if(removed<0)state.discardErrors++;
+      }).catch(e=>{
+        state.discardErrors++;state.lastErr='전시 후 캐시 정리 오류: '+String(e.message||e);
+      });
+    }
     updateInfo();
     return true;
   }
@@ -959,6 +987,7 @@
     const count=state.stats.portrait+state.stats.other;
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
+    el('discarded-count').textContent=state.discardedCount.toLocaleString('ko-KR')+'점 · 실패 '+state.discardErrors+'회';
     if(el('collector-status'))el('collector-status').textContent=
       (document.hidden?'화면 비활성':'화면 활성 · 1분마다 보충')+
       ' · 30분 실적 '+state.collectorWindowSaved+'/'+CONFIG.collectorTargetPerWindow+
@@ -992,6 +1021,43 @@
     applyRotation();
     if(state.db)await dbPutMany('settings',[{key:'flipped',value:state.flipped}]);
     updateInfo();
+  }
+  async function showAllSourceChannels(){
+    const container=el('source-channels');
+    if(!container)return;
+    const response=await fetch('https://appassets.gallery/art-sources-85.json',{cache:'no-store'});
+    if(!response.ok)throw new Error('85곳 공급원 목록을 열 수 없습니다.');
+    const catalog=await response.json();
+    const rows=Array.isArray(catalog.entries)?catalog.entries:[];
+    if(rows.length!==85 || catalog.counts.direct!==3 ||
+       catalog.counts.commons!==37 || catalog.counts.linkOnly!==45)
+      throw new Error('공급원 85곳 검증 오류');
+    container.replaceChildren();
+    const heading=document.createElement('p');
+    heading.textContent='85개 채널: 공식 API 3곳 + Commons 분류 37곳 + 외부 사이트 열람 45곳. 자동 이미지 다운로드가 확인된 공급원은 3개 미술관 API와 Commons입니다. 45개 사이트는 직접 열람용입니다.';
+    container.appendChild(heading);
+    const modeNames={direct_api:'공식 API',commons_category:'Commons 분류 검색',site_link_only:'외부 열람 전용'};
+    for(const item of rows){
+      const outer=document.createElement('div');
+      outer.className='source-line';
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='source-link';
+      button.textContent=item.name;
+      button.disabled=typeof item.homepage!=='string'||!/^https:\/\/[^/]+/.test(item.homepage);
+      if(!button.disabled)button.addEventListener('click',()=>{
+        if(window.GalleryAndroid&&typeof window.GalleryAndroid.openProviderPage==='function'){
+          if(!window.GalleryAndroid.openProviderPage(item.homepage))
+            ui.msg.textContent='승인된 공급원 주소가 아닙니다.';
+        }else window.open(item.homepage,'_blank','noopener,noreferrer');
+      });
+      const meta=document.createElement('span');
+      meta.className='source-mode';
+      meta.textContent=modeNames[item.mode]||'연결 확인 불가';
+      outer.append(button,meta);
+      container.appendChild(outer);
+    }
+    container.hidden=false;
   }
   function showSettings(){ui.settings.hidden=false;ui.backdrop.hidden=false;clearTimeout(state.hideTimer);controlsFor(0);updateInfo();}
   function closeSettings(){ui.settings.hidden=true;ui.backdrop.hidden=true;controlsFor(2500);}
@@ -1117,6 +1183,7 @@
         catalogBox.hidden=false;
       }catch(e){catalogBox.textContent='사조 목록 오류: '+e.message;catalogBox.hidden=false;}
     });
+    el('show-sources-85').addEventListener('click',()=>showAllSourceChannels().catch(e=>{ui.msg.textContent='공급원 목록 오류: '+e.message;}));
     el('show-providers').addEventListener('click',async()=>{
       try{
         const r=await fetch('https://appassets.gallery/art-providers.json');
@@ -1232,7 +1299,7 @@
     flipped:state.flipped,caption:[ui.title.textContent,ui.meta.textContent],
     dedupBlocked:state.dedupBlocked,exhaustedTicks:state.exhaustedTicks,recentKeys:state.recentKeys.size,
     visualHashes:state.visualHashes.size,sourceCount:3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length+C.SMITHSONIAN_MUSEUMS.length+C.GLOBAL_OPEN_ART_CATEGORIES.length,
-    collector:{running:state.collectorRunning,lastAt:state.collectorLastAt,validatedPrefetch:state.collectorSuccess,errors:state.collectorErrors,categoryIndex:state.globalCategoryIndex,windowDownloaded:state.collectorWindowSaved,windowGoal:CONFIG.collectorTargetPerWindow,dayDownloaded:state.collectorDaySaved,throttled:state.collectorThrottled,retryEntries:Object.keys(state.collectorRetry).length},
+    collector:{running:state.collectorRunning,lastAt:state.collectorLastAt,validatedPrefetch:state.collectorSuccess,errors:state.collectorErrors,categoryIndex:state.globalCategoryIndex,windowDownloaded:state.collectorWindowSaved,windowGoal:CONFIG.collectorTargetPerWindow,dayDownloaded:state.collectorDaySaved,throttled:state.collectorThrottled,retryEntries:Object.keys(state.collectorRetry).length,discardedAfterDisplay:state.discardedCount,discardFailures:state.discardErrors},
     modernShown:state.stats.modernShown,modernFetched:state.modernFetched,modernPool:state.pool.filter(a=>a.modern).length,modernTargetNext:C.targetModern(state.stats.slot),
     lastSwapAt:state.lastSwapAt,tickCount:state.tickCount,emergencySwaps:state.emergencySwaps,
     offlineReady:state.offlineReady.length,nativeClock:state.nativeClock,nextDueAt:state.nextDueAt});
