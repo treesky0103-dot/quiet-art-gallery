@@ -255,6 +255,8 @@ def run():
             "Original JPEG/PNG/WebP proof files live in expiring GitHub Actions artifacts, not tablet",
             "Server-side scheduled run does not update the existing v1.7.2 APK"]}
     save_json(OUT/"report.json",report)
+    save_json(ROOT/"last_report.json",report)
+    print("COLLECTION_PROBES "+json.dumps(probes[:25],ensure_ascii=False),flush=True)
     if ok_sources==0:
         print("ERROR: all metadata sources failed; no ledger commit",flush=True)
         raise SystemExit(2)
