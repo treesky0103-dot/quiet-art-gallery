@@ -1,0 +1,150 @@
+name: Build random mixed-media gallery APK with unified caption
+on:
+  push:
+    paths:
+      - '.github/workflows/build-mixed-random-886-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: random-mixed-media-886-release
+  cancel-in-progress: false
+jobs:
+  build-portrait30-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout isolated research source (do not mutate existing production APK)
+        uses: actions/checkout@v4
+        with:
+          ref: feat-random-mixed-media-caption-20261114
+          persist-credentials: true
+      - name: Install Python 3.12 and image decoder
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Pillow for real images
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Check syntax and portrait30 program invariants
+        run: |
+          python -m py_compile scripts/build_886_adapted_deck.py
+          node --check web/app.js
+          node --check web/core.js
+          cmp web/app.js android-app/app/src/main/assets/app.js
+          cmp web/core.js android-app/app/src/main/assets/core.js
+          cmp web/index.html android-app/app/src/main/assets/index.html
+          cmp web/style.css android-app/app/src/main/assets/style.css
+          grep -q 'const eligible=C.shuffledCopy' web/app.js
+          grep -q 'artworkYearLabel' web/core.js
+          grep -q "collectorEveryMs:1800000" web/app.js
+          grep -q "PortraitAdapter.convert" android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "versionName '1.7.4-mixed'" android-app/app/build.gradle
+          node --test tests/*.test.cjs
+      - name: Install Java 17, SDK 35 and Gradle 8.9
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Use preinstalled runner Android SDK without obsolete tools package
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager=""
+          if test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; then
+            sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          else
+            sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          fi
+          test -n "$sdkmanager"
+          printf 'yes\n' | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Download and independently decode eligible original art, smart-crop, upscale and embed
+        timeout-minutes: 32
+        run: python -u scripts/build_886_adapted_deck.py
+      - name: Verify exact image manifest and written image hashes
+        run: |
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from PIL import Image
+          root=Path('android-app/app/src/main/assets')
+          rows=json.loads((root/'offline-deck.json').read_text())
+          rep=json.loads(Path('build-art-report.json').read_text())
+          files=sorted((root/'offline').glob('pack-*.jpg'))
+          assert len(rows)==len(files)==rep['embedded_verified_jpegs']
+          assert 754<len(files)<=886
+          assert rep['new_adapted_originals_embedded']>0
+          assert rep['landscape_to_portrait_count']>0
+          assert rep['actually_upscaled_count']>=0
+          assert len(set(x['key'] for x in rows))==len(rows)
+          assert len(set(x['sourceSHA256'] for x in rows))==len(rows)
+          assert len(set(x['derivedSHA256'] for x in rows))==len(rows)
+          for index,x in enumerate(rows):
+              expected='offline/pack-%04d.jpg'%index
+              assert x['offlineAsset']==expected
+              assert x['image']=='https://appassets.gallery/'+expected
+              path=root/expected
+              blob=path.read_bytes()
+              assert hashlib.sha256(blob).hexdigest()==x['derivedSHA256']
+              with Image.open(path) as im:
+                  im.load();assert im.size==(1000,1667) and im.format=='JPEG'
+          print('REAL_EMBEDDED_REOPENED_HASH_VERIFIED',len(rows),'bytes',sum(x.stat().st_size for x in files))
+          PY
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build actual installable debug APK
+        working-directory: android-app
+        timeout-minutes: 15
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Open APK ZIP and inspect all embedded JPEGs, activity and web assets
+        run: |
+          python - <<'PY'
+          import zipfile,hashlib,json
+          from pathlib import Path
+          src=Path('android-app/app/build/outputs/apk/debug/app-debug.apk')
+          rows=json.loads(Path('android-app/app/src/main/assets/offline-deck.json').read_text())
+          assert src.is_file() and src.stat().st_size>30000
+          with zipfile.ZipFile(src) as z:
+              assert z.testzip() is None
+              names=set(z.namelist())
+              assert 'assets/offline-deck.json' in names
+              assert 'assets/app.js' in names and 'assets/core.js' in names
+              packaged=json.loads(z.read('assets/offline-deck.json'))
+              assert len(packaged)==len(rows)
+              for art in rows:
+                  assert 'assets/'+art['offlineAsset'] in names
+              print('APK_REAL_ART_BYTES_PRESENT',len(rows),'TOTAL_APK_BYTES',src.stat().st_size)
+          dest=Path('QuietArtGallery-MixedMedia-Random-886-debug.apk')
+          dest.write_bytes(src.read_bytes())
+          sha=hashlib.sha256(dest.read_bytes()).hexdigest()
+          Path('apk-sha256.txt').write_text(sha+'  '+dest.name+'\n')
+          result=json.loads(Path('build-art-report.json').read_text())
+          result.update({'apk_name':dest.name,'apk_sha256':sha,'apk_bytes':dest.stat().st_size})
+          Path('release-art-report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+          PY
+      - name: Release APK without metered Actions artifact uploads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="quiet-art-mixed-media-random-20261114"
+          cat > /tmp/release-notes.md <<'NOTE'
+          《고요한 미술관》 연구용 Android APK — 30분 수집, 가로 원작 CPU 스마트 크롭·저해상도 업스케일, 30초 전시·90일 재전시 제한.
+          기존 내장 원본 886점의 파일은 실제 새로 다운로드/디코딩·세로 크롭/리사이즈·SHA256 검증한 파일만 포함합니다. 전시할 때 장르별 고정 순서 없이 무작위 선택하고 작품 아래에 모든 장르의 작품명·작가명·연도를 같은 방식으로 표시합니다. 사진·일러스트·애니메이션 스틸의 새로운 검색·검증 경로는 구현했지만, 이 APK에 신규 정지 사진·애니메이션 파일이 포함됐다고 추정해서는 안 됩니다. 저작권 불명 작품을 무단 내장하거나 유료/접근제한을 우회하지 않습니다. 실제 확보 작품 수는 release-art-report.json을 참조하세요.
+          Android 앱이 포그라운드일 때의 주기적 수집이며 화면 꺼짐/재부팅 후 무중단 실행을 보장하지 않습니다.
+          앱 ID는 이전판을 덮어쓰지 않는 별도 com.gallery.kiosk.mixedmedia 입니다.
+          APK는 GitHub Actions의 자동 생성 debug 서명으로 빌드되었습니다.
+          NOTE
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" QuietArtGallery-MixedMedia-Random-886-debug.apk release-art-report.json apk-sha256.txt --clobber
+          else
+            gh release create "$TAG" QuietArtGallery-MixedMedia-Random-886-debug.apk release-art-report.json apk-sha256.txt \
+              --target feat-random-mixed-media-caption-20261114 \
+              --title "고요한 미술관 · 무작위 혼합 전시·일관된 작품명/작가/연도 APK" \
+              --notes-file /tmp/release-notes.md
+          fi
+          gh release view "$TAG" --json url,assets --jq '{url:.url,assets:[.assets[].name]}'
