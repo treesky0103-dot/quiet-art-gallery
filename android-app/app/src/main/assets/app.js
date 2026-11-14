@@ -404,8 +404,16 @@
       return state.pool.length-before;
     }catch(e){
       state.failures[source]=(state.failures[source]||0)+1;
-      state.backoff[source]=Date.now()+Math.min(10*60*1000,10000*Math.pow(2,state.failures[source]));
-      state.lastErr=`${sourceNames[source]}: ${e.message}`;
+      const reason=String(e&&e.message||e);
+      // Respect each public provider's access policy. Do NOT retry a blocked
+      // image/API every two minutes or rotate IPs to defeat rate limits.
+      const hardBlock=/\b(?:HTTP\s*401|unauthorized)\b/i.test(reason);
+      const rateLimit=/\b(?:HTTP\s*429|too many requests|rate.?limit)\b/i.test(reason);
+      const delay=hardBlock?12*60*60*1000:
+        rateLimit?60*60*1000:
+        Math.min(10*60*1000,10000*Math.pow(2,state.failures[source]));
+      state.backoff[source]=Date.now()+delay;
+      state.lastErr=`${sourceNames[source]}: ${reason}`;
       return 0;
     }
   }
