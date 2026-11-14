@@ -62,7 +62,7 @@ test('disks preserve 8 GiB max, 7 GiB cleanup, 1.5 GiB reserve and 90-day viewin
  assert.match(java,/CLEAN_TO = 7L \* 1024 \* 1024 \* 1024/);
  assert.match(java,/FREE_RESERVE = 1536L \* 1024 \* 1024/);
  assert.match(java,/new File\(getFilesDir\(\), "gallery-images"\)/);
- assert.match(java,/new File\(imageDir,hashUrl\(src\)\+"\.img"\)/);
+ assert.match(java,/new File\(imageDir,hash\+"\.img"\)/);
  assert.match(s,/pruneDays: 90/);
  assert.match(s,/store\.put\(entry\)/);
  assert.match(s,/dbPutMany\('seen'/);
