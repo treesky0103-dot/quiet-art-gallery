@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const C = window.GalleryCore;
-  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:120000, maxPrefetchPerPump:6, savedCandidateLimit:180});
+  const CONFIG = Object.freeze({intervalMs: 30000, minPool: 28, targetPool: 180, maxQueue: 800, prefetch: 1, retryMs: 20000, pruneDays: 90, movementRetryMs: 5*60*1000, minimumPortraitFill:.75, collectorEveryMs:600000, maxPrefetchPerPump:6, savedCandidateLimit:180});
   const test = window.__GALLERY_TEST__ || null;
   const INTERVAL = test && test.intervalMs >= 100 ? test.intervalMs : CONFIG.intervalMs;
   const el = id => document.getElementById(id);
@@ -791,7 +791,7 @@
 
   function cacheStatus(){
     if(window.GalleryAndroid&&window.GalleryAndroid.cacheStats){
-      try{const s=JSON.parse(window.GalleryAndroid.cacheStats());return `${C.prettyBytes(s.bytes||0)} / 100MB`;}catch(_){return '확인할 수 없음';}
+      try{const s=JSON.parse(window.GalleryAndroid.cacheStats());return `${C.prettyBytes(s.bytes||0)} / 8GiB`;}catch(_){return '확인할 수 없음';}
     }
     return '브라우저 관리 (자동 캐시 제한 불가)';
   }
@@ -807,7 +807,7 @@
     el('ratio-count').textContent=count?`${Math.round(state.stats.portrait*100/count)}% 세로형`:'집계 전';
     el('cache-count').textContent=cacheStatus();
     if(el('collector-status'))el('collector-status').textContent=
-      (document.hidden?'화면 비활성':'화면 활성 · 2분 주기')+
+      (document.hidden?'화면 비활성':'화면 활성 · 10분 주기')+
       ' · 사전 검증 '+state.collectorSuccess+'점 · 재시도 '+state.collectorErrors+'회';
     if(el('dedup-count'))el('dedup-count').textContent=
       '중복 차단 '+state.dedupBlocked+'건 · 후보 부족 '+state.exhaustedTicks+'회';
@@ -978,7 +978,7 @@
       e.target.value='';
     });
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings(); if(e.key==='ArrowRight'&&ui.settings.hidden)next(); if(e.key===' '&&ui.settings.hidden){e.preventDefault();el('toggle-pause').click();}});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.playing){startClock();refreshForDay().catch(()=>{});}});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(state.playing)startClock();refreshForDay().catch(()=>{});collectorPump().catch(()=>{});}});
   }
   async function init(){
     wire();
