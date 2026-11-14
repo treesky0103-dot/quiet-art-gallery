@@ -112,3 +112,10 @@ body.upside-down:not(.native-rotation) #caption{
  .ambient-orbit::before,.ambient-orbit::after{animation:none}
  .cache-progress-fill{transition:none}
 }
+
+/* v1.8.5: capacity vs not-yet-shown files, plus bounded viewing headroom */
+.cache-availability{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
+.cache-availability>div{min-width:0;border:1px solid rgba(229,207,169,.15);border-radius:10px;padding:10px 8px;background:rgba(10,10,8,.18)}
+.cache-availability small{display:block;font-size:10px;line-height:1.45;color:#bfb4a5;margin-bottom:5px}
+.cache-availability strong{display:block;font-size:17px;color:#f1e7d6;font-variant-numeric:tabular-nums;line-height:1.25;overflow-wrap:anywhere}
+#cache-available-days{font-size:16px;color:#dfc9a6}
