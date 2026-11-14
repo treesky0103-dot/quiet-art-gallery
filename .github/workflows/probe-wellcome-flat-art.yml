@@ -1,0 +1,51 @@
+name: Probe Wellcome 1800+ flat art IIIF real image bytes
+on:
+  push:
+    branches:
+      - collect-80pct-scale-batch-20261114
+    paths:
+      - scripts/probe_wellcome_flat_art.py
+      - .github/workflows/probe-wellcome-flat-art.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Check syntax and run API + decoded image pilot
+        run: |
+          python -m py_compile scripts/probe_wellcome_flat_art.py
+          python -u scripts/probe_wellcome_flat_art.py
+      - name: Validate report and image bytes
+        run: |
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from PIL import Image
+          d=Path('audit-wellcome-flat-art')
+          r=json.loads((d/'audit.json').read_text())
+          assert r['false_259200_completion'] is False
+          assert len(r['files'])==r['byte_verified_image_files']
+          for x in r['files']:
+              p=Path(x['file_path'])
+              assert p.exists() and hashlib.sha256(p.read_bytes()).hexdigest()==x['sha256']
+              im=Image.open(p);im.load()
+              assert im.width>=1000 and im.height>=1400 and im.width<im.height
+              assert min((im.width/im.height)/.625,.625/(im.width/im.height))>=.75
+          print('Wellcome source/era/binary audit PASSED:',len(r['files']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wellcome-1800plus-flat-art-audit
+          path: audit-wellcome-flat-art/
+          if-no-files-found: warn
+          retention-days: 14
