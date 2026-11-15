@@ -227,6 +227,10 @@ public final class MainActivity extends Activity {
             URL u = new URL(src);
             if (!"https".equals(u.getProtocol()) || u.getPort() != -1 || u.getUserInfo() != null) return false;
             String host=u.getHost().toLowerCase(java.util.Locale.ROOT);
+            if(host.equals("media.artmuseum.princeton.edu")){
+                return u.getPath().matches("(?i)^/iiif/3/collection/[a-z0-9_-]{2,72}/full/2000,/0/default\\.jpg$")
+                    && u.getQuery()==null && u.getRef()==null;
+            }
             if(host.equals("iiif.wellcomecollection.org")){
                 return u.getPath().matches("(?i)^/image/[a-z0-9_-]{3,28}/full/2000,/0/default\\.jpg$")
                     && u.getQuery()==null && u.getRef()==null;
@@ -369,6 +373,21 @@ public final class MainActivity extends Activity {
     }
 
     private String apiUrl(String type,String p) throws Exception {
+        if (type.equals("princetonSearch")) {
+            String[] parts=p.split(":",-1);
+            if(parts.length!=2)throw new IOException("Princeton search args");
+            int idx=bounded(parts[0],0,9),off=bounded(parts[1],0,3000);
+            if(off%20!=0)throw new IOException("Princeton paging invalid");
+            String[] terms={"drawing","watercolor","woodcut","etching","lithograph",
+                "oil painting","pastel","engraving","printmaking","landscape"};
+            return "https://data.artmuseum.princeton.edu/search?q="+
+                URLEncoder.encode(terms[idx],"UTF-8")+
+                "&type=artobjects&size=20&from="+off;
+        }
+        if (type.equals("princetonObject")) {
+            int id=bounded(p,1,9999999);
+            return "https://data.artmuseum.princeton.edu/objects/"+id;
+        }
         if (type.equals("wellcome")) {
             String[] parts=p.split(":",-1);
             if(parts.length!=2)throw new IOException("Wellcome search arguments");
