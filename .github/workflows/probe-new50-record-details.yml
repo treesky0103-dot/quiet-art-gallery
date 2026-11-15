@@ -1,0 +1,17 @@
+name: Probe new image rights and record shapes
+on:
+  push:
+    branches: [feat-new50-v186-verified-apis-20261115]
+    paths:
+      - '.github/workflows/probe-new50-record-details.yml'
+      - 'tools/probe_new_source_record_details.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/probe_new_source_record_details.py
