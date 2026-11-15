@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "date_kst": "2026-11-15",
+  "existing_85_excluded": true,
+  "reviewed_new_units": 3,
+  "new_institutions": [
+    {
+      "name": "Princeton University Art Museum",
+      "country": "USA",
+      "unit": "princeton",
+      "web": "https://data.artmuseum.princeton.edu",
+      "status": "integrated_source_code",
+      "pixels_verified": [
+        {
+          "sample": "Dancers",
+          "width": 1602,
+          "height": 2000,
+          "bytes": 702254,
+          "sha256": "9d27d55be4cd6691e09ddd9d6f53f4ebc382e2e74e80c926aa5218f1cd97e811"
+        }
+      ],
+      "conditions": "Exclusively 2D drawings/paintings/prints. Accept primary image without restrictions, no nowebuse, blank creditline repro, age/artist death conservatively bounded. Real device throughput not yet measured."
+    },
+    {
+      "name": "Smithsonian National Portrait Gallery",
+      "country": "USA",
+      "unit": "npg",
+      "status": "integrated_source_code",
+      "pixels_verified": [
+        {
+          "sample": "Lithograph",
+          "width": 1443,
+          "height": 2000,
+          "bytes": 622930,
+          "sha256": "49870d55f2ce5d001d3bee0ecf84220c63bdbd6119a7096b4455fa554fa04941"
+        },
+        {
+          "sample": "Engraving",
+          "width": 1414,
+          "height": 2000,
+          "bytes": 706298,
+          "sha256": "baffd474fed669d510c6c9f928ae8f3d86acbb187397bb6562058d1e39cabdd0"
+        },
+        {
+          "sample": "Oil painting",
+          "width": 1448,
+          "height": 2000,
+          "bytes": 278366,
+          "sha256": "d123c63e354740beb87621b0b0cf97f848a5b38d1a1e342dbb665e4ce90aea47"
+        }
+      ],
+      "conditions": "Only Smithsonian official S3 records with CC0 for BOTH record and individual image, and art object classification; strict ids.si.edu image service; no keys."
+    },
+    {
+      "name": "Smithsonian Cooper Hewitt",
+      "country": "USA",
+      "unit": "chndm",
+      "previous_50_entry": true,
+      "status": "integrated_source_code",
+      "pixels_verified": [
+        {
+          "sample": "Sketchbook drawing",
+          "width": 1281,
+          "height": 2000,
+          "bytes": 123267,
+          "sha256": "076047b1d4b399bdfc3fe48a4ca76723e98fe5d13a2cd68a84b92720cad06882"
+        }
+      ],
+      "conditions": "CC0 both levels, 2D classes only; exclude furniture/3D, no keys."
+    }
+  ],
+  "excluded_or_deferred": [
+    {
+      "name": "Yale LUX",
+      "reason": "live HTTP 403"
+    },
+    {
+      "name": "Library of Congress Free to Use curated pack",
+      "reason": "1 of 8 sampled imagery passed strict 75%/resolution; meta candidate ≠ ready image"
+    },
+    {
+      "name": "Musée d'art contemporain de Montréal JSON dataset",
+      "reason": "sample per-image rights show estate copyright and Canadian public-domain only; not automatically universal"
+    },
+    {
+      "name": "Hirshhorn",
+      "reason": "sample shard only low-resolution photograph, not 2D painting evidence"
+    },
+    {
+      "name": "Smithsonian National Museum of African Art",
+      "reason": "sample S3 shard had zero bytes"
+    },
+    {
+      "name": "Birmingham Museum of Art",
+      "reason": "website search JSON works but per-object image rights/API not verified"
+    }
+  ],
+  "usage": "This ledger proves tested examples, not all-source stability, overall capacity, full rights audit, or 90-day operations."
+}
