@@ -1500,6 +1500,24 @@
           '※ 자동 수집의 실제 일일 성공량과 90일 운영은 실기기 미검증\n\n'+lines.join('\n');
       }catch(e){panel.textContent='신규 공급원 검토 목록 확인 실패: '+String(e&&e.message||e);}
     });
+    el('show-v188').addEventListener('click',async()=>{
+      const panel=el('v188-audit-panel');panel.hidden=false;
+      panel.textContent='신규 CC0 공급원 검사 기록을 확인하고 있습니다.';
+      try{
+        const url=window.GalleryAndroid?'https://appassets.gallery/v188-verified-sources.json':'./v188-verified-sources.json';
+        const res=await fetch(url,{cache:'no-store'});
+        if(!res.ok)throw Error('검사 기록을 읽을 수 없습니다.');
+        const audit=await res.json();
+        if(audit.new_institution_count!==1||audit.upgraded_existing_institution_count!==1||
+          !Array.isArray(audit.sources)||audit.sources.length!==2)throw Error('검사 기록 불일치');
+        const lines=audit.sources.map(src=>
+          src.name+' ('+(src.source_kind.startsWith('new')?'추가 신규 기관':'기존 기관 직접 수집 강화')+')\n'+
+          src.samples.map(z=>' - '+z.title+' · '+z.width+'×'+z.height+' · '+z.bytes+' bytes · 실물 검증').join('\n'));
+        panel.textContent='실제로 검증한 추가 수집 경로\n\n'+
+          lines.join('\n\n')+'\n\n보류: '+audit.deferred.map(x=>x.name).join(', ')+
+          '\n\n※ 실제 태블릿에서의 24시간 확보량과 8GiB 충전·90일 무중복은 미검증입니다.';
+      }catch(e){panel.textContent='검사 기록 오류: '+String(e&&e.message||e);}
+    });
     el('show-v187').addEventListener('click',async()=>{
       const panel=el('v187-audit-panel');
       panel.hidden=false;panel.textContent='새로운 공급원 실물 검증을 불러오는 중입니다.';
