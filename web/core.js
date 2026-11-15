@@ -52,7 +52,7 @@
         return /^\/image\/[a-z0-9_-]{3,28}\/full\/2000,\/0\/default\.jpg$/i.test(u.pathname) && !u.search && !u.hash;
       if(h==='ids.si.edu')
         return u.pathname==='/ids/deliveryService'&&
-          /^\\?id=[a-zA-Z0-9_.-]{3,90}&max=2000$/.test(u.search) && !u.hash;
+          /^\?id=[a-zA-Z0-9_.-]{3,90}&max=2000$/.test(u.search) && !u.hash;
       if(h==='media.artmuseum.princeton.edu')
         return /^\/iiif\/3\/collection\/[a-z0-9_-]{2,72}\/full\/2000,\/0\/default\.jpg$/i.test(u.pathname) && !u.search && !u.hash;
       return h === 'upload.wikimedia.org' || h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
