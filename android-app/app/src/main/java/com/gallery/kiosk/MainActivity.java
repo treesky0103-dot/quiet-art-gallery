@@ -22,6 +22,8 @@ import android.webkit.WebViewClient;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -231,6 +233,11 @@ public final class MainActivity extends Activity {
                 return u.getPath().matches("(?i)^/iiif/3/collection/[a-z0-9_-]{2,72}/full/2000,/0/default\\.jpg$")
                     && u.getQuery()==null && u.getRef()==null;
             }
+            if(host.equals("ids.si.edu")){
+                return "/ids/deliveryService".equals(u.getPath()) &&
+                    u.getQuery()!=null && u.getQuery().matches("^id=[a-zA-Z0-9_.-]{3,90}&max=2000$") &&
+                    u.getRef()==null;
+            }
             if(host.equals("iiif.wellcomecollection.org")){
                 return u.getPath().matches("(?i)^/image/[a-z0-9_-]{3,28}/full/2000,/0/default\\.jpg$")
                     && u.getQuery()==null && u.getRef()==null;
@@ -372,6 +379,135 @@ public final class MainActivity extends Activity {
         return ok;
     }
 
+
+    private static String smithsonianShard(String arg) throws Exception {
+        String[] parts=arg.split(":",-1);
+        if(parts.length!=2||!Arrays.asList("npg","chndm").contains(parts[0]))
+            throw new IOException("Smithsonian new unit not approved");
+        int shard=bounded(parts[1],0,255);
+        String url="https://smithsonian-open-access.s3-us-west-2.amazonaws.com/metadata/edan/"+
+            parts[0]+"/"+String.format(java.util.Locale.ROOT,"%02x",shard)+".txt";
+        URL target=new URL(url);
+        checkHostCooldown(target.getHost().toLowerCase(java.util.Locale.ROOT));
+        HttpURLConnection conn=(HttpURLConnection)target.openConnection();
+        conn.setConnectTimeout(10000);conn.setReadTimeout(18000);
+        conn.setInstanceFollowRedirects(false);
+        conn.setRequestProperty("Accept","text/plain");
+        conn.setRequestProperty("User-Agent","QuietArtGallery/1.8.7 (CC0 public art personal display)");
+        JSONArray arts=new JSONArray();
+        try {
+            int status=conn.getResponseCode();
+            if(status==404||status==204)return new JSONObject().put("results",arts).toString();
+            if(status!=200){
+                recordHostThrottle(conn,status);
+                throw new IOException("HTTP "+status+(status==429||status==503?
+                    " Retry-After:"+retryAfterSeconds(conn,status):""));
+            }
+            int lines=0,total=0;
+            try(BufferedReader in=new BufferedReader(new InputStreamReader(conn.getInputStream(),StandardCharsets.UTF_8))){
+                String line;
+                while((line=in.readLine())!=null){
+                    total+=line.length();
+                    if(total>7*1024*1024)throw new IOException("Smithsonian shard too large");
+                    if(++lines>12000)throw new IOException("Smithsonian record count limit");
+                    if(arts.length()>=170)break; // Bound WebView JSON bridge memory.
+                    try{
+                        JSONObject art=smithsonianArtCandidate(new JSONObject(line),parts[0]);
+                        if(art!=null)arts.put(art);
+                    }catch(Exception ignored){/* fail closed on malformed collection entry */}
+                }
+            }
+            return new JSONObject().put("results",arts).put("unit",parts[0]).toString();
+        }finally{conn.disconnect();}
+    }
+    /** A CC0 metadata license alone is NOT enough: image-specific CC0 is mandatory. */
+    private static JSONObject smithsonianArtCandidate(JSONObject item,String unit) throws Exception {
+        if(!Arrays.asList("npg","chndm").contains(unit)||item==null)return null;
+        JSONObject content=item.optJSONObject("content");
+        if(content==null)return null;
+        JSONObject desc=content.optJSONObject("descriptiveNonRepeating");
+        if(desc==null)return null;
+        JSONObject metadataUsage=desc.optJSONObject("metadata_usage");
+        if(metadataUsage==null||!"CC0".equals(metadataUsage.optString("access")))return null;
+        JSONObject indexed=content.optJSONObject("indexedStructured");
+        JSONArray kinds=indexed==null?null:indexed.optJSONArray("object_type");
+        if(kinds==null)return null;
+        String kind="";
+        for(int i=0;i<kinds.length();i++){
+            String k=kinds.optString(i,"");
+            if(k.matches("(?i)^(paintings?|prints?|drawings?|watercolors?|watercolours?|posters?|graphic design|illustrations?|lithographs?|etchings?|engravings?|woodcuts?)$")){
+                kind=k.toLowerCase(java.util.Locale.ROOT).contains("paint")||k.toLowerCase(java.util.Locale.ROOT).contains("watercolor")?"Painting":
+                    k.toLowerCase(java.util.Locale.ROOT).contains("draw")?"Drawing":"Print";
+                break;
+            }
+            if(unit.equals("chndm")&&k.matches("(?i)^sketchbook (folio|page)$"))kind="Drawing";
+        }
+        if(kind.isEmpty())return null;
+        JSONArray physical=null;
+        JSONObject freetext=content.optJSONObject("freetext");
+        if(freetext!=null)physical=freetext.optJSONArray("physicalDescription");
+        String medium="";
+        if(physical!=null)for(int i=0;i<physical.length();i++){
+            JSONObject row=physical.optJSONObject(i);
+            if(row!=null&&"Medium".equalsIgnoreCase(row.optString("label")))medium=row.optString("content","");
+        }
+        if(medium.matches("(?i).*(?:ceramic|sculpture|wood furniture|metalwork|costume|jewelry|carpet|bronze statue|porcelain|glass vessel|screen of silk).*"))
+            return null;
+        if(unit.equals("chndm")&&kind.equals("Drawing")&&medium.isEmpty())return null;
+        JSONObject mediad=desc.optJSONObject("online_media");
+        JSONArray media=mediad==null?null:mediad.optJSONArray("media");
+        if(media==null)return null;
+        for(int j=0;j<media.length();j++){
+            JSONObject entry=media.optJSONObject(j);
+            if(entry==null||!"Images".equalsIgnoreCase(entry.optString("type")))continue;
+            JSONObject usage=entry.optJSONObject("usage");
+            if(usage==null||!"CC0".equals(usage.optString("access")))continue;
+            String ids=entry.optString("idsId","");
+            if(!ids.matches("[a-zA-Z0-9_.-]{3,90}"))continue;
+            JSONArray resources=entry.optJSONArray("resources");
+            int width=0,height=0;
+            if(resources!=null)for(int n=0;n<resources.length();n++){
+                JSONObject res=resources.optJSONObject(n);
+                if(res!=null&&"High-resolution JPEG".equals(res.optString("label"))){
+                    width=res.optInt("width");height=res.optInt("height");break;
+                }
+            }
+            if(width<1000||height<1400||height<=width)continue;
+            if(!("https://ids.si.edu/ids/deliveryService?id="+ids).equals(entry.optString("content")))continue;
+            String image="https://ids.si.edu/ids/deliveryService?id="+ids+"&max=2000";
+            if(!safeImageUrl(image))continue;
+            String title="";
+            JSONObject titleObj=desc.optJSONObject("title");
+            if(titleObj!=null)title=titleObj.optString("content","");
+            if(title.isEmpty())title=item.optString("title","제목 미상");
+            if(title.matches("(?i).*(?:photograph of installation|sculpture|door boss|ceramic|furniture).*"))continue;
+            String maker="";
+            if(freetext!=null){
+                JSONArray names=freetext.optJSONArray("name");
+                if(names!=null)for(int n=0;n<names.length();n++){
+                    JSONObject person=names.optJSONObject(n);
+                    if(person!=null&&person.optString("label","").matches("(?i).*(artist|maker|author).*")){
+                        maker=person.optString("content","");break;
+                    }
+                }
+            }
+            JSONObject art=new JSONObject();
+            art.put("key","smithsonian-"+unit+":"+ids);
+            art.put("source",unit.equals("npg")?"Smithsonian National Portrait Gallery":"Smithsonian Cooper Hewitt");
+            art.put("title",title);
+            art.put("artist",maker.isEmpty()?"작가 미상":maker);
+            art.put("image",image);
+            art.put("width",width);art.put("height",height);
+            art.put("type",kind);art.put("classification",kind);
+            art.put("medium",medium);
+            art.put("license","CC0");art.put("rightsOK",true);
+            art.put("description","");
+            art.put("date","");
+            art.put("page",item.optString("url",""));
+            return art;
+        }
+        return null;
+    }
     private String apiUrl(String type,String p) throws Exception {
         if (type.equals("princetonSearch")) {
             String[] parts=p.split(":",-1);
@@ -682,7 +818,7 @@ public final class MainActivity extends Activity {
                     long pause=1000L-(System.currentTimeMillis()-lastApiMs);
                     if(pause>0)Thread.sleep(pause);
                     lastApiMs=System.currentTimeMillis();
-                    result=fetchJson(apiUrl(type,param));ok=true;
+                    result=type.equals("smithsonianShard")?smithsonianShard(param):fetchJson(apiUrl(type,param));ok=true;
                 }
                 catch(Exception e){result=e.getMessage()==null?"연결 실패":e.getMessage();}
                 boolean success=ok;String payload=result;
