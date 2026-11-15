@@ -1,0 +1,18 @@
+name: Verify Wellcome source actual JPEG bytes
+on:
+  push:
+    branches: [feat-new50-v186-verified-apis-20261115]
+    paths: ['tools/verify_wellcome_pdm_pixels.py','.github/workflows/verify-wellcome-pixels.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install Pillow==11.3.0
+      - run: python tools/verify_wellcome_pdm_pixels.py
