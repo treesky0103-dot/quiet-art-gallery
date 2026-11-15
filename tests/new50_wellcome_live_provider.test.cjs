@@ -60,5 +60,5 @@ test('50 sources are readable in settings without inventing artwork collection c
  const page=read('web/index.html'),app=read('web/app.js');
  assert.match(page,/show-new50/);
  assert.match(app,/reviewed_candidates!==50/);
- assert.match(page,/기존 85곳 외/); // message may live in script not HTML
+ assert.match(app,/기존 85곳 외/);
 });
