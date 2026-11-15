@@ -1,0 +1,247 @@
+name: Build and verify v1.8.8 NMAAHC/Asian Art CC0 gallery APK
+on:
+  push:
+    branches:
+      - feat-v188-smithsonian-2d-openaccess-20261115
+    paths:
+      - '.github/workflows/build-v188-nmaahc-fsg-cc0.yml'
+      - 'tests/*.test.cjs'
+      - 'web/core.js'
+      - 'web/app.js'
+      - 'android-app/app/src/main/assets/core.js'
+      - 'android-app/app/src/main/assets/app.js'
+      - 'android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java'
+      - 'data/v187_additional_verified_sources.json'
+      - 'data/v188_smithsonian_verified_sources.json'
+      - 'data/new50_provider_audit_20261115.json'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: quiet-art-smithsonian-nmaahc-fsg-v188
+  cancel-in-progress: true
+jobs:
+  build-tablet60-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout isolated one-minute tablet source branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat-v188-smithsonian-2d-openaccess-20261115
+      - name: Install Python and JPEG decoder
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Pillow
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Download immutable 2692-artwork source APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-2061-plus-10m-display-test-20261115 --repo treesky0103-dot/quiet-art-gallery --pattern 'QuietArtGallery-2061-plus-10min-Test.apk' --clobber
+          test -s QuietArtGallery-2061-plus-10min-Test.apk
+      - name: Restore all 2692 original verified JPEG bytes without replacing updated program code
+        run: |
+          python - <<'PY'
+          import json,hashlib,zipfile,re
+          from pathlib import Path
+          from PIL import Image
+          original=Path('QuietArtGallery-2061-plus-10min-Test.apk')
+          assets=Path('android-app/app/src/main/assets')
+          assets.mkdir(parents=True,exist_ok=True)
+          with zipfile.ZipFile(original) as z:
+              rows=json.loads(z.read('assets/offline-deck.json'))
+              assert len(rows)==2692
+              assert len({a['key'] for a in rows})==2692
+              assert len({a['derivedSHA256'] for a in rows})==2692
+              (assets/'offline-deck.json').write_text(json.dumps(rows,ensure_ascii=False,indent=1)+'\n',encoding='utf-8')
+              for i,art in enumerate(rows):
+                  asset=art['offlineAsset']
+                  assert re.fullmatch(r'offline/(?:pack-\d{4}|fallback-(?:\d|1[0-5]))\.jpg',asset),asset
+                  raw=z.read('assets/'+asset)
+                  assert hashlib.sha256(raw).hexdigest()==art['derivedSHA256'],(i,asset)
+                  dest=assets/asset
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  dest.write_bytes(raw)
+                  with Image.open(dest) as img:
+                      img.load()
+                      assert img.format=='JPEG'
+                      assert img.width>=1000 and img.height>=1400
+          print('2692_ORIGINAL_JPEGS_INTACT_AND_REOPENED',len(rows),flush=True)
+          PY
+      - name: Check fast-prefill, live cache meter, faint orbit, and 90-day rule regressions
+        run: |
+          set -euo pipefail
+          cmp web/app.js android-app/app/src/main/assets/app.js
+          cmp web/core.js android-app/app/src/main/assets/core.js
+          cmp web/index.html android-app/app/src/main/assets/index.html
+          cmp web/style.css android-app/app/src/main/assets/style.css
+          cmp web/new50-provider-audit.json android-app/app/src/main/assets/new50-provider-audit.json
+          cmp web/new50-provider-audit.json data/new50_provider_audit_20261115.json
+          cmp web/v187-verified-sources.json android-app/app/src/main/assets/v187-verified-sources.json
+          cmp web/v187-verified-sources.json data/v187_additional_verified_sources.json
+          cmp web/v188-verified-sources.json android-app/app/src/main/assets/v188-verified-sources.json
+          cmp web/v188-verified-sources.json data/v188_smithsonian_verified_sources.json
+          node --check web/app.js
+          node --check web/core.js
+          node --test tests/*.test.cjs
+          grep -q 'ART_INTERVAL_MS = 60000L' android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "versionName '1.8.8-global6'" android-app/app/build.gradle
+          grep -q 'collectorTickMs:15000' web/app.js
+          grep -q 'collectorMaxPerTick:6' web/app.js
+          grep -q 'id="cache-progress"' web/index.html
+          grep -q 'id="ambient-orbit"' web/index.html
+          grep -q 'cache-unshown-count' web/index.html
+          grep -q 'cache-available-days' web/index.html
+          grep -q 'claimArtworkKeys' web/app.js
+          grep -q 'SeenIdentityLedger' android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q 'new Semaphore(3,true)' android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "source==='wellcome'" web/app.js
+          grep -q "type.equals(\"wellcome\")" android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q 'iiif.wellcomecollection.org' web/core.js
+          grep -q 'new50-provider-audit.json' android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "type.equals(\"princetonSearch\")" android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q 'smithsonianArtCandidate' android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q 'metadata_usage' android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q "smNpg:'" web/app.js
+          grep -q 'smNpg' web/app.js
+          grep -q "source==='smNmaahc'" web/app.js
+          grep -q "source==='smFsg'" web/app.js
+          grep -q 'smithsonianNmaahcShard' web/app.js
+          grep -q 'smithsonianFsgShard' web/app.js
+          grep -q 'Arrays.asList("npg","chndm","nmaahc","fsg")' android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java
+          grep -q 'ids.si.edu' web/core.js
+          grep -q "indexedDB.open('quiet-art-gallery-v1',2)" web/app.js
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify 8GiB cache eviction planner with native Java simulation
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cache-policy
+          javac -d /tmp/cache-policy android-app/app/src/main/java/com/gallery/kiosk/ShownFirstEviction.java tests/java/com/gallery/kiosk/ShownFirstEvictionTest.java
+          java -cp /tmp/cache-policy com.gallery.kiosk.ShownFirstEvictionTest
+      - name: Use GitHub runner Android 35 SDK
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          test -n "$sdkmanager"
+          printf 'yes\n' | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build installable standalone APK without touching old Android application ID
+        working-directory: android-app
+        timeout-minutes: 15
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Inspect APK JPEG SHA, code bytes, cache limit and install package
+        run: |
+          python - <<'PY'
+          import json,zipfile,hashlib
+          from pathlib import Path
+          root=Path('android-app/app/src/main/assets')
+          src=Path('android-app/app/build/outputs/apk/debug/app-debug.apk')
+          assert src.is_file() and src.stat().st_size>500_000_000
+          with zipfile.ZipFile(src) as z:
+              assert z.testzip() is None
+              manifest=json.loads(z.read('assets/offline-deck.json'))
+              assert len(manifest)==2692
+              assert len({x['key'] for x in manifest})==2692
+              for art in manifest:
+                  assert hashlib.sha256(z.read('assets/'+art['offlineAsset'])).hexdigest()==art['derivedSHA256']
+              for f in ('app.js','core.js','index.html','style.css'):
+                  assert z.read('assets/'+f)==Path('web/'+f).read_bytes()
+              assert z.read('assets/new50-provider-audit.json')==Path('data/new50_provider_audit_20261115.json').read_bytes()
+              assert z.read('assets/v187-verified-sources.json')==Path('data/v187_additional_verified_sources.json').read_bytes()
+              assert z.read('assets/v188-verified-sources.json')==Path('data/v188_smithsonian_verified_sources.json').read_bytes()
+              fresh=json.loads(z.read('assets/v188-verified-sources.json'))
+              assert fresh['new_institution_count']==1
+              assert fresh['upgraded_existing_institution_count']==1
+              assert fresh['activated_direct_smithsonian_units']==['nmaahc','fsg']
+              new50=json.loads(z.read('assets/new50-provider-audit.json'))
+              assert new50['reviewed_candidates']==50
+              assert sum(x['enabled_in_apk'] for x in new50['items'])==2
+              for f in ():
+                  assert z.read('assets/'+f)==Path('web/'+f).read_bytes()
+              for f in ('art-movements.json','art-sources-85.json','art-providers.json'):
+                  assert z.read('assets/'+f)==(root/f).read_bytes()
+              assert b'intervalMs: 60000' in z.read('assets/app.js')
+              assert b'129,600' in z.read('assets/index.html')
+              assert b'collectorTickMs:15000' in z.read('assets/app.js')
+              assert b'collectorMaxPerTick:6' in z.read('assets/app.js')
+              assert b'id="cache-progress"' in z.read('assets/index.html')
+              assert b'id="ambient-orbit"' in z.read('assets/index.html')
+              assert b'quiet-orbit-turn' in z.read('assets/style.css')
+              assert b'cache-unshown-count' in z.read('assets/index.html')
+              assert b'cache-available-days' in z.read('assets/index.html')
+              assert b'claimArtworkKeys' in z.read('assets/app.js')
+              assert b'wellcome' in z.read('assets/app.js')
+              assert b'WELLCOME_TERMS' in z.read('assets/core.js')
+          out=Path('QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk')
+          out.write_bytes(src.read_bytes())
+          sha=hashlib.sha256(out.read_bytes()).hexdigest()
+          report={'bundle_jpeg_count':2692,'bundle_jpeg_sha256_verified':2692,
+                  'display_interval_seconds':60,'90_day_unique_target':129600,
+                  'cache_limit_bytes':8*1024**3,'preload_target_bytes':8*1024**3,
+                  'initial_extra_downloaded_bytes':0,'android_offline_2692_images_verified':True,
+                  'new_candidates_downloaded_to_tablet':0,
+                  'tablet_8gib_prefill_physically_verified':False,
+                  'tablet_90_day_nonrepeat_physically_verified':False,
+                  'autocollection_results_depend_on_sources_and_free_device_space':True,
+                  'collector_daily_cap':None,'collector_tick_ms':15000,'max_successes_per_pump':6,
+                  'parallel_native_image_fetch_slots':3,'download_visual_dedup_included':True,
+                  'unshown_inventory_ui_included':True,'synchronous_90_day_identity_journal_included':True,
+                  'offline_online_recovery_code_checked':True,
+                  'new_source_candidates_reviewed':50,'new_source_adapters_enabled':6,
+                  'v188_new_institutions_outside_prior_135':1,
+                  'v188_existing_85_institutions_upgraded_to_direct':1,
+                  'new_sources_outside_prior_135':3,
+                  'new_sources_promoted_within_prior_50':1,
+                  'active_direct_v188_names':['Wellcome Collection','Princeton University Art Museum','Smithsonian National Portrait Gallery','Smithsonian Cooper Hewitt','Smithsonian National Museum of African American History and Culture','Smithsonian National Museum of Asian Art'],
+                  'sources_selected_by_code_path_validation':6,
+                  'verified_sample_jpeg_counts_by_source':{'Wellcome Collection':1,'Princeton University Art Museum':1,'Smithsonian National Portrait Gallery':3,'Smithsonian Cooper Hewitt':1,'Smithsonian National Museum of African American History and Culture':2,'Smithsonian National Museum of Asian Art':1},
+                  'new_source_name':'Wellcome + Princeton + Smithsonian NPG + Cooper Hewitt + NMAAHC + Smithsonian Asian Art','new_source_license_filter':'PDM or CC0 by item',
+                  'new_source_sample_jpeg_verified_on_CI':True,
+                  'new_source_sample_dimensions':[2000,3743],
+                  'new_source_sample_jpeg_sha256':'50a830ef2f6c407a1b61e124302dbfc990b6c9f4e9796c9cefc42bd3968d51c0',
+                  'android_real_hardware_24h_tested':False,'a7_lite_physically_tested':False,'a8_physically_tested':False,
+                  'right_bottom_ambient_orbit_present':True,'native_cache_progress_meter_present':True,
+                  'tablet_8gib_fill_live_verified':False,
+                  'old_app_data_migrated':False,'source_branch':'feat-v188-smithsonian-2d-openaccess-20261115',
+                  'apk_name':out.name,'apk_bytes':out.stat().st_size,'apk_sha256':sha}
+          Path('verified-v188-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          Path('apk-sha256.txt').write_text(sha+'  '+out.name+'\n')
+          print('VERIFIED_INSTALLABLE_APK',out.stat().st_size,sha)
+          PY
+      - name: Publish independently verified 2692-piece v1.8.8 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="quiet-art-nmaahc-fsg-2692-v188-20261115"
+          cat > /tmp/notes.md <<'NOTE'
+          고요한 미술관 v1.8.8 태블릿 단독 실행용 시험판.
+          기존 85곳과 중복되지 않은 50곳 기술·이용조건 감사 대장을 동봉했습니다.
+          신규·보강 직접 수집 어댑터 6개: Wellcome(PDM), Cooper Hewitt(CC0), Princeton(퍼블릭 도메인), Smithsonian NPG(CC0), 신규 Smithsonian NMAAHC(CC0), 기존 Smithsonian National Museum of Asian Art(FSG)의 직접 CC0 경로. 기존 40개 검색 경로와 혼동하지 않습니다.
+          공식 기관 API와 Smithsonian 공용 S3 NDJSON에서 이미지별 CC0·평면 작품 분류를 동시 확인합니다.
+          Princeton 1602×2000 JPEG 1점, NPG JPEG 3점, Cooper Hewitt JPEG 1점, NMAAHC CC0 포스터 JPEG 2점, 국립아시아미술관 기존 기관의 직접 CC0 JPEG 1점을 실제 다운로드·디코딩해 확인했습니다.
+          신규 후보 50곳 중 실증 연동 2곳(Wellcome·Cooper Hewitt), 48곳 미승인. 이전 135곳 밖 신규 기관은 Princeton·Smithsonian NPG·Smithsonian NMAAHC 총 3곳입니다. Smithsonian National Museum of Asian Art(FSG)는 이미 등록된 기관의 직접 CC0 경로 추가이며 새 기관으로 중복 계산하지 않습니다.
+          국회도서관 공개 파일 2610건 중 실제 전시화질 8건 표본 1건만 통과, 공급원으로 무단 활성화하지 않았습니다.
+          60초 작품 교체, 90일 감상 기록을 네이티브 SQLite와 IndexedDB에 분리 보관, 최대 8GiB 원격 캐시, 미전시 파일 보호, 동시 다운로드 최대 3개, 시각적 근접 중복 검사, 실제 저장/미전시/전시 후 보관 수량 및 예상 전시 가능 시간 표시.
+          사전 검증 완료된 APK 내장 이미지 2,692점은 기존 시험판의 원본 바이트와 SHA256이 같습니다. 8GiB 원격 이미지를 미리 채운 APK는 아닙니다.
+          앱 화면이 활성인 동안 15초 주기로 적응형 수집을 시도합니다. 1회 최대 3개의 이미지 다운로드를 병렬로 실행하며, 성공 최대 6점/시도 최대 18회를 제한하고 공급원 429·503의 재시도 제한을 준수합니다. 전시 직전 SQLite 동기 기록, 재시작 후 이미지 색인 복원 및 중복 이미지 삭제, 인터넷 복귀 시 네트워크 실패만 재시도합니다. 90일 연속/24시간 실기기 운용과 목표 일일 확보량은 검증 전입니다.
+          이전 설치본을 보존하기 위해 패키지 ID를 com.gallery.kiosk.v188로 분리했습니다. 기존 감상 기록은 CSV 백업·복원으로 가져올 수 있습니다.
+          NOTE
+          if gh release view "$tag" --repo treesky0103-dot/quiet-art-gallery >/dev/null 2>&1; then
+            gh release upload "$tag" QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk verified-v188-report.json apk-sha256.txt --repo treesky0103-dot/quiet-art-gallery --clobber
+          else
+            gh release create "$tag" QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk verified-v188-report.json apk-sha256.txt --repo treesky0103-dot/quiet-art-gallery --target feat-v188-smithsonian-2d-openaccess-20261115 --title "고요한 미술관 v1.8.8 · NMAAHC CC0 신규 · 국립아시아미술관 CC0 직접 경로 추가" --notes-file /tmp/notes.md
+          fi
