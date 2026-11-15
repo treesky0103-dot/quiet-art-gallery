@@ -1,0 +1,14 @@
+name: Inspect Princeton live 2D image rights fields
+on:
+  push:
+    branches: [feat-v187-verified-new-global-sources-20261115]
+    paths: ['tools/inspect_princeton_rights.py','.github/workflows/inspect-princeton-rights.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/inspect_princeton_rights.py
