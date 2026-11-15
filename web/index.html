@@ -33,7 +33,7 @@
 <footer id="caption" class="caption" aria-live="polite"><div id="art-title"></div><div id="art-meta"></div></footer>
 <div id="settings-backdrop" class="backdrop" hidden></div>
 <section id="settings" class="settings" aria-label="전시 설정" aria-modal="true" role="dialog" hidden>
-  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.8.7</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
+  <div class="sheet-header"><div><div class="eyebrow">AUTOMATIC ART GALLERY</div><h1>전시 관리 · v1.8.8</h1></div><button id="close-settings" aria-label="닫기">×</button></div>
   <section class="cache-dashboard" aria-label="태블릿 이미지 저장 현황">
     <div class="cache-dashboard-header">
       <div class="cache-dashboard-eyebrow">LIVE STORAGE</div>
@@ -67,7 +67,7 @@
   <div class="rule"><span>이미지 캐시·사전 확보 최대</span><strong>태블릿 단독 Wi-Fi 자동 다운로드로 8GiB까지 사전 확보를 시도합니다(완료 보장 아님). 8GiB 도달 시 실제 전시한 작품부터 약 1GiB 단위로 정리하여 7GiB 수준 복귀 · 현재 전시·미전시 이미지 보호 · 기기 여유 공간 1.5GiB 보호</strong></div>
   <div class="rule"><span>사조·화파 검색 분류</span><strong>397개 항목 등록 · 해당 작품 확보량과 별개</strong></div>
   <div class="rule"><span>85개 공급원 연결 방식</span><strong>공식 미술관 API 3곳 + Commons 경유 미술관 37곳 + 외부 사이트 공식 링크 45곳(자동 수집 아님)</strong></div>
-  <div class="rule"><span>신규 50곳 검토</span><strong>Wellcome·Cooper Hewitt 2곳 연동 · 추가 발견 Princeton·NPG 2곳 연동</strong></div>
+  <div class="rule"><span>신규 50곳 검토</span><strong>기존 50곳 중 2곳 연동 · 별도 발견 Princeton·NPG·NMAAHC 3곳 · 기존 국립아시아미술관 직접 수집 보강</strong></div>
   <div class="rule"><span>상시 수집 상태</span><strong id="collector-status">준비 중</strong></div>
   <div class="rule"><span>전시한 작품</span><strong id="seen-count">0점</strong></div>
   <div class="rule"><span>현재 방향 비율</span><strong id="ratio-count">–</strong></div>
@@ -85,7 +85,8 @@
     <button class="wide-btn" id="show-movements">전 세계 예술사조·화파 397개 보기</button>
     <button class="wide-btn" id="show-providers">기존 85개 공급원 연결 상태 보기</button>
     <button class="wide-btn" id="show-new50">신규 50곳 연동 현황 및 보류 사유</button>
-    <button class="wide-btn" id="show-v187">추가 실측 공급원·이미지 검증 결과 보기</button>
+    <button class="wide-btn" id="show-v187">v1.8.7 신규 공급원 실물 검사 보기</button>
+    <button class="wide-btn" id="show-v188">v1.8.8 CC0 추가 공급원·실제 파일 검증 보기</button>
     <button class="wide-btn" id="free-space">이미지 캐시 비우기</button>
     <button class="wide-btn" id="export-history">감상 기록 백업</button>
     <button class="wide-btn" id="import-history">감상 기록 복원</button>
@@ -94,6 +95,7 @@
   <div class="rule"><span>작품 수 조사</span><strong>표본·미확정</strong></div>
   <p id="audit-summary" class="small-note" style="white-space:pre-wrap;max-height:36vh;overflow:auto">조사 전 · 전체 수 미확인</p>
   <pre id="catalog-result" hidden style="white-space:pre-wrap;overflow:auto;max-height:42vh;border:1px solid #554c43;border-radius:8px;padding:12px;font-size:12px;text-align:left"></pre>
+  <pre id="v188-audit-panel" hidden style="white-space:pre-wrap;overflow:auto;max-height:36vh;border:1px solid #554c43;border-radius:8px;padding:12px;font-size:12px;text-align:left"></pre>
   <pre id="v187-audit-panel" hidden style="white-space:pre-wrap;overflow:auto;max-height:36vh;border:1px solid #554c43;border-radius:8px;padding:12px;font-size:12px;text-align:left"></pre>
   <pre id="new50-audit-panel" hidden style="white-space:pre-wrap;overflow:auto;max-height:46vh;border:1px solid #554c43;border-radius:8px;padding:12px;font-size:12px;text-align:left"></pre>
   <div id="source-catalog-links" hidden style="max-height:42vh;overflow-y:auto;border:1px solid #554c43;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;text-align:left"></div>
