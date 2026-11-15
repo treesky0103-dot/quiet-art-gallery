@@ -1,0 +1,58 @@
+name: Android 11 emulator installation smoke test of published v188 APK
+on:
+  push:
+    branches: [audit-v188-postrelease-install-20261115]
+    paths: ['.github/workflows/smoke-v188-android11-emulator.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 29
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download quiet-art-nmaahc-fsg-2692-v188-20261115 \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --pattern QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk \
+            --pattern apk-sha256.txt
+          sha256sum -c apk-sha256.txt
+      - name: Boot Android 11 / API 30 emulator, install and launch exactly published APK
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          ram-size: 2048M
+          heap-size: 512M
+          disk-size: 8G
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            echo "ANDROID_VERSION $(adb shell getprop ro.build.version.release)"
+            adb install -r -g QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk
+            adb shell pm path com.gallery.kiosk.v188
+            adb logcat -c
+            adb shell am start -W -n com.gallery.kiosk.v188/com.gallery.kiosk.MainActivity
+            sleep 35
+            adb shell pidof com.gallery.kiosk.v188
+            adb shell dumpsys activity activities | grep -E 'com.gallery.kiosk.v188|com.gallery.kiosk.MainActivity' | head -n 12
+            adb exec-out screencap -p > /tmp/v188_screen.png
+            python3 - <<'PY'
+            import struct
+            path='/tmp/v188_screen.png'
+            with open(path,'rb') as f: header=f.read(24)
+            assert header.startswith(b'\x89PNG\r\n\x1a\n')
+            w,h=struct.unpack('>II',header[16:24])
+            assert w>=720 and h>=1100,(w,h)
+            print("ANDROID_11_LAUNCH_SCREENSHOT_CAPTURED",w,h,flush=True)
+            PY
+            if adb logcat -d -b crash | grep -E 'FATAL EXCEPTION|com.gallery.kiosk.v188'; then
+              echo "CRASH_BUFFER_NOT_EMPTY"; exit 1
+            fi
+            echo "ANDROID_11_EMULATOR_STARTUP_PASS"
