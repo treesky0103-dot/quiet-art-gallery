@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "audited_at_kst": "2026-11-15",
+  "based_on_v187_release": "quiet-art-princeton-smithsonian-2692-v187-20261115",
+  "new_institution_count": 1,
+  "upgraded_existing_institution_count": 1,
+  "activated_direct_smithsonian_units": [
+    "nmaahc",
+    "fsg"
+  ],
+  "conditions": "Accept solely public Smithsonian S3 records where metadata_usage.access=CC0 and individual media.usage.access=CC0, flat 2D object type, high-res JPEG >=1000x1400 and >=75% tablet portrait fill, images directly from ids.si.edu, 8MiB maximum, existing 8GiB cache and 90-day seen embargo retained.",
+  "sources": [
+    {
+      "name": "Smithsonian National Museum of African American History and Culture",
+      "code": "nmaahc",
+      "source_kind": "new institution outside earlier 135",
+      "status": "connected_in_code; physical device not verified",
+      "samples": [
+        {
+          "title": "Poster of Josephine Baker (scan 1)",
+          "width": 1595,
+          "height": 2000,
+          "bytes": 301433,
+          "sha256": "e39f59095a50e64eeb2c45bc06984c28cc92df9f7e52d5d62238e7699a136b93"
+        },
+        {
+          "title": "Poster of Josephine Baker (scan 2)",
+          "width": 1583,
+          "height": 2000,
+          "bytes": 71346,
+          "sha256": "97959c753d7bb0c87450027ac1d075c9bd20f07f43cdc03d94fd382614f1d0e3"
+        }
+      ],
+      "warnings": [
+        "Two scanned images may represent the same original poster; full visual/dedup policy remains mandatory",
+        "Only a limited number of S3 shard samples were examined"
+      ]
+    },
+    {
+      "name": "Smithsonian National Museum of Asian Art (Freer Gallery and Sackler)",
+      "code": "fsg",
+      "source_kind": "existing 85 source upgraded from Commons to direct CC0 S3; not a new institution",
+      "status": "connected_in_code; physical device not verified",
+      "samples": [
+        {
+          "title": "James McNeill Whistler, Harmony in Green and Rose: The Music Room",
+          "width": 1622,
+          "height": 2000,
+          "bytes": 631717,
+          "sha256": "583b6797098083cc1e93269259df25c7b0641896aabf51ec8bff0144cb3e769d"
+        }
+      ],
+      "rejected_samples": [
+        {
+          "title": "Two magpies under an orchid cliff",
+          "width": 872,
+          "height": 1999,
+          "reason": "minimum 1000px short side not met"
+        }
+      ]
+    }
+  ],
+  "deferred": [
+    {
+      "name": "Smithsonian National Museum of American History (NMAH)",
+      "reason": "5.24MB prefix of shard: 2,995 records, only one CC0 portrait JPEG; existing 7MB per-shard bound and low yield need better streaming before approval"
+    },
+    {
+      "name": "Smithsonian Archives of American Art (AAA)",
+      "reason": "5.24MB sample of 1466 records yielded no usable CC0 image candidate; high cost"
+    },
+    {
+      "name": "Smithsonian National Museum of the American Indian",
+      "reason": "four sampled shards contain 2D type candidates but none with both media CC0 and sufficient portrait dimensions"
+    },
+    {
+      "name": "Smithsonian National Museum of African Art",
+      "reason": "sampled official metadata shards empty"
+    },
+    {
+      "name": "Smithsonian Hirshhorn, Anacostia, Archives of Photography and Air-Space Museum",
+      "reason": "no qualifying 2D open CC0 art JPEG sample in audited S3 shards"
+    }
+  ],
+  "caveat": "Sample-image successful tests demonstrate technical feasibility, not multi-day availability, total new image inventory, daily yield, real A8/A7 performance, or guarantee of 90-day uninterrupted display."
+}
