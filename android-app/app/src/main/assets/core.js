@@ -50,6 +50,8 @@
       // Only fixed IIIF PDM image derivatives, never an arbitrary image URL.
       if(h==='iiif.wellcomecollection.org')
         return /^\/image\/[a-z0-9_-]{3,28}\/full\/2000,\/0\/default\.jpg$/i.test(u.pathname) && !u.search && !u.hash;
+      if(h==='media.artmuseum.princeton.edu')
+        return /^\/iiif\/3\/collection\/[a-z0-9_-]{2,72}\/full\/2000,\/0\/default\.jpg$/i.test(u.pathname) && !u.search && !u.hash;
       return h === 'upload.wikimedia.org' || h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
     } catch (_) { return false; }
   }
@@ -609,6 +611,40 @@
       institution:'Wellcome Collection'
     };
   }
+
+  // Princeton University Art Museum publishes public-domain high-resolution
+  // artworks. Be more conservative than "has an image": no restrictions,
+  // no copyrighted creditline, older work and deceased maker (or pre-1880 work).
+  const PRINCETON_TERMS=Object.freeze(['drawing','watercolor','woodcut','etching','lithograph','oil painting','pastel','engraving','printmaking','landscape']);
+  function normalizePrinceton(item){
+    if(!item||!Number.isInteger(Number(item.objectid)))return null;
+    const classification=string(item.classification);
+    if(!/\b(?:drawings?|paintings?|prints?|watercolors?|engravings?|etchings?|lithographs?)\b/i.test(classification))return null;
+    const years=Number(item.dateend);
+    if(!Number.isInteger(years)||years<1000||years>1930)return null;
+    const makers=Array.isArray(item.makers)?item.makers:[];
+    const makerDeath=makers.map(x=>Number(x.dateend)).filter(x=>Number.isInteger(x)&&x>1300).sort((a,b)=>b-a)[0]||0;
+    if(!(makerDeath>0&&makerDeath<=1955)&&years>1880)return null;
+    if(item.restrictions!==null&&item.restrictions!==undefined&&item.restrictions!=='')return null;
+    if(!/^(?:false|0)$/i.test(String(item.nowebuse)))return null;
+    if(string(item.creditlinerepro).trim()!=='')return null;
+    const media=Array.isArray(item.media)?item.media:[];
+    const primary=media.find(m=>Number(m.isprimary)===1&&Number(m.mediatypeid)===1&&
+      (m.restrictions===null||m.restrictions===undefined||m.restrictions===''));
+    const base=string(primary&&primary.uri);
+    if(!/^https:\/\/media\.artmuseum\.princeton\.edu\/iiif\/3\/collection\/[a-z0-9_-]{2,72}$/i.test(base))return null;
+    const image=base+'/full/2000,/0/default.jpg';
+    if(!safeURL(image))return null;
+    return {
+      key:'princeton:'+Number(item.objectid),source:'Princeton University Art Museum',
+      title:string(item.displaytitle)||'제목 미상',artist:string(item.displaymaker)||'작가 미상',
+      image,width:0,height:0,type:classification,classification,
+      medium:string(item.medium),description:'',license:'Public domain (curator free-download and age restrictions)',
+      rightsOK:true,style:'',styles:[],date:string(item.displaydate),
+      yearStart:Number(item.datebegin)||null,yearEnd:years,
+      page:'https://artmuseum.princeton.edu/art/collections/objects/'+Number(item.objectid)
+    };
+  }
   function normalizeCleveland(item) {
     // CMA web rendition is only 900 px: use the CC0 print (3400 px) image when available.
     const img = item && item.images && (item.images.print || item.images.web);
@@ -772,7 +808,7 @@
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
   }
   return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, MIN_ACCEPTABLE_SHORT_SIDE, MIN_ACCEPTABLE_LONG_SIDE, highResolution, acceptableResolution, qualityTier, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
-    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, WELLCOME_TERMS, normalizeWellcome, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, SMITHSONIAN_MUSEUMS, normalizeSmithsonianCommons, commonsPublicDomain,
+    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, WELLCOME_TERMS, normalizeWellcome, PRINCETON_TERMS, normalizePrinceton, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, SMITHSONIAN_MUSEUMS, normalizeSmithsonianCommons, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
     artworkEra,targetPost1800,eraQuota90Days,MODERN_THRESHOLD_YEAR,
