@@ -8,12 +8,19 @@ from concurrent.futures import ThreadPoolExecutor,as_completed
 ENDPOINTS={
  "loc":"https://www.loc.gov/photos/?fo=json&c=2&sp=1",
  "loc_print":"https://www.loc.gov/pictures/?fo=json",
- "wellcome":"https://api.wellcomecollection.org/catalogue/v2/images?query=painting&pageSize=2",
+ "loc_poster":"https://www.loc.gov/posters/?fo=json&c=2&sp=1",
+ "loc_free":"https://www.loc.gov/free-to-use/?fo=json&c=2&sp=1",
+ "wellcome":"https://api.wellcomecollection.org/catalogue/v2/images?query=illustration&locations.license=cc0,pdm&pageSize=3",
+ "wellcome_pdm":"https://api.wellcomecollection.org/catalogue/v2/images?locations.license=pdm&pageSize=2",
+ "wellcome_cc0":"https://api.wellcomecollection.org/catalogue/v2/images?locations.license=cc0&pageSize=2",
  "finna":"https://api.finna.fi/v1/search?lookfor=painting&limit=2&field%5B%5D=id&field%5B%5D=title&field%5B%5D=images&field%5B%5D=onlineUrls&field%5B%5D=usageRights&field%5B%5D=year&field%5B%5D=nonPresenterAuthors",
  "digitalcommonwealth":"https://www.digitalcommonwealth.org/search.json?q=painting&per_page=2",
+ "digitalcommonwealth_item":"https://www.digitalcommonwealth.org/search/commonwealth:abcd12345.json",
  "digitalnz":"https://api.digitalnz.org/records/v3.json?text=painting&per_page=2",
+ "digitalnz2":"https://api.digitalnz.org/v3/records.json?text=painting&per_page=2",
  "internetarchive":"https://archive.org/advancedsearch.php?q=mediatype%3Aimage+AND+licenseurl%3A%28%22creativecommons.org%2Fpublicdomain%22%29&fl%5B%5D=identifier&rows=2&page=1&output=json",
  "vam":"https://api.vam.ac.uk/v2/objects/search?q=watercolour&page_size=2",
+ "vam2":"https://api.vam.ac.uk/v2/objects/search?q=painting&page_size=2",
  "sciencemuseum":"https://collection.sciencemuseumgroup.org.uk/search/objects?q=poster&format=json",
  "cooperhewitt":"https://api.cooperhewitt.org/?query=%7B%20__typename%20%7D",
  "gallica":"https://gallica.bnf.fr/SRU?version=1.2&operation=searchRetrieve&query=dc.title%3Dpaint&maximumRecords=2",
@@ -39,7 +46,7 @@ def probe(name,url):
       if v:out["sample_"+k+"_keys"]=list(v[0])[:35] if isinstance(v[0],dict) else str(type(v[0]))
       if v and isinstance(v[0],dict):
        sample=v[0]
-       out["sample_subset"]={k:str(sample.get(k))[:180] for k in ("id","title","image","image_url","image_url_full","image_url_s","images","thumbnail","locations","rights","rights_advisory","license","date","created","creators","imageURL","imageId") if k in sample}
+       out["sample_subset"]={k:str(sample.get(k))[:650] for k in ("id","title","image","image_url","image_url_full","image_url_s","images","thumbnail","locations","source","rights","rights_advisory","license","date","created","creators","imageURL","imageId","attributes","links","_images","_primaryImageId","_primaryTitle","_primaryMaker") if k in sample}
      elif isinstance(v,dict):
       out[k+"_keys"]=list(v)[:20]
       if k=="data":
@@ -49,7 +56,7 @@ def probe(name,url):
   return out
  except Exception as e:
   return {"source":name,"error":str(e)[:220],"elapsed_s":round(time.monotonic()-t,1)}
-with ThreadPoolExecutor(max_workers=4) as ex:
+with ThreadPoolExecutor(max_workers=5) as ex:
  tasks={ex.submit(probe,n,u):n for n,u in ENDPOINTS.items()}
  results={f.result()["source"]:f.result() for f in as_completed(tasks)}
 for k in ENDPOINTS:
