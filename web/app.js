@@ -17,15 +17,15 @@
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
     recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
-    cursors:{cleveland:{Painting:0,Drawing:0,Print:0,Photograph:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{},movement:{}},
-    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,
+    cursors:{cleveland:{Painting:0,Drawing:0,Print:0,Photograph:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{},movement:{},wellcome:{}},
+    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,wellcomeIndex:0,
     modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,mediaCategoryIndex:0,movementTermIndex:0,movementQueries:[],modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),collectorWindowStarted:0,collectorWindowSaved:0,collectorDayKey:'',collectorDaySaved:0,collectorLastIndexAt:0,collectorRetry:{},collectorThrottled:0,
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
-    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0,media:0,movement:0},backoff:{},
+    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0,media:0,movement:0,wellcome:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어',media:'사진·일러스트·애니메이션 스틸(공개 아카이브)',movement:'전 세계 사조·화파 (검증된 정지 이미지)'};
+  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어',media:'사진·일러스트·애니메이션 스틸(공개 아카이브)',movement:'전 세계 사조·화파 (검증된 정지 이미지)',wellcome:'웰컴 컬렉션(PDM 직접 API)'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -229,6 +229,7 @@
     if(kind==='cleveland')return (Array.isArray(result.data)?result.data:[]).map(C.normalizeCleveland);
     if(kind==='chicago')return (Array.isArray(result.data)?result.data:[]).map(x=>C.normalizeChicago(x, result.config && result.config.iiif_url || 'https://www.artic.edu/iiif/2'));
     if(kind==='openverseModern')return C.normalizeModernOpenverse(result);
+    if(kind==='wellcome')return (Array.isArray(result.results)?result.results:[]).map(C.normalizeWellcome).filter(Boolean);
     return [];
   }
   let requestNum=0;
@@ -336,6 +337,16 @@
         iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',format:'json',
         formatversion:'2',origin:'*'});
       url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
+    }else if(kind==='wellcome'){
+      const parts=String(param).split(':');
+      const ix=Number(parts[0]),page=Number(parts[1]);
+      if(parts.length!==2||!Number.isInteger(ix)||ix<0||ix>=C.WELLCOME_TERMS.length||
+         !Number.isInteger(page)||page<1||page>250)
+        throw Error('Wellcome 공개 이미지 검색 인자 오류');
+      const qs=new URLSearchParams({query:C.WELLCOME_TERMS[ix],
+        'locations.license':'pdm','include':'source.genres,source.contributors',
+        page:String(page),pageSize:'50'});
+      url='https://api.wellcomecollection.org/catalogue/v2/images?'+qs.toString();
     }else if(kind==='openverseModern'){
       const [termIndexText,pageText]=String(param).split(':');
       const termIndex=Number(termIndexText),page=Number(pageText);
@@ -458,6 +469,14 @@
           state.modernFetched+=items.length;
           state.cursors.openverseModern[idx]=(Array.isArray(res.results)&&res.results.length===20&&page<4)?page+1:1;
         }
+      }else if(source==='wellcome'){
+        const index=state.wellcomeIndex++%C.WELLCOME_TERMS.length;
+        const page=Number(state.cursors.wellcome&&state.cursors.wellcome[index])||1;
+        const result=await request('wellcome',index+':'+page);
+        const arts=normalizeBatch('wellcome',result);
+        addCandidates(arts);
+        const pages=Math.min(250,Number(result.totalPages)||1);
+        state.cursors.wellcome[index]=(page>=pages||!Array.isArray(result.results)||!result.results.length)?1:page+1;
       }else if(source==='met'){
         const departments=['11','9','21','6'];const m=departments[(state.metType++)%3];
         if(!state.metIDs.length||state.metIndex>=state.metIDs.length){
@@ -532,7 +551,7 @@
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<14){
         // Give year-dated museum APIs greater weight than undated Commons filenames.
-        const sources=['movement','media','cleveland','chicago','media','met','cleveland','global','chicago','asian','media','african','additional','movement','global','additional','smithsonian','modern'];
+        const sources=['movement','media','cleveland','wellcome','chicago','media','met','cleveland','global','chicago','wellcome','asian','media','african','additional','movement','global','additional','smithsonian','modern'];
         const source=sources[state.sourceOrder++%sources.length];
         attempts++;
         progress+=await fetchSource(source);
@@ -1487,6 +1506,7 @@
       state.cursors.openverseModern=state.cursors.openverseModern||{};
       state.cursors.media=state.cursors.media||{};
       state.cursors.movement=state.cursors.movement||{};
+      state.cursors.wellcome=state.cursors.wellcome||{};
       state.cursors.global=state.cursors.global||{};
       const gIndex=await dbGet('settings','globalCategoryIndex');
       state.globalCategoryIndex=Number.isInteger(gIndex&&gIndex.value)?Math.max(0,gIndex.value):0;
