@@ -1,0 +1,16 @@
+name: Audit actual LOC free-use two-dimensional artwork inventory
+on:
+  push:
+    branches: [feat-v187-verified-new-global-sources-20261115]
+    paths: ['tools/audit_loc_full_art_categories.py','.github/workflows/audit-loc-art-classes.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python tools/audit_loc_full_art_categories.py
