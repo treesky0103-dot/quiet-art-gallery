@@ -1,0 +1,22 @@
+name: Probe new 50 art sources official metadata endpoints
+on:
+  push:
+    branches:
+      - feat-new50-v186-verified-apis-20261115
+    paths:
+      - 'tools/probe_new_50_source_endpoints.py'
+      - '.github/workflows/probe-new50-sources.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Probe official JSON metadata endpoints, bounded one GET per source
+        run: python tools/probe_new_50_source_endpoints.py
