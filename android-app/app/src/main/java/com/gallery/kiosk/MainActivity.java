@@ -175,7 +175,7 @@ public final class MainActivity extends Activity {
                 }
                 String assetPath = (path == null || path.equals("/")) ? "index.html" : path.substring(1);
                 boolean offlineImage=assetPath.matches("(?:offline/fallback-(?:[0-9]|1[0-5])|offline/pack-[0-9]{4})\\.jpg");
-                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json", "art-movements.json", "art-providers.json", "art-sources-85.json", "new50-provider-audit.json", "v187-verified-sources.json").contains(assetPath))
+                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json", "art-movements.json", "art-providers.json", "art-sources-85.json", "new50-provider-audit.json", "v187-verified-sources.json", "v188-verified-sources.json").contains(assetPath))
                     return response(404, "text/plain", new byte[0]);
                 try {
                     InputStream in = getAssets().open(assetPath);
@@ -382,7 +382,7 @@ public final class MainActivity extends Activity {
 
     private static String smithsonianShard(String arg) throws Exception {
         String[] parts=arg.split(":",-1);
-        if(parts.length!=2||!Arrays.asList("npg","chndm").contains(parts[0]))
+        if(parts.length!=2||!Arrays.asList("npg","chndm","nmaahc","fsg").contains(parts[0]))
             throw new IOException("Smithsonian new unit not approved");
         int shard=bounded(parts[1],0,255);
         String url="https://smithsonian-open-access.s3-us-west-2.amazonaws.com/metadata/edan/"+
@@ -393,7 +393,7 @@ public final class MainActivity extends Activity {
         conn.setConnectTimeout(10000);conn.setReadTimeout(18000);
         conn.setInstanceFollowRedirects(false);
         conn.setRequestProperty("Accept","text/plain");
-        conn.setRequestProperty("User-Agent","QuietArtGallery/1.8.7 (CC0 public art personal display)");
+        conn.setRequestProperty("User-Agent","QuietArtGallery/1.8.8 (CC0 public art personal display)");
         JSONArray arts=new JSONArray();
         try {
             int status=conn.getResponseCode();
@@ -422,7 +422,7 @@ public final class MainActivity extends Activity {
     }
     /** A CC0 metadata license alone is NOT enough: image-specific CC0 is mandatory. */
     private static JSONObject smithsonianArtCandidate(JSONObject item,String unit) throws Exception {
-        if(!Arrays.asList("npg","chndm").contains(unit)||item==null)return null;
+        if(!Arrays.asList("npg","chndm","nmaahc","fsg").contains(unit)||item==null)return null;
         JSONObject content=item.optJSONObject("content");
         if(content==null)return null;
         JSONObject desc=content.optJSONObject("descriptiveNonRepeating");
@@ -493,7 +493,10 @@ public final class MainActivity extends Activity {
             }
             JSONObject art=new JSONObject();
             art.put("key","smithsonian-"+unit+":"+ids);
-            art.put("source",unit.equals("npg")?"Smithsonian National Portrait Gallery":"Smithsonian Cooper Hewitt");
+            art.put("source",unit.equals("npg")?"Smithsonian National Portrait Gallery":
+                unit.equals("chndm")?"Smithsonian Cooper Hewitt":
+                unit.equals("nmaahc")?"Smithsonian National Museum of African American History and Culture":
+                "Smithsonian National Museum of Asian Art");
             art.put("title",title);
             art.put("artist",maker.isEmpty()?"작가 미상":maker);
             art.put("image",image);
