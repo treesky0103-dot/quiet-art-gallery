@@ -47,6 +47,9 @@
       const h = u.hostname.toLowerCase();
       // Only exact named, APK-embedded artworks may use the pseudo-local host.
       if(h === 'appassets.gallery')return /^\/offline\/pack-[0-9]{4}\.jpg$/.test(u.pathname) && !u.search && !u.hash;
+      // Only fixed IIIF PDM image derivatives, never an arbitrary image URL.
+      if(h==='iiif.wellcomecollection.org')
+        return /^\/image\/[a-z0-9_-]{3,28}\/full\/2000,\/0\/default\.jpg$/i.test(u.pathname) && !u.search && !u.hash;
       return h === 'upload.wikimedia.org' || h === 'images.metmuseum.org' || h === 'www.artic.edu' || h === 'artic.edu' || h === 'openaccess-cdn.clevelandart.org' || h.endsWith('.clevelandart.org');
     } catch (_) { return false; }
   }
@@ -565,6 +568,47 @@
     if (/\b(?:unknown|unverified|copyrighted|restricted)\b/i.test(string(a.license))) return false;
     return true;
   }
+  const WELLCOME_TERMS=Object.freeze(['painting','drawing','watercolour','woodcut','engraving','etching','lithograph','illustration','botanical illustration','print']);
+  function normalizeWellcome(image){
+    if(!image||!image.id||!image.source||!Array.isArray(image.locations))return null;
+    const genre=Array.isArray(image.source.genres)?
+      image.source.genres.map(g=>string(g&&g.label)).filter(Boolean):[];
+    const labels=genre.map(x=>x.toLowerCase());
+    // A broad search hit isn't sufficient evidence that an object is 2D art.
+    const categories=[
+      [/^(paintings?|watercolou?rs?|gouaches?)$/i,'Painting'],
+      [/^(drawings?|illustrations?|illuminations?)$/i,'Drawing'],
+      [/^(prints?|woodcuts?|engravings?|etchings?|lithographs?|screenprints?|linocuts?)$/i,'Print'],
+      [/^(photographs?|photographic prints?)$/i,'Photograph']
+    ];
+    let type='';
+    for(const [rx,label] of categories)
+      if(genre.some(g=>rx.test(g))){type=label;break;}
+    if(!type)return null;
+    const title=string(image.source.title);
+    if(!title||/\b(?:sculpture|statue|3d print|museum interior|gallery installation|frame and mount)\b/i.test(title))return null;
+    const loc=image.locations.find(x=>
+      x&&x.license&&x.license.id==='pdm' &&
+      typeof x.url==='string' &&
+      /^https:\/\/iiif\.wellcomecollection\.org\/image\/[a-z0-9_-]{3,28}\/info\.json$/i.test(x.url)
+    );
+    if(!loc)return null;
+    const link=loc.url.replace(/info\.json$/,'full/2000,/0/default.jpg');
+    if(!safeURL(link))return null;
+    const creators=Array.isArray(image.source.contributors)?image.source.contributors:[];
+    const creator=creators.map(c=>string(c&&c.agent&&c.agent.label)).find(Boolean)||'작가 미상';
+    const workId=string(image.source.id);
+    return {
+      key:'wellcome:'+string(image.id),
+      source:'Wellcome Collection',
+      title,artist:creator,image:link,width:0,height:0,
+      type,medium:genre.join(' | '),classification:type,
+      description:'',license:'PDM',rightsOK:true,
+      style:'',styles:[],date:'',yearStart:null,yearEnd:null,
+      page:workId?'https://wellcomecollection.org/works/'+encodeURIComponent(workId):'',
+      institution:'Wellcome Collection'
+    };
+  }
   function normalizeCleveland(item) {
     // CMA web rendition is only 900 px: use the CC0 print (3400 px) image when available.
     const img = item && item.images && (item.images.print || item.images.web);
@@ -728,7 +772,7 @@
     return v < 1024 * 1024 ? `${(v / 1024).toFixed(0)}KB` : `${(v / (1024 * 1024)).toFixed(1)}MB`;
   }
   return { NINETY_DAYS_MS, MIN_IMAGE_SHORT_SIDE, MIN_IMAGE_LONG_SIDE, MIN_ACCEPTABLE_SHORT_SIDE, MIN_ACCEPTABLE_LONG_SIDE, highResolution, acceptableResolution, qualityTier, metadataResolutionOkay, safeURL, eligibleArt, fingerprint, orientation, targetOrientation,
-    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, SMITHSONIAN_MUSEUMS, normalizeSmithsonianCommons, commonsPublicDomain,
+    kstRenewalDay, canReshow, normalizeCleveland, normalizeChicago, normalizeMet, WELLCOME_TERMS, normalizeWellcome, normalizeAsianCommons, ASIAN_MUSEUMS, normalizeAfricanCommons, AFRICAN_MUSEUMS, normalizeAdditionalCommons, ADDITIONAL_MUSEUMS, SMITHSONIAN_MUSEUMS, normalizeSmithsonianCommons, commonsPublicDomain,
     pickCandidate, prettyBytes, MOVEMENTS, classifyMovement, nextAvailableMovementIndex, tidyLabel,
     MODERN_CATEGORIES,MODERN_OPENVERSE_TERMS,normalizeModernCommons,normalizeModernOpenverse,targetModern,
     artworkEra,targetPost1800,eraQuota90Days,MODERN_THRESHOLD_YEAR,
