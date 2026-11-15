@@ -1,0 +1,17 @@
+name: Probe v187 newly discovered global image APIs
+on:
+  push:
+    branches: [feat-v187-verified-new-global-sources-20261115]
+    paths: ['tools/probe_v187_new_sources.py','.github/workflows/probe-v187-new-sources.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Live bounded probes, no image downloads and no payment/keys
+        run: python tools/probe_v187_new_sources.py
