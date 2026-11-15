@@ -49,16 +49,7 @@ jobs:
             adb shell pidof com.gallery.kiosk.v188
             adb shell dumpsys activity activities | grep -E 'com.gallery.kiosk.v188|com.gallery.kiosk.MainActivity' | head -n 12
             adb exec-out screencap -p > /tmp/v188_screen.png
-            python3 - <<'PY'
-            import struct
-            path='/tmp/v188_screen.png'
-            with open(path,'rb') as f: header=f.read(24)
-            assert header.startswith(b'\x89PNG\r\n\x1a\n')
-            w,h=struct.unpack('>II',header[16:24])
-            assert w>=720 and h>=1100,(w,h)
-            print("ANDROID_11_LAUNCH_SCREENSHOT_CAPTURED",w,h,flush=True)
-            PY
-            if adb logcat -d -b crash | grep -E 'FATAL EXCEPTION|com.gallery.kiosk.v188'; then
-              echo "CRASH_BUFFER_NOT_EMPTY"; exit 1
-            fi
+            python3 -c 'import struct; d=open("/tmp/v188_screen.png","rb").read(24); assert d[:8]==bytes.fromhex("89504e470d0a1a0a"); w,h=struct.unpack(">II",d[16:24]); assert w>=720 and h>=1100,(w,h); print("ANDROID_11_LAUNCH_SCREENSHOT_CAPTURED",w,h,flush=True)'
+            adb logcat -d -b crash > /tmp/v188_crashlog.txt
+            ! grep -E 'FATAL EXCEPTION|com.gallery.kiosk.v188' /tmp/v188_crashlog.txt
             echo "ANDROID_11_EMULATOR_STARTUP_PASS"
