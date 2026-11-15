@@ -1,0 +1,14 @@
+name: Probe new Smithsonian CC0 flat-art museum units
+on:
+  push:
+    branches: [feat-v188-smithsonian-2d-openaccess-20261115]
+    paths: ['tools/probe_v188_smithsonian_units.py','.github/workflows/probe-v188-units.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/probe_v188_smithsonian_units.py
