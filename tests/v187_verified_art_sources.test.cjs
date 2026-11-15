@@ -51,7 +51,7 @@ test('Native fetch protects BOTH metadata and media CC0 and excludes 3D objects'
  assert.match(src,/smithsonianArtCandidate\(new JSONObject\(line\),parts\[0\]\)/);
  assert.match(src,/metadataUsage==null\|\|!"CC0"\.equals\(metadataUsage\.optString\("access"\)\)/);
  assert.match(src,/usage==null\|\|!"CC0"\.equals\(usage\.optString\("access"\)\)/);
- assert.match(src,/Arrays\.asList\("npg","chndm"\)/);
+ assert.match(src,/Arrays\.asList\("npg","chndm","nmaahc","fsg"\)/);
  assert.match(src,/if\(width<1000\|\|height<1400\|\|height<=width\)continue/);
  assert.match(src,/7\*1024\*1024/);
  assert.match(src,/smithsonianShard\(param\)/);
