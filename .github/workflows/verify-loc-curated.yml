@@ -1,0 +1,16 @@
+name: Inspect curated 2610 free-to-use LOC records
+on:
+  push:
+    branches: [feat-v187-verified-new-global-sources-20261115]
+    paths: ['tools/probe_loc_curated.py','.github/workflows/verify-loc-curated.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python tools/probe_loc_curated.py
