@@ -1,49 +1,37 @@
 {
-  "run_utc": "2026-11-15T12:43:49.596192+00:00",
-  "github_run_id": "43715240722",
+  "run_utc": "2026-11-15T19:10:45.021055+00:00",
+  "github_run_id": "43750805595",
   "baseline_requested": 736,
   "baseline_with_independent_hash_records": 675,
   "new_verified_this_run": 80,
-  "increment_verified_unique": 550,
-  "user_baseline_plus_new": 1286,
-  "metadata_source_ok": 4,
+  "increment_verified_unique": 630,
+  "user_baseline_plus_new": 1366,
+  "metadata_source_ok": 2,
   "download_attempts": 80,
-  "proof_files": 4,
+  "proof_files": 3,
   "details": [
     {
-      "source": "cma_older",
-      "cursor": 3100,
-      "candidates": 18,
+      "source": "cma_modern",
+      "cursor": 5400,
+      "candidates": 39,
       "ok": true
     },
     {
-      "source": "cma_older",
-      "cursor": 3200,
-      "candidates": 19,
-      "ok": true
-    },
-    {
-      "source": "cma_older",
-      "cursor": 3300,
-      "candidates": 33,
-      "ok": true
-    },
-    {
-      "source": "cma_older",
-      "cursor": 3400,
-      "candidates": 22,
+      "source": "cma_modern",
+      "cursor": 5500,
+      "candidates": 45,
       "ok": true
     }
   ],
   "rejection_summary": {
-    "validated_but_not_archived": 76
+    "validated_but_not_archived": 77
   },
-  "scan_pages": 4,
-  "elapsed_sec": 50.8,
-  "proof_bytes": 1015531,
+  "scan_pages": 2,
+  "elapsed_sec": 84.3,
+  "proof_bytes": 983143,
   "target_cap": 80,
   "max_output_bytes": 1048576,
-  "verified_only_in_hash_ledger": 76,
+  "verified_only_in_hash_ledger": 77,
   "limitations": [
     "736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
     "Only a small sample of proof JPEGs is uploaded for one day; other accepted images were downloaded and verified on the runner then discarded, preserving SHA/URL metadata only",
