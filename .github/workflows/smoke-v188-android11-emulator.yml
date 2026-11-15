@@ -20,6 +20,11 @@ jobs:
             --pattern QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk \
             --pattern apk-sha256.txt
           sha256sum -c apk-sha256.txt
+      - name: Grant KVM accelerator permissions on ephemeral test runner
+        run: |
+          test -e /dev/kvm
+          sudo chmod a+rw /dev/kvm
+          ls -l /dev/kvm
       - name: Boot Android 11 / API 30 emulator, install and launch exactly published APK
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -30,7 +35,8 @@ jobs:
           ram-size: 2048M
           heap-size: 512M
           disk-size: 8G
-          disable-animations: true
+          disable-animations: false
+          emulator-boot-timeout: 600
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
             set -euo pipefail
