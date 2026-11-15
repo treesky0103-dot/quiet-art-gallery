@@ -4,7 +4,7 @@ on:
     branches:
       - feat-new50-v186-verified-apis-20261115
     paths:
-      - '.github/workflows/build-v186-ci-recovery.yml'
+      - '.github/workflows/build-v186-new50-wellcome-pdm.yml'
       - 'tests/*.test.cjs'
       - 'web/core.js'
       - 'web/app.js'
