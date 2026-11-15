@@ -17,8 +17,9 @@ test('50 new sources are unique and do not pretend 50 automatic connectors',()=>
  assert.equal(audit.items.length,50);
  assert.equal(new Set(audit.items.map(x=>x.name.toLowerCase())).size,50);
  assert.equal(old.entries.length,85);
- assert.equal(audit.items.filter(x=>x.enabled_in_apk).length,1);
- assert.equal(audit.items.find(x=>x.enabled_in_apk).name,'Wellcome Collection');
+ assert.equal(audit.items.filter(x=>x.enabled_in_apk).length,2);
+ assert(audit.items.some(x=>x.name==='Wellcome Collection'&&x.enabled_in_apk));
+ assert(audit.items.some(x=>x.name==='Cooper Hewitt Design Museum'&&x.enabled_in_apk));
  assert.equal(audit.items.filter(x=>x.images_validated_and_stored_on_tablet>0).length,0);
 });
 test('PDM Wellcome paintings produce one verified-format allowlisted IIIF image URL',()=>{
