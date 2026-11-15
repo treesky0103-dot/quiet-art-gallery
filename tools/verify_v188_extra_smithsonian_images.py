@@ -5,6 +5,8 @@ from PIL import Image
 URLS={
  "nmaahc_poster1":"https://ids.si.edu/ids/deliveryService?id=NMAAHC-2016_135_6_001&max=2000",
  "nmaahc_poster2":"https://ids.si.edu/ids/deliveryService?id=NMAAHC-2016_135_6_002&max=2000",
+ "fsg_james_whistler":"https://ids.si.edu/ids/deliveryService?id=FS-7435_26&max=2000",
+ "fsg_japanese_painting":"https://ids.si.edu/ids/deliveryService?id=FS-5907_12&max=2000",
 }
 for label,url in URLS.items():
  try:
@@ -15,8 +17,8 @@ for label,url in URLS.items():
   with Image.open(io.BytesIO(b)) as img:
    img.load();w,h=img.size;fmt=img.format
    assert fmt=="JPEG" and w>=1000 and h>=1400 and h>w and min((w/h)/.62,.62/(w/h))>=.75,(w,h)
-  print("NMAAHC_PIXELS_PASS",json.dumps({"name":label,"width":w,"height":h,"bytes":len(b),"sha256":hashlib.sha256(b).hexdigest()}),flush=True)
- except Exception as e:print("NMAAHC_PIXELS_FAIL",label,str(e)[:180],flush=True)
+  print("SMITHSONIAN_NEW_PIXELS_PASS",json.dumps({"name":label,"width":w,"height":h,"bytes":len(b),"sha256":hashlib.sha256(b).hexdigest()}),flush=True)
+ except Exception as e:print("SMITHSONIAN_NEW_PIXELS_FAIL",label,str(e)[:180],flush=True)
 for unit in ("nmah","aaa"):
  url="https://smithsonian-open-access.s3-us-west-2.amazonaws.com/metadata/edan/"+unit+"/00.txt"
  stats=collections.Counter();sample=[]
