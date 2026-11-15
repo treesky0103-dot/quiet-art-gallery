@@ -5,7 +5,7 @@
   "reviewed_candidates": 50,
   "decision_basis": "No payment card, open rights per image, safe 2D object format, programmatic metadata + download, 1000x1400px+ and portrait 75%, 90-day storage compatible, no image rights inference from metadata licenses",
   "source_of_prior_list": "Previous 7+17+10+16 candidate list",
-  "caveat": "Most items are assessed at documentation level; only sources tagged live_metadata_api received a bounded live metadata query. enabled_in_apk is provisional until pixel test and build pass.",
+  "caveat": "Wellcome and Cooper Hewitt are coded into v1.8.7 with byte-checked samples; 48/50 other candidates not enabled. Princeton and Smithsonian National Portrait Gallery are newly discovered, tracked separately. No tablet 24-hour soak or 8GiB fill-rate guarantee.",
   "items": [
     {
       "index": 1,
@@ -120,12 +120,12 @@
       "name": "Cooper Hewitt Design Museum",
       "country": "USA",
       "official_docs": "https://apidocs.cooperhewitt.org/",
-      "assessment": "live_api_metadata_cc0_images_separate",
-      "evidence_level": "live_metadata_api",
-      "enabled_in_apk": false,
+      "assessment": "official_smithsonian_s3_cc0_image_test_pass",
+      "evidence_level": "live_full_image_download_and_pixel_test",
+      "enabled_in_apk": true,
       "images_validated_and_stored_on_tablet": 0,
       "requires_user_api_key": false,
-      "note": "live api metadata cc0 images separate"
+      "note": "Official CC0 per-record and per-image flags from Smithsonian S3; 1281x2000 JPEG verified, 123267 bytes, only 2D types harvested"
     },
     {
       "index": 11,
