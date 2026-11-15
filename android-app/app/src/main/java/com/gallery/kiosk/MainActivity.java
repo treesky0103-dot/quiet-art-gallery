@@ -173,7 +173,7 @@ public final class MainActivity extends Activity {
                 }
                 String assetPath = (path == null || path.equals("/")) ? "index.html" : path.substring(1);
                 boolean offlineImage=assetPath.matches("(?:offline/fallback-(?:[0-9]|1[0-5])|offline/pack-[0-9]{4})\\.jpg");
-                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json", "art-movements.json", "art-providers.json", "art-sources-85.json").contains(assetPath))
+                if (!offlineImage && !Arrays.asList("index.html", "app.js", "core.js", "style.css", "icon-192.png", "icon-512.png", "manifest.webmanifest", "sw.js", "offline-deck.json", "art-movements.json", "art-providers.json", "art-sources-85.json", "new50-provider-audit.json").contains(assetPath))
                     return response(404, "text/plain", new byte[0]);
                 try {
                     InputStream in = getAssets().open(assetPath);
@@ -227,6 +227,10 @@ public final class MainActivity extends Activity {
             URL u = new URL(src);
             if (!"https".equals(u.getProtocol()) || u.getPort() != -1 || u.getUserInfo() != null) return false;
             String host=u.getHost().toLowerCase(java.util.Locale.ROOT);
+            if(host.equals("iiif.wellcomecollection.org")){
+                return u.getPath().matches("(?i)^/image/[a-z0-9_-]{3,28}/full/2000,/0/default\\.jpg$")
+                    && u.getQuery()==null && u.getRef()==null;
+            }
             return host.equals("upload.wikimedia.org") || host.equals("images.metmuseum.org") || host.equals("www.artic.edu") || host.equals("artic.edu") || host.equals("openaccess-cdn.clevelandart.org") || host.endsWith(".clevelandart.org");
         } catch(Exception e){return false;}
     }
@@ -365,6 +369,18 @@ public final class MainActivity extends Activity {
     }
 
     private String apiUrl(String type,String p) throws Exception {
+        if (type.equals("wellcome")) {
+            String[] parts=p.split(":",-1);
+            if(parts.length!=2)throw new IOException("Wellcome search arguments");
+            int idx=bounded(parts[0],0,9),page=bounded(parts[1],1,250);
+            String[] terms={"painting","drawing","watercolour","woodcut",
+                "engraving","etching","lithograph","illustration",
+                "botanical illustration","print"};
+            return "https://api.wellcomecollection.org/catalogue/v2/images?query="+
+                URLEncoder.encode(terms[idx],"UTF-8")+
+                "&locations.license=pdm&include=source.genres%2Csource.contributors"+
+                "&page="+page+"&pageSize=50";
+        }
         if (type.equals("cleveland")) {
             String[] parts=p.split(":",-1);if(parts.length!=2 || !Arrays.asList("Painting","Drawing","Print","Photograph").contains(parts[0]))throw new IOException("유효하지 않은 작품 종류");
             int off=bounded(parts[1],0,1000000);
