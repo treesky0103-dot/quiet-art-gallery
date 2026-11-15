@@ -1435,6 +1435,23 @@
         catalogBox.hidden=false;panel.hidden=true;
       }
     });
+    el('show-new50').addEventListener('click',async()=>{
+      const panel=el('new50-audit-panel');
+      panel.hidden=false;panel.textContent='공급원 검토 대장을 읽는 중입니다.';
+      try{
+        const path=window.GalleryAndroid?'https://appassets.gallery/new50-provider-audit.json':'./new50-provider-audit.json';
+        const res=await fetch(path,{cache:'no-store'});
+        if(!res.ok)throw Error('공급원 검토 대장 열기 실패');
+        const report=await res.json();
+        if(report.reviewed_candidates!==50||!Array.isArray(report.items)||report.items.length!==50)
+          throw Error('신규 50곳 감사 파일 형식 오류');
+        const lines=report.items.map(x=>x.index+'. '+x.name+' ['+
+          (x.enabled_in_apk?'자동 수집 코드 연결':'연동 보류')+'] · '+x.assessment.replace(/_/g,' '));
+        panel.textContent='기존 85곳 외 신규 후보 50곳\n정식 자동 수집 연결: Wellcome 1곳(실기기 수집량 미검증)\n'+
+          '나머지 49곳은 메타데이터·권리·접근 조건별 보류\n'+
+          '※ 분류는 기술 검토이며 실제 이미지 확보량을 의미하지 않습니다.\n\n'+lines.join('\n');
+      }catch(e){panel.textContent='신규 공급원 검토 목록 확인 실패: '+String(e&&e.message||e);}
+    });
     el('audit-now').addEventListener('click',()=>runInventoryAudit().catch(e=>{ui.msg.textContent='조사 실패: '+String(e.message||e);state.auditing=false;el('audit-now').disabled=false;}));
     el('refresh-now').addEventListener('click',async()=>{
       ui.msg.textContent='새 목록 확인 중...';
