@@ -1,0 +1,16 @@
+name: Audit new keyless museum API records (v187)
+on:
+  push:
+    branches: [feat-v187-more-open-sources-20261115]
+    paths: ['tools/probe_v187_sources.py','.github/workflows/probe-v187-sources.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python tools/probe_v187_sources.py
