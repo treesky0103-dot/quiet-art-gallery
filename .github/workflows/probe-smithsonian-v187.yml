@@ -1,0 +1,16 @@
+name: Probe Smithsonian direct CC0 art units without API keys
+on:
+  push:
+    branches: [feat-v187-verified-new-global-sources-20261115]
+    paths: ['tools/probe_smithsonian_new_art_units.py','.github/workflows/probe-smithsonian-v187.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 11
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python tools/probe_smithsonian_new_art_units.py
