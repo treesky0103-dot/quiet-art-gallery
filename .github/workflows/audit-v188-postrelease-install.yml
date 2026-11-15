@@ -1,0 +1,80 @@
+name: Independent post-release v188 APK signature and installability audit
+on:
+  push:
+    branches: [audit-v188-postrelease-install-20261115]
+    paths: ['.github/workflows/audit-v188-postrelease-install.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  verify-released-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact published APK, SHA and audit report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download quiet-art-nmaahc-fsg-2692-v188-20261115 \
+            --repo treesky0103-dot/quiet-art-gallery \
+            --pattern 'QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk' \
+            --pattern 'apk-sha256.txt' \
+            --pattern 'verified-v188-report.json'
+          sha256sum -c apk-sha256.txt
+          test -s QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk
+      - name: Install Android 35 tools (static inspection only)
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -r | head -n 1)"
+          test -n "$sdkmanager"
+          "$sdkmanager" --install "build-tools;35.0.0" "platforms;android-35"
+          echo "TOOLS=$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_ENV"
+      - name: Verify debug APK digital signature and package identity
+        run: |
+          set -euo pipefail
+          apk='QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk'
+          "$TOOLS/apksigner" verify --min-sdk-version 26 --verbose --print-certs "$apk" | tee signing-report.txt
+          "$TOOLS/aapt" dump badging "$apk" | tee package-report.txt
+          grep -F "package: name='com.gallery.kiosk.v188' versionCode='26' versionName='1.8.8-global6'" package-report.txt
+          grep -F "sdkVersion:'26'" package-report.txt
+          grep -F "launchable-activity: name='com.gallery.kiosk.MainActivity'" package-report.txt
+          grep -F 'android.permission.INTERNET' package-report.txt
+          grep -F 'android.permission.ACCESS_NETWORK_STATE' package-report.txt
+          test "$(grep -c 'uses-permission:' package-report.txt)" = 2
+          grep -E '^Verified using v[23] scheme' signing-report.txt
+      - name: Verify exact bundled assets and runtime display declarations
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,zipfile,hashlib
+          apk=Path('QuietArtGallery-NMAAHC-AsianArt-2692-v188.apk')
+          report=json.loads(Path('verified-v188-report.json').read_text())
+          observed=hashlib.sha256(apk.read_bytes()).hexdigest()
+          assert observed==report['apk_sha256']
+          assert apk.stat().st_size==report['apk_bytes']
+          with zipfile.ZipFile(apk) as z:
+              assert z.testzip() is None
+              deck=json.loads(z.read('assets/offline-deck.json'))
+              assert len(deck)==2692
+              assert len({x['key'] for x in deck})==2692
+              for a in deck:
+                  b=z.read('assets/'+a['offlineAsset'])
+                  assert hashlib.sha256(b).hexdigest()==a['derivedSHA256']
+              for p in ['app.js','core.js','index.html','style.css','v187-verified-sources.json','v188-verified-sources.json','new50-provider-audit.json']:
+                  assert z.read('assets/'+p)==Path('web/'+p).read_bytes()
+              app=z.read('assets/app.js')
+              html=z.read('assets/index.html')
+              java=Path('android-app/app/src/main/java/com/gallery/kiosk/MainActivity.java').read_text()
+              assert b'collectorTickMs:15000' in app
+              assert b'intervalMs: 60000' in app
+              assert b'id="ambient-orbit"' in html
+              assert b'id="cache-progress"' in html
+              assert b'id="show-v188"' in html
+              assert 'MAX_IMAGE_CACHE = 8L * 1024 * 1024 * 1024' in java
+              assert 'FREE_RESERVE = 1536L * 1024 * 1024' in java
+              assert 'claimArtworkKeys' in java
+              assert 'Arrays.asList("npg","chndm","nmaahc","fsg")' in java
+          print("POST_RELEASE_STATIC_AUDIT_PASS",observed,apk.stat().st_size,len(deck),flush=True)
+          PY
