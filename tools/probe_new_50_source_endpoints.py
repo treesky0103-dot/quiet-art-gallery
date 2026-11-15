@@ -44,7 +44,7 @@ def probe(name,url):
       out[k+"_keys"]=list(v)[:20]
       if k=="data":
        out["data_subset"]={kk:(list(vv)[:7] if isinstance(vv,dict) else str(vv)[:100]) for kk,vv in v.items()}
-  except Exception as e:out["json_error"]=str(e)[:160]
+   except Exception as e:out["json_error"]=str(e)[:160]
   else:out["body_preview"]=data[:160].decode("utf-8","replace")
   return out
  except Exception as e:
