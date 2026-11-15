@@ -1,0 +1,17 @@
+name: Verify Smithsonian NPG and Cooper Hewitt CC0 actual image bytes
+on:
+  push:
+    branches: [feat-v187-verified-new-global-sources-20261115]
+    paths: ['tools/verify_smithsonian_v187_pixels.py','.github/workflows/verify-smithsonian-v187-pixels.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install Pillow==11.3.0
+      - run: python tools/verify_smithsonian_v187_pixels.py
