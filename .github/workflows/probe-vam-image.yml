@@ -1,0 +1,17 @@
+name: Verify V&A personal-use sample JPEG
+on:
+  push:
+    branches: [feat-new50-v186-verified-apis-20261115]
+    paths: ['tools/verify_vam_personal_api_image.py','.github/workflows/probe-vam-image.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install Pillow==11.3.0
+      - run: python tools/verify_vam_personal_api_image.py
