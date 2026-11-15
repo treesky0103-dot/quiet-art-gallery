@@ -17,15 +17,15 @@
     offlineReady:[],recentLoaded:[],recentDisplayed:new Set(),emergencyIndex:0,emergencySwaps:0,
     recentKeys:new Map(),visualHashes:new Map(),dedupBlocked:0,exhaustedTicks:0,
     lastSwapAt:0, nextDueAt:0,nativeClock:false,tickCount:0,
-    cursors:{cleveland:{Painting:0,Drawing:0,Print:0,Photograph:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{},movement:{},wellcome:{}},
-    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,wellcomeIndex:0,
+    cursors:{cleveland:{Painting:0,Drawing:0,Print:0,Photograph:0},chicago:1,met:{'11':0,'9':0,'21':0,'6':0},asian:{},african:{},additional:{},smithsonian:{},modern:{},openverseModern:{},media:{},movement:{},wellcome:{},princeton:{}},
+    sourceOrder:0,cmaType:0,metType:0,metIDs:[],metIndex:0, asianOrder:0, africanOrder:0, additionalOrder:0, smithsonianOrder:0, smithsonianCategoryOrder:0,globalCategoryIndex:0,wellcomeIndex:0,princetonIndex:0,
     modernOrder:0,modernCategoryIndex:0,modernOpenverseIndex:0,mediaCategoryIndex:0,movementTermIndex:0,movementQueries:[],modernFetched:0,modernErrors:0, collectorRunning:false,collectorLastAt:0,collectorSuccess:0,collectorErrors:0,collectorTimer:null,prefetchedKeys:new Set(),collectorWindowStarted:0,collectorWindowSaved:0,collectorDayKey:'',collectorDaySaved:0,collectorLastIndexAt:0,collectorRetry:{},collectorThrottled:0,
     movementPages:{},lastMovementTry:{}, flipped:false, audit:null, auditing:false,
-    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0,media:0,movement:0,wellcome:0},backoff:{},
+    failures:{global:0,cleveland:0,chicago:0,met:0,asian:0,african:0,additional:0,smithsonian:0,modern:0,media:0,movement:0,wellcome:0,princeton:0},backoff:{},
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,post1800Shown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어',media:'사진·일러스트·애니메이션 스틸(공개 아카이브)',movement:'전 세계 사조·화파 (검증된 정지 이미지)',wellcome:'웰컴 컬렉션(PDM 직접 API)'};
+  const sourceNames={global:'세계 공개 아카이브',cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어',media:'사진·일러스트·애니메이션 스틸(공개 아카이브)',movement:'전 세계 사조·화파 (검증된 정지 이미지)',wellcome:'웰컴 컬렉션(PDM 직접 API)',princeton:'프린스턴 대학교 미술관(퍼블릭 도메인 IIIF)'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -337,6 +337,18 @@
         iiprop:'url|size|mime|extmetadata',iiurlwidth:'2000',format:'json',
         formatversion:'2',origin:'*'});
       url='https://commons.wikimedia.org/w/api.php?'+qs.toString();
+    }else if(kind==='princetonSearch'){
+      const parts=String(param).split(':'),idx=Number(parts[0]),offset=Number(parts[1]);
+      if(parts.length!==2||!Number.isInteger(idx)||idx<0||idx>=C.PRINCETON_TERMS.length||
+          !Number.isInteger(offset)||offset<0||offset>3000||offset%20)
+        throw Error('프린스턴 검색 범위 오류');
+      url='https://data.artmuseum.princeton.edu/search?'+new URLSearchParams({
+        q:C.PRINCETON_TERMS[idx],type:'artobjects',size:'20',from:String(offset)
+      });
+    }else if(kind==='princetonObject'){
+      const n=Number(param);
+      if(!Number.isInteger(n)||n<1||n>9999999)throw Error('프린스턴 작품 ID 오류');
+      url='https://data.artmuseum.princeton.edu/objects/'+n;
     }else if(kind==='wellcome'){
       const parts=String(param).split(':');
       const ix=Number(parts[0]),page=Number(parts[1]);
@@ -469,6 +481,24 @@
           state.modernFetched+=items.length;
           state.cursors.openverseModern[idx]=(Array.isArray(res.results)&&res.results.length===20&&page<4)?page+1:1;
         }
+      }else if(source==='princeton'){
+        const index=state.princetonIndex++%C.PRINCETON_TERMS.length;
+        const offset=Number(state.cursors.princeton[index])||0;
+        const page=await request('princetonSearch',index+':'+offset);
+        const hits=page&&page.hits&&Array.isArray(page.hits.hits)?page.hits.hits:[];
+        let checked=0;
+        for(const hit of hits){
+          if(checked>=5||state.pool.length-before>=10)break;
+          const id=Number(hit&&hit._id);
+          if(!Number.isInteger(id)||id<1||id>9999999)continue;
+          checked++;
+          try{
+            const record=await request('princetonObject',String(id));
+            const art=C.normalizePrinceton(record);
+            if(art)addCandidates([art]);
+          }catch(_){/* isolated artwork failure; no rights bypass */}
+        }
+        state.cursors.princeton[index]=hits.length<20||offset>=3000?0:offset+20;
       }else if(source==='wellcome'){
         const index=state.wellcomeIndex++%C.WELLCOME_TERMS.length;
         const page=Number(state.cursors.wellcome&&state.cursors.wellcome[index])||1;
@@ -551,7 +581,7 @@
       let attempts=0, progress=0;
       while(state.pool.length<target && attempts<14){
         // Give year-dated museum APIs greater weight than undated Commons filenames.
-        const sources=['movement','media','cleveland','wellcome','chicago','media','met','cleveland','global','chicago','wellcome','asian','media','african','additional','movement','global','additional','smithsonian','modern'];
+        const sources=['movement','media','cleveland','princeton','wellcome','chicago','media','met','cleveland','global','chicago','princeton','wellcome','asian','media','african','additional','movement','global','additional','smithsonian','modern'];
         const source=sources[state.sourceOrder++%sources.length];
         attempts++;
         progress+=await fetchSource(source);
@@ -1524,6 +1554,7 @@
       state.cursors.media=state.cursors.media||{};
       state.cursors.movement=state.cursors.movement||{};
       state.cursors.wellcome=state.cursors.wellcome||{};
+      state.cursors.princeton=state.cursors.princeton||{};
       state.cursors.global=state.cursors.global||{};
       const gIndex=await dbGet('settings','globalCategoryIndex');
       state.globalCategoryIndex=Number.isInteger(gIndex&&gIndex.value)?Math.max(0,gIndex.value):0;
