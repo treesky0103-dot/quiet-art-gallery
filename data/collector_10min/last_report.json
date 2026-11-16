@@ -1,49 +1,61 @@
 {
-  "run_utc": "2026-11-16T10:55:33.768554+00:00",
-  "github_run_id": "43852285870",
+  "run_utc": "2026-11-16T20:44:22.939432+00:00",
+  "github_run_id": "43952484330",
   "baseline_requested": 736,
   "baseline_with_independent_hash_records": 675,
-  "new_verified_this_run": 65,
-  "increment_verified_unique": 855,
-  "user_baseline_plus_new": 1591,
-  "metadata_source_ok": 3,
-  "download_attempts": 66,
-  "proof_files": 2,
+  "new_verified_this_run": 80,
+  "increment_verified_unique": 935,
+  "user_baseline_plus_new": 1671,
+  "metadata_source_ok": 6,
+  "download_attempts": 80,
+  "proof_files": 4,
   "details": [
     {
-      "source": "cma_modern",
-      "cursor": 6300,
-      "candidates": 29,
+      "source": "cma_older",
+      "cursor": 3500,
+      "candidates": 10,
       "ok": true
     },
     {
-      "source": "cma_modern",
-      "artwork_id": "151945",
-      "error": "The read operation timed out"
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 6400,
-      "candidates": 23,
+      "source": "cma_older",
+      "cursor": 3600,
+      "candidates": 16,
       "ok": true
     },
     {
-      "source": "cma_modern",
-      "cursor": 6500,
-      "candidates": 29,
+      "source": "cma_older",
+      "cursor": 3700,
+      "candidates": 22,
+      "ok": true
+    },
+    {
+      "source": "cma_older",
+      "cursor": 3800,
+      "candidates": 20,
+      "ok": true
+    },
+    {
+      "source": "cma_older",
+      "cursor": 3900,
+      "candidates": 6,
+      "ok": true
+    },
+    {
+      "source": "cma_older",
+      "cursor": 4000,
+      "candidates": 18,
       "ok": true
     }
   ],
   "rejection_summary": {
-    "validated_but_not_archived": 63,
-    "download_decode_error": 1
+    "validated_but_not_archived": 76
   },
-  "scan_pages": 3,
-  "elapsed_sec": 345.3,
-  "proof_bytes": 938998,
+  "scan_pages": 6,
+  "elapsed_sec": 114.8,
+  "proof_bytes": 1022076,
   "target_cap": 80,
   "max_output_bytes": 1048576,
-  "verified_only_in_hash_ledger": 63,
+  "verified_only_in_hash_ledger": 76,
   "limitations": [
     "736 baseline includes 61 not linked to the 675 SHA manifest; possible cross-set duplicates remain",
     "Only a small sample of proof JPEGs is uploaded for one day; other accepted images were downloaded and verified on the runner then discarded, preserving SHA/URL metadata only",
