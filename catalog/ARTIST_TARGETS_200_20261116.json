@@ -1,0 +1,1413 @@
+{
+  "project": "Quiet Art Gallery / 고요한 미술관",
+  "date": "2026-11-16",
+  "kind": "artwork_discovery_target_register",
+  "artist_count": 200,
+  "user_provided": 100,
+  "newly_added": 100,
+  "verification": "Only name/duplicate validation; no artwork files were acquired or approved by this update",
+  "gallery_app_integration": "not_yet_connected",
+  "filter_policy": "2D paintings, drawings and prints; inspect each image's decoded pixels, dimensions, fill, uniqueness and rights before actual display",
+  "artists": [
+    {
+      "id": 1,
+      "name_ko": "클로드 모네",
+      "name_en": "Claude Monet",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 2,
+      "name_ko": "빈센트 반 고흐",
+      "name_en": "Vincent van Gogh",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 3,
+      "name_ko": "피에르 오귀스트 르누아르",
+      "name_en": "Pierre-Auguste Renoir",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 4,
+      "name_ko": "폴 세잔",
+      "name_en": "Paul Cézanne",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 5,
+      "name_ko": "에드가 드가",
+      "name_en": "Edgar Degas",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 6,
+      "name_ko": "에두아르 마네",
+      "name_en": "Édouard Manet",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 7,
+      "name_ko": "폴 고갱",
+      "name_en": "Paul Gauguin",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 8,
+      "name_ko": "조르주 쇠라",
+      "name_en": "Georges Seurat",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 9,
+      "name_ko": "카미유 피사로",
+      "name_en": "Camille Pissarro",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 10,
+      "name_ko": "앙리 드 툴루즈 로트레크",
+      "name_en": "Henri de Toulouse-Lautrec",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 11,
+      "name_ko": "에드바르 뭉크",
+      "name_en": "Edvard Munch",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 12,
+      "name_ko": "구스타프 클림트",
+      "name_en": "Gustav Klimt",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 13,
+      "name_ko": "에곤 실레",
+      "name_en": "Egon Schiele",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 14,
+      "name_ko": "앙리 마티스",
+      "name_en": "Henri Matisse",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 15,
+      "name_ko": "파블로 피카소",
+      "name_en": "Pablo Picasso",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 16,
+      "name_ko": "조르주 브라크",
+      "name_en": "Georges Braque",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 17,
+      "name_ko": "바실리 칸딘스키",
+      "name_en": "Wassily Kandinsky",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 18,
+      "name_ko": "피트 몬드리안",
+      "name_en": "Piet Mondrian",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 19,
+      "name_ko": "카지미르 말레비치",
+      "name_en": "Kazimir Malevich",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 20,
+      "name_ko": "마르크 샤갈",
+      "name_en": "Marc Chagall",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 21,
+      "name_ko": "아메데오 모딜리아니",
+      "name_en": "Amedeo Modigliani",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 22,
+      "name_ko": "조르조 데 키리코",
+      "name_en": "Giorgio de Chirico",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 23,
+      "name_ko": "살바도르 달리",
+      "name_en": "Salvador Dalí",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 24,
+      "name_ko": "르네 마그리트",
+      "name_en": "René Magritte",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 25,
+      "name_ko": "막스 에른스트",
+      "name_en": "Max Ernst",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 26,
+      "name_ko": "호안 미로",
+      "name_en": "Joan Miró",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 27,
+      "name_ko": "파울 클레",
+      "name_en": "Paul Klee",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 28,
+      "name_ko": "프란츠 마르크",
+      "name_en": "Franz Marc",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 29,
+      "name_ko": "에른스트 루트비히 키르히너",
+      "name_en": "Ernst Ludwig Kirchner",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 30,
+      "name_ko": "오스카 코코슈카",
+      "name_en": "Oskar Kokoschka",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 31,
+      "name_ko": "페르낭 레제",
+      "name_en": "Fernand Léger",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 32,
+      "name_ko": "소니아 들로네",
+      "name_en": "Sonia Delaunay",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 33,
+      "name_ko": "타마라 드 렘피카",
+      "name_en": "Tamara de Lempicka",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 34,
+      "name_ko": "조지아 오키프",
+      "name_en": "Georgia O'Keeffe",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 35,
+      "name_ko": "에드워드 호퍼",
+      "name_en": "Edward Hopper",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 36,
+      "name_ko": "앤드루 와이어스",
+      "name_en": "Andrew Wyeth",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 37,
+      "name_ko": "디에고 리베라",
+      "name_en": "Diego Rivera",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 38,
+      "name_ko": "프리다 칼로",
+      "name_en": "Frida Kahlo",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 39,
+      "name_ko": "레메디오스 바로",
+      "name_en": "Remedios Varo",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 40,
+      "name_ko": "레오노라 캐링턴",
+      "name_en": "Leonora Carrington",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 41,
+      "name_ko": "잭슨 폴록",
+      "name_en": "Jackson Pollock",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 42,
+      "name_ko": "마크 로스코",
+      "name_en": "Mark Rothko",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 43,
+      "name_ko": "빌럼 데 쿠닝",
+      "name_en": "Willem de Kooning",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 44,
+      "name_ko": "바넷 뉴먼",
+      "name_en": "Barnett Newman",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 45,
+      "name_ko": "리 크래스너",
+      "name_en": "Lee Krasner",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 46,
+      "name_ko": "헬렌 프랑켄탈러",
+      "name_en": "Helen Frankenthaler",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 47,
+      "name_ko": "조안 미첼",
+      "name_en": "Joan Mitchell",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 48,
+      "name_ko": "사이 톰블리",
+      "name_en": "Cy Twombly",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 49,
+      "name_ko": "재스퍼 존스",
+      "name_en": "Jasper Johns",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 50,
+      "name_ko": "로버트 라우션버그",
+      "name_en": "Robert Rauschenberg",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 51,
+      "name_ko": "앤디 워홀",
+      "name_en": "Andy Warhol",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 52,
+      "name_ko": "로이 리히텐슈타인",
+      "name_en": "Roy Lichtenstein",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 53,
+      "name_ko": "키스 해링",
+      "name_en": "Keith Haring",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 54,
+      "name_ko": "장미셸 바스키아",
+      "name_en": "Jean-Michel Basquiat",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 55,
+      "name_ko": "데이비드 호크니",
+      "name_en": "David Hockney",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 56,
+      "name_ko": "프랜시스 베이컨",
+      "name_en": "Francis Bacon",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 57,
+      "name_ko": "루시안 프로이트",
+      "name_en": "Lucian Freud",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 58,
+      "name_ko": "앨리스 닐",
+      "name_en": "Alice Neel",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 59,
+      "name_ko": "필립 거스턴",
+      "name_en": "Philip Guston",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 60,
+      "name_ko": "게르하르트 리히터",
+      "name_en": "Gerhard Richter",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 61,
+      "name_ko": "지그마어 폴케",
+      "name_en": "Sigmar Polke",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 62,
+      "name_ko": "안젤름 키퍼",
+      "name_en": "Anselm Kiefer",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 63,
+      "name_ko": "게오르크 바젤리츠",
+      "name_en": "Georg Baselitz",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 64,
+      "name_ko": "이브 클랭",
+      "name_en": "Yves Klein",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 65,
+      "name_ko": "브리짓 라일리",
+      "name_en": "Bridget Riley",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 66,
+      "name_ko": "빅토르 바자렐리",
+      "name_en": "Victor Vasarely",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 67,
+      "name_ko": "아그네스 마틴",
+      "name_en": "Agnes Martin",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 68,
+      "name_ko": "야요이 쿠사마",
+      "name_en": "Yayoi Kusama",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 69,
+      "name_ko": "무라카미 다카시",
+      "name_en": "Takashi Murakami",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 70,
+      "name_ko": "나라 요시토모",
+      "name_en": "Yoshitomo Nara",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 71,
+      "name_ko": "뱅크시",
+      "name_en": "Banksy",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 72,
+      "name_ko": "에드 루샤",
+      "name_en": "Ed Ruscha",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 73,
+      "name_ko": "피터 도이그",
+      "name_en": "Peter Doig",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 74,
+      "name_ko": "마를렌 뒤마",
+      "name_en": "Marlene Dumas",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 75,
+      "name_ko": "엘리자베스 페이턴",
+      "name_en": "Elizabeth Peyton",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 76,
+      "name_ko": "세실리 브라운",
+      "name_en": "Cecily Brown",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 77,
+      "name_ko": "케리 제임스 마셜",
+      "name_en": "Kerry James Marshall",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 78,
+      "name_ko": "줄리 메레투",
+      "name_en": "Julie Mehretu",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 79,
+      "name_ko": "에이미 셰럴드",
+      "name_en": "Amy Sherald",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 80,
+      "name_ko": "조지 콘도",
+      "name_en": "George Condo",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 81,
+      "name_ko": "크리스 오필리",
+      "name_en": "Chris Ofili",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 82,
+      "name_ko": "케힌데 와일리",
+      "name_en": "Kehinde Wiley",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 83,
+      "name_ko": "트레이시 에민",
+      "name_en": "Tracey Emin",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 84,
+      "name_ko": "데이미언 허스트",
+      "name_en": "Damien Hirst",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 85,
+      "name_ko": "아이 웨이웨이",
+      "name_en": "Ai Weiwei",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 86,
+      "name_ko": "쩡판즈",
+      "name_en": "Zeng Fanzhi",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 87,
+      "name_ko": "장샤오강",
+      "name_en": "Zhang Xiaogang",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 88,
+      "name_ko": "류샤오둥",
+      "name_en": "Liu Xiaodong",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 89,
+      "name_ko": "우관중",
+      "name_en": "Wu Guanzhong",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 90,
+      "name_ko": "김환기",
+      "name_en": "Kim Whanki",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 91,
+      "name_ko": "박서보",
+      "name_en": "Park Seo-bo",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 92,
+      "name_ko": "이우환",
+      "name_en": "Lee Ufan",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 93,
+      "name_ko": "김창열",
+      "name_en": "Kim Tschang-yeul",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 94,
+      "name_ko": "이중섭",
+      "name_en": "Lee Jung-seob",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 95,
+      "name_ko": "천경자",
+      "name_en": "Chun Kyung-ja",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 96,
+      "name_ko": "박수근",
+      "name_en": "Park Soo-keun",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 97,
+      "name_ko": "김기창",
+      "name_en": "Kim Ki-chang",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 98,
+      "name_ko": "이성자",
+      "name_en": "Lee Seongja",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 99,
+      "name_ko": "하종현",
+      "name_en": "Ha Chong-hyun",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 100,
+      "name_ko": "이배",
+      "name_en": "Lee Bae",
+      "batch": "user_selected",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 101,
+      "name_ko": "레오나르도 다 빈치",
+      "name_en": "Leonardo da Vinci",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 102,
+      "name_ko": "미켈란젤로",
+      "name_en": "Michelangelo",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 103,
+      "name_ko": "라파엘로",
+      "name_en": "Raphael",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 104,
+      "name_ko": "산드로 보티첼리",
+      "name_en": "Sandro Botticelli",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 105,
+      "name_ko": "티치아노",
+      "name_en": "Titian",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 106,
+      "name_ko": "카라바조",
+      "name_en": "Caravaggio",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 107,
+      "name_ko": "아르테미시아 젠틸레스키",
+      "name_en": "Artemisia Gentileschi",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 108,
+      "name_ko": "렘브란트",
+      "name_en": "Rembrandt",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 109,
+      "name_ko": "요하네스 페르메이르",
+      "name_en": "Johannes Vermeer",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 110,
+      "name_ko": "페테르 파울 루벤스",
+      "name_en": "Peter Paul Rubens",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 111,
+      "name_ko": "디에고 벨라스케스",
+      "name_en": "Diego Velázquez",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 112,
+      "name_ko": "프란시스코 고야",
+      "name_en": "Francisco Goya",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 113,
+      "name_ko": "엘 그레코",
+      "name_en": "El Greco",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 114,
+      "name_ko": "알브레히트 뒤러",
+      "name_en": "Albrecht Dürer",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 115,
+      "name_ko": "히에로니무스 보스",
+      "name_en": "Hieronymus Bosch",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 116,
+      "name_ko": "윌리엄 터너",
+      "name_en": "J. M. W. Turner",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 117,
+      "name_ko": "존 컨스터블",
+      "name_en": "John Constable",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 118,
+      "name_ko": "카스파르 다비트 프리드리히",
+      "name_en": "Caspar David Friedrich",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 119,
+      "name_ko": "테오도르 제리코",
+      "name_en": "Théodore Géricault",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 120,
+      "name_ko": "외젠 들라크루아",
+      "name_en": "Eugène Delacroix",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 121,
+      "name_ko": "장오귀스트도미니크 앵그르",
+      "name_en": "Jean-Auguste-Dominique Ingres",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 122,
+      "name_ko": "귀스타브 쿠르베",
+      "name_en": "Gustave Courbet",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 123,
+      "name_ko": "장프랑수아 밀레",
+      "name_en": "Jean-François Millet",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 124,
+      "name_ko": "장바티스트 카미유 코로",
+      "name_en": "Jean-Baptiste-Camille Corot",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 125,
+      "name_ko": "오노레 도미에",
+      "name_en": "Honoré Daumier",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 126,
+      "name_ko": "존 싱어 사전트",
+      "name_en": "John Singer Sargent",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 127,
+      "name_ko": "제임스 맥닐 휘슬러",
+      "name_en": "James McNeill Whistler",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 128,
+      "name_ko": "메리 카사트",
+      "name_en": "Mary Cassatt",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 129,
+      "name_ko": "베르트 모리조",
+      "name_en": "Berthe Morisot",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 130,
+      "name_ko": "귀스타브 카유보트",
+      "name_en": "Gustave Caillebotte",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 131,
+      "name_ko": "알프레드 시슬레",
+      "name_en": "Alfred Sisley",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 132,
+      "name_ko": "단테 가브리엘 로세티",
+      "name_en": "Dante Gabriel Rossetti",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 133,
+      "name_ko": "존 에버렛 밀레이",
+      "name_en": "John Everett Millais",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 134,
+      "name_ko": "에드워드 번존스",
+      "name_en": "Edward Burne-Jones",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 135,
+      "name_ko": "앨버트 비어슈타트",
+      "name_en": "Albert Bierstadt",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 136,
+      "name_ko": "토머스 콜",
+      "name_en": "Thomas Cole",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 137,
+      "name_ko": "윈슬로 호머",
+      "name_en": "Winslow Homer",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 138,
+      "name_ko": "프레더릭 에드윈 처치",
+      "name_en": "Frederic Edwin Church",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 139,
+      "name_ko": "이반 아이바좁스키",
+      "name_en": "Ivan Aivazovsky",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 140,
+      "name_ko": "일리야 레핀",
+      "name_en": "Ilya Repin",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 141,
+      "name_ko": "앙드레 드랭",
+      "name_en": "André Derain",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 142,
+      "name_ko": "모리스 드 블라맹크",
+      "name_en": "Maurice de Vlaminck",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 143,
+      "name_ko": "라울 뒤피",
+      "name_en": "Raoul Dufy",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 144,
+      "name_ko": "키스 판 동언",
+      "name_en": "Kees van Dongen",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 145,
+      "name_ko": "수잔 발라동",
+      "name_en": "Suzanne Valadon",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 146,
+      "name_ko": "마리 로랑생",
+      "name_en": "Marie Laurencin",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 147,
+      "name_ko": "나탈리야 곤차로바",
+      "name_en": "Natalia Goncharova",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 148,
+      "name_ko": "류보프 포포바",
+      "name_en": "Lyubov Popova",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 149,
+      "name_ko": "알렉산드라 엑스테르",
+      "name_en": "Alexandra Exter",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 150,
+      "name_ko": "로베르 들로네",
+      "name_en": "Robert Delaunay",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 151,
+      "name_ko": "움베르토 보초니",
+      "name_en": "Umberto Boccioni",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 152,
+      "name_ko": "자코모 발라",
+      "name_en": "Giacomo Balla",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 153,
+      "name_ko": "조르조 모란디",
+      "name_en": "Giorgio Morandi",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 154,
+      "name_ko": "힐마 아프 클린트",
+      "name_en": "Hilma af Klint",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 155,
+      "name_ko": "프란티셰크 쿠프카",
+      "name_en": "František Kupka",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 156,
+      "name_ko": "라이오넬 파이닝어",
+      "name_en": "Lyonel Feininger",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 157,
+      "name_ko": "가브리엘레 뮌터",
+      "name_en": "Gabriele Münter",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 158,
+      "name_ko": "아우구스트 마케",
+      "name_en": "August Macke",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 159,
+      "name_ko": "에밀 놀데",
+      "name_en": "Emil Nolde",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 160,
+      "name_ko": "하임 수틴",
+      "name_en": "Chaïm Soutine",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 161,
+      "name_ko": "피에르 보나르",
+      "name_en": "Pierre Bonnard",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 162,
+      "name_ko": "에두아르 뷔야르",
+      "name_en": "Édouard Vuillard",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 163,
+      "name_ko": "펠릭스 발로통",
+      "name_en": "Félix Vallotton",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 164,
+      "name_ko": "모리스 드니",
+      "name_en": "Maurice Denis",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 165,
+      "name_ko": "알렉세이 폰 야블렌스키",
+      "name_en": "Alexej von Jawlensky",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 166,
+      "name_ko": "위프레도 람",
+      "name_en": "Wifredo Lam",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 167,
+      "name_ko": "루피노 타마요",
+      "name_en": "Rufino Tamayo",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 168,
+      "name_ko": "페르난도 보테로",
+      "name_en": "Fernando Botero",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 169,
+      "name_ko": "호아킨 토레스 가르시아",
+      "name_en": "Joaquín Torres García",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 170,
+      "name_ko": "타르실라 두 아마랄",
+      "name_en": "Tarsila do Amaral",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 171,
+      "name_ko": "베아트리스 밀라제스",
+      "name_en": "Beatriz Milhazes",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 172,
+      "name_ko": "이브라힘 엘살라히",
+      "name_en": "Ibrahim El-Salahi",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 173,
+      "name_ko": "벤 엔원우",
+      "name_en": "Ben Enwonwu",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 174,
+      "name_ko": "제라드 세코토",
+      "name_en": "Gerard Sekoto",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 175,
+      "name_ko": "암리타 셰르길",
+      "name_en": "Amrita Sher-Gil",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 176,
+      "name_ko": "라덴 살레",
+      "name_en": "Raden Saleh",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 177,
+      "name_ko": "라자 라비 바르마",
+      "name_en": "Raja Ravi Varma",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 178,
+      "name_ko": "아바닌드라나트 타고르",
+      "name_en": "Abanindranath Tagore",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 179,
+      "name_ko": "자미니 로이",
+      "name_en": "Jamini Roy",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 180,
+      "name_ko": "레 포",
+      "name_en": "Lê Phổ",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 181,
+      "name_ko": "가쓰시카 호쿠사이",
+      "name_en": "Katsushika Hokusai",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 182,
+      "name_ko": "우타가와 히로시게",
+      "name_en": "Utagawa Hiroshige",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 183,
+      "name_ko": "기타가와 우타마로",
+      "name_en": "Kitagawa Utamaro",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 184,
+      "name_ko": "가쓰시카 오이",
+      "name_en": "Katsushika Ōi",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 185,
+      "name_ko": "우에무라 쇼엔",
+      "name_en": "Uemura Shōen",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 186,
+      "name_ko": "요코야마 다이칸",
+      "name_en": "Yokoyama Taikan",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 187,
+      "name_ko": "후지타 쓰구하루",
+      "name_en": "Tsuguharu Foujita",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 188,
+      "name_ko": "치바이스",
+      "name_en": "Qi Baishi",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 189,
+      "name_ko": "장다첸",
+      "name_en": "Zhang Daqian",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 190,
+      "name_ko": "쉬베이훙",
+      "name_en": "Xu Beihong",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 191,
+      "name_ko": "판위량",
+      "name_en": "Pan Yuliang",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 192,
+      "name_ko": "린펑몐",
+      "name_en": "Lin Fengmian",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 193,
+      "name_ko": "산위",
+      "name_en": "Sanyu",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 194,
+      "name_ko": "자오우키",
+      "name_en": "Zao Wou-Ki",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 195,
+      "name_ko": "정선",
+      "name_en": "Jeong Seon",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 196,
+      "name_ko": "김홍도",
+      "name_en": "Kim Hong-do",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 197,
+      "name_ko": "신윤복",
+      "name_en": "Shin Yun-bok",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 198,
+      "name_ko": "나혜석",
+      "name_en": "Na Hye-seok",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 199,
+      "name_ko": "유영국",
+      "name_en": "Yoo Youngkuk",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    },
+    {
+      "id": 200,
+      "name_ko": "이인성",
+      "name_en": "Lee In-sung",
+      "batch": "additional_recommendation",
+      "acquisition_status": "target_only"
+    }
+  ]
+}
