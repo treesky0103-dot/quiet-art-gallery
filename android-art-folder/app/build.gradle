@@ -1,0 +1,16 @@
+plugins { id 'com.android.application' }
+android {
+  namespace 'com.quietart.gallery'
+  compileSdk 35
+  defaultConfig {
+    applicationId 'com.quietart.gallery'
+    minSdk 26
+    targetSdk 32
+    versionCode 2
+    versionName '2.0.1-art-folder'
+  }
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+}
