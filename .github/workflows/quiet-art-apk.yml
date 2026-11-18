@@ -2,7 +2,7 @@ name: Build Quiet Art Folder APK
 on:
   push:
     branches:
-      - build/quiet-art-local-folder-apk-20261118
+      - build/quiet-art-v2-1-ai-crop-20261118
   pull_request:
     paths:
       - 'android-art-folder/**'
@@ -24,6 +24,27 @@ jobs:
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - name: Fetch public Real-ESRGAN model for offline APK
+        run: |
+          mkdir -p android-art-folder/app/src/main/assets
+          curl --fail --location --retry 3 --silent --show-error \
+            https://github.com/john-rocky/LiteRT-Models/releases/download/v1/real_esrgan_x4v3.tflite \
+            --output android-art-folder/app/src/main/assets/real_esrgan_x4v3.tflite
+          python3 - <<'PY'
+          import pathlib,hashlib
+          p=pathlib.Path('android-art-folder/app/src/main/assets/real_esrgan_x4v3.tflite')
+          assert p.stat().st_size==4878664, f'Model size changed: {p.stat().st_size}'
+          data=p.read_bytes()
+          assert data[4:8]==b'TFL3', 'Not a TensorFlow Lite model'
+          print('MODEL_SHA256='+hashlib.sha256(data).hexdigest())
+          PY
+      - name: Test offline focal crop geometry
+        run: |
+          mkdir -p /tmp/quietart-focus-test
+          javac -d /tmp/quietart-focus-test \
+            android-art-folder/app/src/main/java/com/quietart/gallery/FocusProjection.java \
+            android-art-folder/tests/FocusProjectionTest.java
+          java -cp /tmp/quietart-focus-test FocusProjectionTest
       - name: Test portrait image sizing geometry
         run: |
           mkdir -p /tmp/quietart-scaling-test
