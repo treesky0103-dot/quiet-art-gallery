@@ -2,16 +2,16 @@
   "baseline_requested": 736,
   "verified_manifest_base": 675,
   "baseline_unmatched_count": 61,
-  "runs": 19,
-  "last_run": "2026-11-18T02:40:40.572978+00:00",
-  "new_verified": 1255,
-  "claimed_total_with_requested_baseline": 1991,
+  "runs": 20,
+  "last_run": "2026-11-18T10:46:43.607521+00:00",
+  "new_verified": 1335,
+  "claimed_total_with_requested_baseline": 2071,
   "last_download_success": 80,
-  "last_metadata_sources_ok": 3,
+  "last_metadata_sources_ok": 5,
   "cursor": {
-    "cma_modern": 7800,
+    "cma_modern": 7900,
     "aic_modern": 16,
-    "cma_older": 4100,
+    "cma_older": 4500,
     "aic_older": 16
   },
   "notes": [
