@@ -1,58 +1,41 @@
 {
-  "run_utc": "2026-11-18T10:46:43.607521+00:00",
-  "github_run_id": "44288301485",
+  "run_utc": "2026-11-18T19:10:04.466900+00:00",
+  "github_run_id": "44377275890",
   "baseline_requested": 736,
   "baseline_with_independent_hash_records": 675,
   "new_verified_this_run": 80,
-  "increment_verified_unique": 1335,
-  "user_baseline_plus_new": 2071,
-  "metadata_source_ok": 5,
-  "download_attempts": 80,
+  "increment_verified_unique": 1415,
+  "user_baseline_plus_new": 2151,
+  "metadata_source_ok": 3,
+  "download_attempts": 81,
   "proof_files": 3,
   "details": [
     {
-      "source": "cma_older",
-      "cursor": 4100,
-      "candidates": 15,
+      "source": "cma_modern",
+      "cursor": 7900,
+      "candidates": 31,
       "ok": true
-    },
-    {
-      "source": "cma_older",
-      "cursor": 4200,
-      "candidates": 8,
-      "ok": true
-    },
-    {
-      "source": "cma_older",
-      "cursor": 4300,
-      "candidates": 16,
-      "ok": true
-    },
-    {
-      "source": "cma_older",
-      "cursor": 4400,
-      "candidates": 17,
-      "ok": true
-    },
-    {
-      "source": "cma_older",
-      "cursor": 4500,
-      "ok": false,
-      "error": "The read operation timed out"
     },
     {
       "source": "cma_modern",
-      "cursor": 7800,
-      "candidates": 25,
+      "cursor": 8000,
+      "candidates": 36,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 8100,
+      "candidates": 43,
       "ok": true
     }
   ],
   "rejection_summary": {
-    "validated_but_not_archived": 77
+    "validated_but_not_archived": 77,
+    "existing_visual": 1
   },
-  "scan_pages": 6,
-  "elapsed_sec": 101.7,
-  "proof_bytes": 1026813,
+  "scan_pages": 3,
+  "elapsed_sec": 95.3,
+  "proof_bytes": 1038822,
   "target_cap": 80,
   "max_output_bytes": 1048576,
   "verified_only_in_hash_ledger": 77,
