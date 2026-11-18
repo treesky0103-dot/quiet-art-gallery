@@ -36,6 +36,7 @@ jobs:
           assert p.stat().st_size==4878664, f'Model size changed: {p.stat().st_size}'
           data=p.read_bytes()
           assert data[4:8]==b'TFL3', 'Not a TensorFlow Lite model'
+          assert hashlib.sha256(data).hexdigest()=='8a284b295049651c67ffdf35d4f365c1d702c13286836de2a33de76d5324146d', 'Model hash mismatch'
           print('MODEL_SHA256='+hashlib.sha256(data).hexdigest())
           PY
       - name: Test offline focal crop geometry
@@ -64,3 +65,17 @@ jobs:
           name: QuietArtGallery_ArtFolder_APK
           path: android-art-folder/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+      - name: Enable KVM for Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: On-device TensorFlow Lite and image crop smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot
+          working-directory: android-art-folder
+          script: gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
