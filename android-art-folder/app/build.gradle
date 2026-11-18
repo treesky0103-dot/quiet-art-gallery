@@ -6,11 +6,15 @@ android {
     applicationId 'com.quietart.gallery'
     minSdk 26
     targetSdk 32
-    versionCode 3
-    versionName '2.0.2-portrait75'
+    versionCode 4
+    versionName '2.1.0-local-ai-crop'
   }
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_17
     targetCompatibility JavaVersion.VERSION_17
   }
+}
+
+dependencies {
+    implementation 'org.tensorflow:tensorflow-lite:2.16.1'
 }
