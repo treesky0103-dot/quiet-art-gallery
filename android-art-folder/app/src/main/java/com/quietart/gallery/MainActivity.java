@@ -130,7 +130,7 @@ public class MainActivity extends Activity {
         frame.setBackgroundColor(Color.BLACK);
         artwork=new ImageView(this);
         artwork.setBackgroundColor(Color.BLACK);
-        artwork.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        artwork.setScaleType(ImageView.ScaleType.MATRIX);
         frame.addView(artwork, new FrameLayout.LayoutParams(-1,-1));
         artwork.setOnClickListener(v->menu.setVisibility(menu.getVisibility()==View.VISIBLE?View.GONE:View.VISIBLE));
         caption=new TextView(this);
@@ -360,6 +360,7 @@ public class MainActivity extends Activity {
                 if (artwork.getDrawable() instanceof android.graphics.drawable.BitmapDrawable)
                     previous=((android.graphics.drawable.BitmapDrawable)artwork.getDrawable()).getBitmap();
                 artwork.setImageBitmap(fresh);
+                artwork.post(()->showWithPortraitSizeRule(fresh));
                 if (previous!=null && previous!=fresh && !previous.isRecycled()) previous.recycle();
                 String text=labels.get(current.path);
                 caption.setText(text==null?"":text);
@@ -367,6 +368,34 @@ public class MainActivity extends Activity {
             });
         });
     }
+    /**
+     * Portrait sizing: preserve source aspect ratio, never crop.
+     * If the portrait is smaller than 75% of display height at 1:1,
+     * enlarge it only to 75%, as long as the screen width permits.
+     * Otherwise use its natural size, downscaling when it would overflow.
+     * Landscape and square images retain their original fit-inside behavior.
+     */
+    private void showWithPortraitSizeRule(Bitmap bitmap) {
+        if (destroyed || bitmap == null || bitmap.isRecycled()) return;
+        if (!(artwork.getDrawable() instanceof android.graphics.drawable.BitmapDrawable)) return;
+        Bitmap shown=((android.graphics.drawable.BitmapDrawable)artwork.getDrawable()).getBitmap();
+        if (shown != bitmap) return;
+        int width=artwork.getWidth(), height=artwork.getHeight();
+        if (width <= 0 || height <= 0) {
+            artwork.post(()->showWithPortraitSizeRule(bitmap));
+            return;
+        }
+        double scale=ImageScaleRules.scaleFor(
+            bitmap.getWidth(),bitmap.getHeight(),width,height);
+        Matrix matrix=new Matrix();
+        matrix.setScale((float)scale,(float)scale);
+        matrix.postTranslate(
+            (float)((width-bitmap.getWidth()*scale)/2.0),
+            (float)((height-bitmap.getHeight()*scale)/2.0)
+        );
+        artwork.setImageMatrix(matrix);
+    }
+
     private Bitmap loadBitmap(Uri uri) throws Exception {
         BitmapFactory.Options bounds=new BitmapFactory.Options();
         bounds.inJustDecodeBounds=true;
