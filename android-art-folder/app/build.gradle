@@ -6,8 +6,8 @@ android {
     applicationId 'com.quietart.gallery'
     minSdk 26
     targetSdk 32
-    versionCode 2
-    versionName '2.0.1-art-folder'
+    versionCode 3
+    versionName '2.0.2-portrait75'
   }
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_17
