@@ -40,6 +40,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Local, offline slideshow of the user's selected Art folder. */
 public class MainActivity extends Activity {
@@ -52,6 +53,12 @@ public class MainActivity extends Activity {
     };
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newSingleThreadExecutor();
+    private final ExecutorService enhanceIo = Executors.newSingleThreadExecutor();
+    private final AtomicBoolean aiBusy = new AtomicBoolean(false);
+    private OnDeviceSuperResolution superResolution;
+    private volatile int frameSerial = 0;
+    private volatile boolean cropEnabled = true;
+    private volatile boolean aiEnabled = true;
     private final List<Picture> pictures = new ArrayList<>();
     private final Map<String, String> labels = new HashMap<>();
     private SharedPreferences prefs;
@@ -111,6 +118,9 @@ public class MainActivity extends Activity {
         super.onCreate(stateBundle);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         prefs=getSharedPreferences("quiet_art_local", MODE_PRIVATE);
+        cropEnabled=prefs.getBoolean("crop_enabled",true);
+        aiEnabled=prefs.getBoolean("ai_enabled",true);
+        superResolution=new OnDeviceSuperResolution(this);
         buildInterface();
         String saved=prefs.getString("tree", "");
         if (!saved.isEmpty()) {
@@ -173,6 +183,29 @@ public class MainActivity extends Activity {
         refresh.setText("새로고침");
         buttons.addView(refresh,new LinearLayout.LayoutParams(0,-2,1));
         refresh.setOnClickListener(v->{if (tree!=null) reload();});
+        LinearLayout enhancements=new LinearLayout(this);
+        enhancements.setOrientation(LinearLayout.HORIZONTAL);
+        menu.addView(enhancements);
+        Button cropButton=new Button(this);
+        cropButton.setAllCaps(false);
+        cropButton.setText(cropEnabled?"자동 크롭: 켜짐":"자동 크롭: 꺼짐");
+        enhancements.addView(cropButton,new LinearLayout.LayoutParams(0,-2,1));
+        cropButton.setOnClickListener(v->{
+            cropEnabled=!cropEnabled;
+            prefs.edit().putBoolean("crop_enabled",cropEnabled).apply();
+            cropButton.setText(cropEnabled?"자동 크롭: 켜짐":"자동 크롭: 꺼짐");
+            if(!pictures.isEmpty()) nextPicture();
+        });
+        Button aiButton=new Button(this);
+        aiButton.setAllCaps(false);
+        aiButton.setText(aiEnabled?"AI 보정: 켜짐":"AI 보정: 꺼짐");
+        enhancements.addView(aiButton,new LinearLayout.LayoutParams(0,-2,1));
+        aiButton.setOnClickListener(v->{
+            aiEnabled=!aiEnabled;
+            prefs.edit().putBoolean("ai_enabled",aiEnabled).apply();
+            aiButton.setText(aiEnabled?"AI 보정: 켜짐":"AI 보정: 꺼짐");
+            if(!pictures.isEmpty()) nextPicture();
+        });
         setContentView(frame);
         hideSystemBars();
     }
@@ -341,59 +374,120 @@ public class MainActivity extends Activity {
         if (index>=pictures.size()) index=0;
         Picture current=pictures.get(index++);
         prefs.edit().putInt("next",index).apply();
-        int myToken=token;
+        int myToken=token, myFrame=++frameSerial;
+        boolean useCrop=cropEnabled;
         io.execute(()->{
-            Bitmap loaded=null;
-            try { loaded=loadBitmap(current.uri); } catch (Exception | OutOfMemoryError ignored) {}
-            Bitmap fresh=loaded;
+            Bitmap fresh=null;
+            try {
+                fresh=loadBitmap(current.uri);
+                if(fresh!=null && useCrop && fresh.getWidth()>fresh.getHeight()) {
+                    Bitmap cropped=SmartArtworkCrop.crop(fresh,
+                        getResources().getDisplayMetrics().widthPixels,
+                        getResources().getDisplayMetrics().heightPixels);
+                    if(cropped!=fresh) {
+                        fresh.recycle();
+                        fresh=cropped;
+                    }
+                }
+            } catch(Exception | OutOfMemoryError ignored) {
+                if(fresh!=null && !fresh.isRecycled()) fresh.recycle();
+                fresh=null;
+            }
+            Bitmap ready=fresh;
             ui.post(()->{
-                if (destroyed || myToken!=token) {
-                    if (fresh!=null) fresh.recycle();
+                if(destroyed || myToken!=token || myFrame!=frameSerial) {
+                    if(ready!=null && !ready.isRecycled()) ready.recycle();
                     return;
                 }
-                if (fresh==null) {
+                if(ready==null) {
                     ui.removeCallbacks(tick);
-                    if (active) ui.postDelayed(tick,800);
+                    if(active) ui.postDelayed(tick,800);
                     return;
                 }
                 Bitmap previous=null;
-                if (artwork.getDrawable() instanceof android.graphics.drawable.BitmapDrawable)
+                if(artwork.getDrawable() instanceof android.graphics.drawable.BitmapDrawable)
                     previous=((android.graphics.drawable.BitmapDrawable)artwork.getDrawable()).getBitmap();
-                artwork.setImageBitmap(fresh);
-                artwork.post(()->showWithPortraitSizeRule(fresh));
-                if (previous!=null && previous!=fresh && !previous.isRecycled()) previous.recycle();
+                ready.setDensity(Bitmap.DENSITY_NONE);
+                artwork.setImageBitmap(ready);
+                artwork.post(()->showWithPortraitSizeRule(ready,ready.getWidth(),ready.getHeight()));
+                if(previous!=null && previous!=ready && !previous.isRecycled())
+                    previous.recycle();
                 String text=labels.get(current.path);
                 caption.setText(text==null?"":text);
                 caption.setVisibility(text==null || text.isEmpty()?View.GONE:View.VISIBLE);
+                scheduleEnhancement(ready,myToken,myFrame);
             });
         });
     }
+
     /**
-     * Portrait sizing: preserve source aspect ratio, never crop.
-     * If the portrait is smaller than 75% of display height at 1:1,
-     * enlarge it only to 75%, as long as the screen width permits.
-     * Otherwise use its natural size, downscaling when it would overflow.
-     * Landscape and square images retain their original fit-inside behavior.
+     * Uses the original image's visible footprint even after AI increases pixel
+     * resolution. A low-resolution portrait remains at its requested 75% height.
      */
-    private void showWithPortraitSizeRule(Bitmap bitmap) {
-        if (destroyed || bitmap == null || bitmap.isRecycled()) return;
-        if (!(artwork.getDrawable() instanceof android.graphics.drawable.BitmapDrawable)) return;
+    private void showWithPortraitSizeRule(Bitmap bitmap,int naturalW,int naturalH) {
+        if(destroyed || bitmap==null || bitmap.isRecycled()) return;
+        if(!(artwork.getDrawable() instanceof android.graphics.drawable.BitmapDrawable)) return;
         Bitmap shown=((android.graphics.drawable.BitmapDrawable)artwork.getDrawable()).getBitmap();
-        if (shown != bitmap) return;
-        int width=artwork.getWidth(), height=artwork.getHeight();
-        if (width <= 0 || height <= 0) {
-            artwork.post(()->showWithPortraitSizeRule(bitmap));
+        if(shown!=bitmap)return;
+        int width=artwork.getWidth(),height=artwork.getHeight();
+        if(width<=0 || height<=0) {
+            artwork.post(()->showWithPortraitSizeRule(bitmap,naturalW,naturalH));
             return;
         }
-        double scale=ImageScaleRules.scaleFor(
-            bitmap.getWidth(),bitmap.getHeight(),width,height);
+        double logicalScale=ImageScaleRules.scaleFor(naturalW,naturalH,width,height);
+        double paintedWidth=naturalW*logicalScale, paintedHeight=naturalH*logicalScale;
+        double scale=Math.min(paintedWidth/bitmap.getWidth(),paintedHeight/bitmap.getHeight());
         Matrix matrix=new Matrix();
         matrix.setScale((float)scale,(float)scale);
         matrix.postTranslate(
-            (float)((width-bitmap.getWidth()*scale)/2.0),
-            (float)((height-bitmap.getHeight()*scale)/2.0)
-        );
+            (float)((width-bitmap.getWidth()*scale)*0.5),
+            (float)((height-bitmap.getHeight()*scale)*0.5));
         artwork.setImageMatrix(matrix);
+    }
+
+    private void scheduleEnhancement(Bitmap preview,int myToken,int myFrame) {
+        if(!aiEnabled || !aiBusy.compareAndSet(false,true)) return;
+        int vw=Math.max(1,getResources().getDisplayMetrics().widthPixels);
+        int vh=Math.max(1,getResources().getDisplayMetrics().heightPixels);
+        if(!OnDeviceSuperResolution.eligible(preview,vw,vh)) {
+            aiBusy.set(false);return;
+        }
+        Bitmap copy;
+        try {
+            copy=preview.copy(Bitmap.Config.ARGB_8888,false);
+            if(copy==null){aiBusy.set(false);return;}
+        }catch(RuntimeException | OutOfMemoryError error) {
+            aiBusy.set(false);return;
+        }
+        final int nativeW=preview.getWidth(),nativeH=preview.getHeight();
+        enhanceIo.execute(()->{
+            Bitmap enhanced=null;
+            try {
+                enhanced=superResolution.improve(copy,()->
+                    !destroyed && aiEnabled && token==myToken && frameSerial==myFrame);
+            }catch(RuntimeException | OutOfMemoryError ignored) {
+                if(enhanced!=null && !enhanced.isRecycled()) enhanced.recycle();
+                enhanced=null;
+            }finally {
+                if(!copy.isRecycled()) copy.recycle();
+                aiBusy.set(false);
+            }
+            Bitmap output=enhanced;
+            ui.post(()->{
+                if(output==null)return;
+                if(destroyed || !aiEnabled || token!=myToken || frameSerial!=myFrame) {
+                    output.recycle();return;
+                }
+                Bitmap previous=null;
+                if(artwork.getDrawable() instanceof android.graphics.drawable.BitmapDrawable)
+                    previous=((android.graphics.drawable.BitmapDrawable)artwork.getDrawable()).getBitmap();
+                output.setDensity(Bitmap.DENSITY_NONE);
+                artwork.setImageBitmap(output);
+                artwork.post(()->showWithPortraitSizeRule(output,nativeW,nativeH));
+                if(previous!=null && previous!=output && !previous.isRecycled())
+                    previous.recycle();
+            });
+        });
     }
 
     private Bitmap loadBitmap(Uri uri) throws Exception {
@@ -460,8 +554,10 @@ public class MainActivity extends Activity {
         destroyed=true;
         active=false;
         token++;
+        frameSerial++;
         ui.removeCallbacks(tick);
         io.shutdownNow();
+        enhanceIo.shutdownNow();
         artwork.setImageDrawable(null);
         super.onDestroy();
     }
