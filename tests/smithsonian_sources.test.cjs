@@ -24,7 +24,7 @@ test('two logically distinct Smithsonian museums and one NMAA with three actual 
  'Paintings from Japan in the Freer Gallery of Art',
  'Paintings from India in the Freer Gallery of Art'
  ]);
- assert.equal(3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length+museums.length,35);
+ assert.equal(3+C.ASIAN_MUSEUMS.length+C.AFRICAN_MUSEUMS.length+C.ADDITIONAL_MUSEUMS.length+museums.length,40);
 });
 test('CC0 and Public domain files normalize for both museum sources and classify into correct rotation',()=>{
  const a=C.normalizeSmithsonianCommons(response(),'saam');
@@ -88,7 +88,7 @@ test('both browser and native Android allowlist only official configured Commons
 test('new user-visible info, independent APK ID and original 75 percent policy remain',()=>{
  const html=read('web/index.html'), gradle=read('android-app/app/build.gradle');
  assert(html.includes('전시 관리 · v1.6.6'));
- assert(html.includes('총 35곳'));
+ assert(html.includes('총 40곳'));
  assert(html.includes('75% 이상'));
  assert(html.includes('고화질 우선'));
  assert(html.includes('스미스소니언 미국미술관'));

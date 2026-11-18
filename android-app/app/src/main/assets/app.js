@@ -22,7 +22,7 @@
     stats:{slot:0,shown:0,portrait:0,other:0,modernShown:0,updatedAt:'',day:'',movementIndex:0},
     apiCalls:0,lastErr:'',sourceReady:[],lastTime:0
   };
-  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관 21곳(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
+  const sourceNames={cleveland:'클리블랜드',chicago:'시카고',met:'메트로폴리탄',asian:'아시아 박물관(공용 자료)',african:'아프리카 박물관(공용 자료)',additional:'세계 미술관 26곳(공용 자료)',smithsonian:'스미스소니언 미국미술관·국립아시아미술관(공개 회화)',modern:'현대 창작 · Openverse / 위키미디어'};
   function inform(message){ ui.status.textContent=message; ui.msg.textContent=message; }
   function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   function openDB(){
@@ -306,7 +306,7 @@
         const total=Number(res.query&&res.query.searchinfo&&res.query.searchinfo.totalhits)||0;
         state.cursors.african[museum.id]=(rows===0||rows<50||offset>=100000||(total&&offset+50>=total))?0:offset+50;
       }else if(source==='additional'){
-        const museum=C.ADDITIONAL_MUSEUMS[(state.additionalOrder++*8)%C.ADDITIONAL_MUSEUMS.length];
+        const museum=C.ADDITIONAL_MUSEUMS[(state.additionalOrder++*11)%C.ADDITIONAL_MUSEUMS.length];
         const offset=Number(state.cursors.additional[museum.id])||0;
         const res=await request('additionalCommons',museum.id+':'+offset);
         addCandidates(C.normalizeAdditionalCommons(res,museum.id).filter(C.eligibleArt));

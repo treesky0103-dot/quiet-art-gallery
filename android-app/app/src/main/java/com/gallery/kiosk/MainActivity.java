@@ -303,7 +303,7 @@ public final class MainActivity extends Activity {
         if(type.equals("additionalCommons")){
             String[] parts=p.split(":",-1);
             if(parts.length!=2)throw new IOException("추가 미술관 검색 조건 오류");
-            String[] ids={"rijks","nga","getty","smk","paris","london","walters","ngv","nsw","aus-nga","south-aus","queensland","auckland","dunedin","brasil-mnba","argentina-mnba","chile-mnba","peru-mali","colombia-mnc","uruguay-mnav","brasil-pina"};
+            String[] ids={"rijks","nga","getty","smk","paris","london","walters","ngv","nsw","aus-nga","south-aus","queensland","auckland","dunedin","brasil-mnba","argentina-mnba","chile-mnba","peru-mali","colombia-mnc","uruguay-mnav","brasil-pina","louvre","orsay","british","prado","hermitage"};
             String[] cats={
                 "Paintings in the Rijksmuseum Amsterdam",
                 "Paintings in the National Gallery of Art (Washington, D.C.)",
@@ -325,7 +325,12 @@ public final class MainActivity extends Activity {
                 "Paintings in the Museo de Arte de Lima",
                 "Paintings in the Museo Nacional de Colombia",
                 "Paintings in the Museo Nacional de Artes Visuales",
-                "Paintings in the Pinacoteca do Estado de São Paulo"
+                "Paintings in the Pinacoteca do Estado de São Paulo",
+                "Paintings in the Louvre",
+                "Paintings in the Musée d'Orsay",
+                "Prints in the British Museum",
+                "Paintings in the Museo del Prado",
+                "Paintings in the Hermitage"
             };
             String category=null;
             for(int i=0;i<ids.length;i++)if(ids[i].equals(parts[0]))category=cats[i];
