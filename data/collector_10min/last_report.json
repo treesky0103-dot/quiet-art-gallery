@@ -1,47 +1,46 @@
 {
-  "run_utc": "2026-11-19T08:54:11.857462+00:00",
-  "github_run_id": "44491396617",
+  "run_utc": "2026-11-19T18:00:10.246370+00:00",
+  "github_run_id": "44582969659",
   "baseline_requested": 736,
   "baseline_with_independent_hash_records": 675,
   "new_verified_this_run": 80,
-  "increment_verified_unique": 1575,
-  "user_baseline_plus_new": 2311,
+  "increment_verified_unique": 1655,
+  "user_baseline_plus_new": 2391,
   "metadata_source_ok": 4,
-  "download_attempts": 81,
+  "download_attempts": 80,
   "proof_files": 3,
   "details": [
     {
       "source": "cma_modern",
-      "cursor": 8500,
-      "candidates": 16,
+      "cursor": 8900,
+      "candidates": 20,
       "ok": true
     },
     {
       "source": "cma_modern",
-      "cursor": 8600,
+      "cursor": 9000,
+      "candidates": 22,
+      "ok": true
+    },
+    {
+      "source": "cma_modern",
+      "cursor": 9100,
       "candidates": 21,
       "ok": true
     },
     {
       "source": "cma_modern",
-      "cursor": 8700,
-      "candidates": 23,
-      "ok": true
-    },
-    {
-      "source": "cma_modern",
-      "cursor": 8800,
-      "candidates": 27,
+      "cursor": 9200,
+      "candidates": 25,
       "ok": true
     }
   ],
   "rejection_summary": {
-    "validated_but_not_archived": 77,
-    "optimized_dimensions": 1
+    "validated_but_not_archived": 77
   },
   "scan_pages": 4,
-  "elapsed_sec": 64.5,
-  "proof_bytes": 977773,
+  "elapsed_sec": 49.6,
+  "proof_bytes": 968337,
   "target_cap": 80,
   "max_output_bytes": 1048576,
   "verified_only_in_hash_ledger": 77,
