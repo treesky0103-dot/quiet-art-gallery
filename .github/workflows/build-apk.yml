@@ -1,7 +1,6 @@
 name: Build Gallery APK
+# Automatic push-triggered CI paused; manually runnable only.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read

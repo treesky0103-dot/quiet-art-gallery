@@ -1,7 +1,6 @@
 name: Probe Seven European American Museum Commons Categories
+# Automatic push-triggered CI paused; manually runnable only.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
